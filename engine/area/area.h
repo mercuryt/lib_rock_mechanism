@@ -5,7 +5,6 @@
 #pragma once
 
 #include "../numericTypes/types.h"
-#include "../mistDisperseEvent.h"
 #include "../geometry/cuboid.h"
 #include "../craft.h"
 #include "../fire.h"
@@ -27,7 +26,6 @@
 #include "woodcutting.h"
 #include "stockpile.h"
 #include "rain.h"
-#include "hasFluidGroups.h"
 #include "hasSleepingSpots.h"
 #include "hasSpaceDesignations.h"
 #include "evaporation.h"
@@ -36,6 +34,8 @@
 #include "hasConstructionDesignations.h"
 #include "hasSoldiers.h"
 #include "hasOnSightForFaction.h"
+#include "../fluid/fluidGroup.h"
+#include "../fluid/areaHasFluidGroups.h"
 //#include "medical.h"
 
 #include <vector>
@@ -113,7 +113,7 @@ public:
 	//WorldLocation* m_worldLocation;
 
 	// Create space and store adjacent
-	Area(AreaId id, std::string n, Simulation& s, const Distance  x, const Distance  y, const Distance  z);
+	Area(AreaId id, std::string n, Simulation& s, const Distance x, const Distance y, const Distance z);
 	Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s);
 	Area(const Area& area) = delete;
 	Area(const Area&& area) = delete;
@@ -125,7 +125,6 @@ public:
 	// To be called periodically by Simulation.
 	void updateClimate();
 
-	[[nodiscard]] std::string toS() const;
 	[[nodiscard]] Json toJson() const;
 	#ifdef NDEBUG
 		[[nodiscard]] Space& getSpace() { return m_space; }

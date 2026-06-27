@@ -92,7 +92,7 @@ void Items::cargo_loadFluidFromLocation(const ItemIndex index, const FluidTypeId
 {
 	Space& space = m_area.getSpace();
 	assert(space.fluid_volumeOfTypeContains(location, fluidType) >= volume);
-	space.fluid_remove(location, volume, fluidType);
+	space.fluid_remove(CuboidSet::create(location), volume.get(), fluidType);
 	cargo_addFluid(index, fluidType, volume);
 }
 void Items::cargo_loadFluidFromItem(const ItemIndex index, const FluidTypeId fluidType, const CollisionVolume volume, const ItemIndex item)
@@ -210,7 +210,7 @@ void Items::cargo_unloadFluidToLocation(const ItemIndex index, const CollisionVo
 	assert(cargo_getFluidVolume(index) >= volume);
 	FluidTypeId fluidType = cargo_getFluidType(index);
 	cargo_removeFluid(index, volume);
-	m_area.getSpace().fluid_add(location, volume, fluidType);
+	m_area.getSpace().fluid_add(CuboidSet::create(location), volume.get(), fluidType);
 }
 bool Items::cargo_exists(const ItemIndex index) const { return m_hasCargo[index] != nullptr; }
 bool Items::cargo_containsActor(const ItemIndex index, const ActorIndex actor) const

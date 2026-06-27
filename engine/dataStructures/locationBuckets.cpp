@@ -76,7 +76,7 @@ void LocationBucket::reserve(int size)
 	m_actors.reserve(size);
 }
 const std::pair<const std::vector<ActorReference>*, Eigen::Array<bool, 2, Eigen::Dynamic>>
-LocationBucket::visionRequestQuery(const Area& area, const Point3D position, const Facing4 facing, const DistanceSquared visionRangeSquared, const CuboidSet& occupied, const Distance  largestVisionRange) const
+LocationBucket::visionRequestQuery(const Area& area, const Point3D position, const Facing4 facing, const DistanceSquared visionRangeSquared, const CuboidSet& occupied, const Distance largestVisionRange) const
 {
 	Sphere sphere(position, largestVisionRange.toFloat());
 	// Broad phase culling.

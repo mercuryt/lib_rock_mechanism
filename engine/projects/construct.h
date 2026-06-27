@@ -38,7 +38,7 @@ class ConstructProject final : public Project
 	void offDelay();
 public:
 	// PointFeatureType can be null, meaning the point is to be filled with a constructed wall.
-	ConstructProject(const FactionId faction, Area& a, const Point3D b, const PointFeatureTypeId bft, const MaterialTypeId mt, std::unique_ptr<DishonorCallback> dishonorCallback) :
+	ConstructProject(const FactionId faction, Area& a, const Point3D b, PointFeatureTypeId bft, const MaterialTypeId mt, std::unique_ptr<DishonorCallback> dishonorCallback) :
 		Project(faction, a, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_pointFeatureType(bft), m_solid(mt) { }
 	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;

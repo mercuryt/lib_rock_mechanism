@@ -123,7 +123,7 @@ void ActorOrItemIndex::setStatic(Area& area) const
 	else
 		area.getItems().setStatic(m_index.toItem());
 }
-std::string ActorOrItemIndex::toString() const
+std::string ActorOrItemIndex::toS() const
 {
 	if(empty())
 		return "null";

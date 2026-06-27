@@ -37,7 +37,7 @@ public:
 	SleepObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute(Area&, const ActorIndex actor) override;
 	void cancel(Area&, const ActorIndex actor) override;
-	void delay(Area& area, const ActorIndex actor)  override{ cancel(area, actor); }
+	void delay(Area& area, const ActorIndex actor) override{ cancel(area, actor); }
 	void reset(Area& area, const ActorIndex actor) override;
 	void selectLocation(Area& area, const Point3D index, const ActorIndex actor);
 	void makePathRequest(Area& area, const ActorIndex actor);

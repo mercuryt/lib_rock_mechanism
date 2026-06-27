@@ -46,7 +46,7 @@ public:
 	[[nodiscard]] static MapWithOffsetCuboidKeys<CollisionVolume> makeOccupiedCuboidsWithFacing(const ShapeId id, const Facing4 facing);
 	[[nodiscard]] static OffsetCuboidSet makeAdjacentCuboidsWithFacing(const ShapeId id, const Facing4 facing);
 	[[nodiscard]] static OffsetCuboid makeOffsetCuboidBoundryWithFacing(const ShapeId id, const Facing4 facing);
-	[[nodiscard]] static MapWithOffsetCuboidKeys<CollisionVolume> getCuboidsWithVolumeByZLevel(const ShapeId id, const Distance  z);
+	[[nodiscard]] static MapWithOffsetCuboidKeys<CollisionVolume> getCuboidsWithVolumeByZLevel(const ShapeId id, const Distance z);
 	[[nodiscard]] static CuboidSet getCuboidsOccupiedAt(const ShapeId id, const Space& space, const Point3D location, const Facing4 facing);
 	[[nodiscard]] static CuboidSet getCuboidsOccupiedAndAdjacentAt(const ShapeId id, const Space& space, const Point3D location, const Facing4 facing);
 	[[nodiscard]] static MapWithCuboidKeys<CollisionVolume> getCuboidsOccupiedAtWithVolume(const ShapeId id, const Space& space, const Point3D location, const Facing4 facing);

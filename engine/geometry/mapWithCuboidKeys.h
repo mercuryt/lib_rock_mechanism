@@ -39,7 +39,7 @@ struct MapWithCuboidKeysBase
 	[[nodiscard]] Pair front() const { return data.front(); }
 	[[nodiscard]] CuboidSetType makeCuboidSet() const;
 	[[nodiscard]] Quantity volume() const;
-	[[nodiscard]] std::string toString() const;
+	[[nodiscard]] std::string toS() const;
 };
 
 template<typename T>

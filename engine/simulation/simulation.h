@@ -67,7 +67,7 @@ public:
 	void save();
 	FactionId createFaction(std::string name);
 	//TODO: latitude, longitude, altitude.
-	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
+	[[nodiscard]] std::filesystem::path getPath() const { return m_path; }
 	[[nodiscard, maybe_unused]] DateTime getDateTime() const;
 	[[nodiscard]] Step getNextStepToSimulate() const;
 	[[nodiscard]] Step getNextEventStep() const;

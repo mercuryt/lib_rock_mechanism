@@ -33,7 +33,7 @@ struct EnterableData
 	[[nodiscard]] constexpr auto operator<=>(const EnterableData& other) const = default;
 	[[nodiscard]] bool empty() const { return verticalClearance.empty(); }
 	[[nodiscard]] bool exists() const { return !empty(); }
-	[[nodiscard]] std::string toString() const { return "{vertical clearance: " + verticalClearance.toString() + ", maxAndMinTemperature: " + maxTemperature.toString() + "," + minTemperature.toString(); }
+	[[nodiscard]] std::string toS() const { return "{vertical clearance: " + verticalClearance.toS() + ", maxAndMinTemperature: " + maxTemperature.toS() + "," + minTemperature.toS(); }
 	void clear() { verticalClearance.clear(); maxTemperature.clear(); minTemperature.clear(); }
 	[[nodiscard]] Primitive get() const { return {verticalClearance.get(), maxTemperature.get(), minTemperature.get()}; }
 	static EnterableData create(Primitive data) { return {Distance::create(data.verticalClearance), Temperature::create(data.maxTemperature), Temperature::create(data.minTemperature)}; }

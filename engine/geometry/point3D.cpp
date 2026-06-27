@@ -1,6 +1,7 @@
 #include "../config/config.h"
 #include "../space/adjacentOffsets.h"
 #include "cuboid.h"
+#include "cuboidSet.h"
 #include "offsetCuboid.h"
 #include <cmath> // for fmod
 Distance Point3D::getDimension(Dimensions dimension) const
@@ -13,12 +14,12 @@ Distance Point3D::getDimension(Dimensions dimension) const
 		default: std::unreachable();
 	}
 }
-Point3D Point3D::operator-(const Distance  distance) const
+Point3D Point3D::operator-(const Distance distance) const
 {
 	assert((data >= distance.get()).all());
 	return (*this) - distance.get();
 }
-Point3D Point3D::operator+(const Distance  distance) const
+Point3D Point3D::operator+(const Distance distance) const
 {
 	return (*this) + distance.get();
 }
@@ -130,7 +131,7 @@ std::strong_ordering Point3D::operator<=>(const Point3D other) const
 	else
 		return z() <=> other.z();
 }
-Point3D Point3D::subtractWithMinimum(const Distance  distance) const
+Point3D Point3D::subtractWithMinimum(const Distance distance) const
 {
 	auto copy = data;
 	const int value = distance.get();
@@ -171,10 +172,11 @@ DistanceSquared Point3D::distanceToSquared(const Point3D other) const
 {
 	return DistanceSquared::create((data - other.data).square().sum());
 }
-std::string Point3D::toString() const
+std::string Point3D::toS() const
 {
 	return "(" + std::to_string(x().get()) + "," + std::to_string(y().get()) + "," + std::to_string(z().get()) + ")";
 }
+std::string Point3D::operator()() const { return toS(); }
 Offset3D Point3D::toOffset() const { return *this; }
 Offset3D Point3D::offsetTo(const Point3D other) const
 {
@@ -273,7 +275,7 @@ Point3D Point3D::operator/(const int other) const
 }
 void Point3D::log() const
 {
-	std::cout << toString() << std::endl;
+	std::cout << toS() << std::endl;
 }
 Point3D Point3D::create(const DistanceWidth x, const DistanceWidth y, const DistanceWidth z)
 {
@@ -320,14 +322,14 @@ bool Point3D::squareOfDistanceIsGreaterThen(const Point3D point, const DistanceF
 }
 bool Point3D::contains(const Point3D point) const { return (*this) == point; }
 bool Point3D::contains(const Cuboid cuboid) const { return (*this) == cuboid.m_high && (*this) == cuboid.m_low; }
-OffsetCuboid Point3D::offsetCuboidRotated( const OffsetCuboid cuboid, const  Facing4 previousFacing, const Facing4 newFacing) const
+OffsetCuboid Point3D::offsetCuboidRotated( const OffsetCuboid cuboid, const Facing4 previousFacing, const Facing4 newFacing) const
 {
 	int rotation = (int)newFacing - (int)previousFacing;
 	if(rotation < 0)
 		rotation += 4;
 	return {offsetRotated(cuboid.m_high, (Facing4)rotation), offsetRotated(cuboid.m_high, (Facing4)rotation)};
 }
-Offset3D Point3D::offsetRotated(const Offset3D initialOffset, const  Facing4 previousFacing, const Facing4 newFacing) const
+Offset3D Point3D::offsetRotated(const Offset3D initialOffset, const Facing4 previousFacing, const Facing4 newFacing) const
 {
 	int rotation = (int)newFacing - (int)previousFacing;
 	if(rotation < 0)
@@ -340,12 +342,12 @@ Offset3D Point3D::offsetRotated(const Offset3D initialOffset, const Facing4 faci
 	rotatedOffset.rotate2D(facing);
 	return applyOffset(rotatedOffset);
 }
-Offset3D Point3D::translate(const Point3D previousPivot, const Point3D nextPivot, const  Facing4 previousFacing, const Facing4 nextFacing) const
+Offset3D Point3D::translate(const Point3D previousPivot, const Point3D nextPivot, const Facing4 previousFacing, const Facing4 nextFacing) const
 {
 	Offset3D destinationOffset = previousPivot.offsetTo(*this);
 	return nextPivot.offsetRotated(destinationOffset, previousFacing, nextFacing);
 }
-Offset3D Point3D::moveInDirection(const Facing6 facing, const Distance  distance) const
+Offset3D Point3D::moveInDirection(const Facing6 facing, const Distance distance) const
 {
 	Offset3D output = toOffset();
 	switch(facing)
@@ -391,6 +393,7 @@ Cuboid Point3D::inflated(Distance distance) const
 	return output;
 }
 Cuboid Point3D::boundry() const { return {*this, *this}; }
+CuboidSet Point3D::toSet() const { return CuboidSet::create(*this); }
 Point3D Point3D::max() { return { Distance::max(), Distance::max(), Distance::max()}; }
 Point3D Point3D::min() { return { Distance::min(), Distance::min(), Distance::min()}; }
 
@@ -415,10 +418,7 @@ Offset3D Offset3D::operator+(const int other) const { return Offsets(data + othe
 Offset3D Offset3D::operator-(const int other) const { return Offsets(data - other); }
 Offset3D Offset3D::operator*(const int other) const { return Offsets(data * other); }
 Offset3D Offset3D::operator/(const int other) const { return Offsets(data / other); }
-std::string Offset3D::toString() const
-{
-	return "(" + x().toString() + "," + y().toString() + "," + z().toString() + ")";
-}
+std::string Offset3D::toS() const { return "(" + x().toS() + "," + y().toS() + "," + z().toS() + ")"; }
 void Offset3D::rotate2DInvert(const Facing4 facing)
 {
 	switch(facing)
@@ -496,12 +496,12 @@ Offset3D Offset3D::below() const { auto output = *this; --output.data[2]; return
 Offset3D Offset3D::east() const { auto output = *this; ++output.data[0]; return output; }
 Offset3D Offset3D::north() const { auto output = *this; ++output.data[1]; return output; }
 Offset3D Offset3D::above() const { auto output = *this; ++output.data[2]; return output; }
-Offset3D Offset3D::translate(const Point3D previousPivot, const Point3D nextPivot, const  Facing4 previousFacing, const Facing4 nextFacing) const
+Offset3D Offset3D::translate(const Point3D previousPivot, const Point3D nextPivot, const Facing4 previousFacing, const Facing4 nextFacing) const
 {
 	Offset3D destinationOffset = previousPivot.offsetTo(*this);
 	return nextPivot.offsetRotated(destinationOffset, previousFacing, nextFacing);
 }
-Offset3D Offset3D::moveInDirection(const Facing6 facing, const Distance  distance) const
+Offset3D Offset3D::moveInDirection(const Facing6 facing, const Distance distance) const
 {
 	Offset3D output = *this;
 	switch(facing)

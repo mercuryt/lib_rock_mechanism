@@ -31,7 +31,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(DramaArcType, {
 	{DramaArcType::AnimalsArrive, "animals arrive"},
 	{DramaArcType::BanditsArrive, "bandits arrive"}
 });
-std::string DramaArc::typeToString(DramaArcType type)
+std::string DramaArc::typetoS(DramaArcType type)
 {
 	switch(type)
 	{
@@ -57,9 +57,9 @@ std::string DramaArc::typeToString(DramaArcType type)
 }
 DramaArcType DramaArc::stringToType(std::string string)
 {
-	if(string == typeToString(DramaArcType::AnimalsArrive))
+	if(string == typetoS(DramaArcType::AnimalsArrive))
 		return DramaArcType::AnimalsArrive;
-	if(string == typeToString(DramaArcType::BanditsArrive))
+	if(string == typetoS(DramaArcType::BanditsArrive))
 		return DramaArcType::BanditsArrive;
 	std::unreachable();
 	return DramaArcType::AnimalsArrive;
@@ -147,7 +147,7 @@ Point3D DramaArc::getEntranceToArea(const ShapeId shape, const MoveTypeId moveTy
 	assert(candidate.exists());
 	return candidate;
 }
-Point3D DramaArc::findLocationOnEdgeForNear(const ShapeId shape, const MoveTypeId moveType, const Point3D origin, const Distance  distance, const SmallSet<Point3D>& exclude) const
+Point3D DramaArc::findLocationOnEdgeForNear(const ShapeId shape, const MoveTypeId moveType, const Point3D origin, const Distance distance, const SmallSet<Point3D>& exclude) const
 {
 	Facing4 facing = getFacingAwayFromEdge(origin);
 	Space& space = m_area->getSpace();

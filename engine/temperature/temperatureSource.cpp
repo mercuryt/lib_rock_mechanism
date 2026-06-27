@@ -9,9 +9,9 @@
  #include "../plants.h"
  #include "../pointFeature.h"
  #include<cmath>
-std::string TemperatureSource::toString() const
+std::string TemperatureSource::toS() const
 {
-	return "location: " + m_location.toString() + " id: " + m_id.toString() + " delta: " + m_delta.toString();
+	return "location: " + m_location.toS() + " id: " + m_id.toS() + " delta: " + m_delta.toS();
 }
 CuboidSet AreaHasTemperatureSources::getAffectedArea(Area& area, const Point3D location, const TemperatureDelta delta)
 {
@@ -66,7 +66,7 @@ void AreaHasTemperatureSources::doStep(Area& area)
 	{
 		auto condition = [&](const TemperatureSource other) { return other.m_id == temperatueSourceId; };
 		TemperatureSource source = m_data.queryGetOneWithCondition(point, condition);
-		CuboidSet recordedArea = RTreeHelpers::getAdjacentWithConditionRecursive(m_data, point, condition);
+		CuboidSet recordedArea = RTreeHelpers::getAdjacentWithConditionRecursive<TemperatureSource>(m_data, point, condition);
 		m_data.removeWithCondition(recordedArea, condition);
 		CuboidSet affectedArea = getAffectedArea(area, point, source.m_delta);
 		m_data.insert(affectedArea, source);
@@ -129,10 +129,10 @@ CuboidSet AreaHasTemperatureSources::getPointsIntersectingExposedToSky(Area& are
 	output = space.m_exposedToSky.get().queryGetIntersection(output);
 	return output;
 }
-std::string AreaHasTemperatureSources::toString(Area& area, int x, int y, int z)
+std::string AreaHasTemperatureSources::toS(Area& area, int x, int y, int z)
 {
 	Point3D location = Point3D::create(x, y, z);
 	TemperatureSource source = m_data.queryGetOneWithCondition(location, [&](const TemperatureSource otherSource) { return otherSource.m_location == location; });
 	CuboidSet affectedArea = getAffectedArea(area, location, source.m_delta);
-	return source.toString() + " affecting: " + affectedArea.toString();
+	return source.toS() + " affecting: " + affectedArea.toS();
 }

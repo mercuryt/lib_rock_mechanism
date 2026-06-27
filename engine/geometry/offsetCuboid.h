@@ -30,7 +30,7 @@ struct OffsetCuboid
 	[[nodiscard]] bool isTouching(const OffsetCuboid other) const;
 	[[nodiscard]] bool isTouchingFace(const OffsetCuboid other) const;
 	[[nodiscard]] bool isTouchingFaceFromInside(const OffsetCuboid other) const;
-	[[nodiscard]] OffsetCuboid translate(const Point3D previousPivot, const Point3D nextPivot, const  Facing4 previousFacing, const Facing4 nextFacing) const;
+	[[nodiscard]] OffsetCuboid translate(const Point3D previousPivot, const Point3D nextPivot, const Facing4 previousFacing, const Facing4 nextFacing) const;
 	[[nodiscard]] std::pair<Offset3D, Offset3D> toOffsetPair() const { return {m_high, m_low}; }
 	[[nodiscard]] SmallSet<OffsetCuboid> getChildrenWhenSplitByCuboid(const OffsetCuboid cuboid) const;
 	[[nodiscard]] SmallSet<OffsetCuboid> getChildrenWhenSplitBy(const OffsetCuboid cuboid) const { return getChildrenWhenSplitByCuboid(cuboid); }
@@ -56,12 +56,14 @@ struct OffsetCuboid
 	[[nodiscard]] Offset sizeY() const;
 	[[nodiscard]] Offset sizeZ() const;
 	void maybeExpand(const OffsetCuboid other);
-	void inflate(const Distance  distance);
-	void shift(const Facing6 direction, const Distance  distance);
-	void shift(const Offset3D offset, const Distance  distance);
+	void inflate(const Distance distance);
+	void inflateHorizontal(const Distance distance);
+	void inflateVertical(const Distance distance);
+	void shift(const Facing6 direction, const Distance distance);
+	void shift(const Offset3D offset, const Distance distance);
 	// Provided for symetry with Cuboid, not actually useful.
-	void maybeShift(const Facing6 direction, const Distance  distance) { shift(direction, distance); }
-	void maybeShift(const Offset3D offset, const Distance  distance) { shift(offset, distance); }
+	void maybeShift(const Facing6 direction, const Distance distance) { shift(direction, distance); }
+	void maybeShift(const Offset3D offset, const Distance distance) { shift(offset, distance); }
 	void rotateAroundPoint(const Offset3D point, const Facing4 facing);
 	void rotate2D(const Facing4 facing);
 	void rotate2D(const Facing4 oldFacing, const Facing4 newFacing);
@@ -83,7 +85,7 @@ struct OffsetCuboid
 	ConstIterator end() const { auto current = m_low; current.setZ(m_high.z() + 1); return {*this, current}; }
 	[[nodiscard]] Json toJson() const;
 	void load(const Json& data);
-	[[nodiscard]] std::string toString() const { return "{" + m_high.toString() + "," + m_low.toString() + "}"; }
+	[[nodiscard]] GDB_CALLABLE std::string toS() const;
 	static OffsetCuboid create(const Cuboid cuboid, const Point3D point);
 	static OffsetCuboid create(const Cuboid cuboid);
 	static OffsetCuboid create(const Offset3D a, const Offset3D b);

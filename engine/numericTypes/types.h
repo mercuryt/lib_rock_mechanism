@@ -15,9 +15,9 @@
 #include <string>
 
 #ifndef NDEBUG
-    constexpr bool DEBUG = true;
+  constexpr bool DEBUG = true;
 #else
-    constexpr bool DEBUG = false;
+  constexpr bool DEBUG = false;
 #endif
 
 // Facing4 is stored sequentally in Portables so it's worth using an 8 bit type.
@@ -194,7 +194,7 @@ class Distance : public StrongInteger<Distance, DistanceWidth, std::numeric_limi
 public:
 	[[nodiscard]] constexpr DistanceFractional toFloat() const;
 	[[nodiscard]] constexpr DistanceSquared squared() const { return DistanceSquared::create(data * data); }
-	struct Hash { [[nodiscard]] size_t operator()(const Distance  index) const { return index.get(); } };
+	struct Hash { [[nodiscard]] size_t operator()(const Distance index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Distance& index) { data = index.get(); }
 inline void from_json(const Json& data, Distance& index) { index = Distance::create(data.get<DistanceWidth>()); }
@@ -204,7 +204,7 @@ class DistanceFractional : public StrongFloat<DistanceFractional>
 public:
 	[[nodiscard]] constexpr Distance toInt() const { return Distance::create(std::round(data)); }
 	struct Hash { [[nodiscard]] size_t operator()(const DistanceFractional index) const { return index.get(); } };
-	static DistanceFractional create(const Distance  distance) { return {(float)distance.get()}; }
+	static DistanceFractional create(const Distance distance) { return {(float)distance.get()}; }
 	static DistanceFractional create(const float distance) { return {distance}; }
 };
 inline void to_json(Json& data, const DistanceFractional& index) { data = index.get(); }

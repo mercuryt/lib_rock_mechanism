@@ -44,3 +44,5 @@ void to_json(Json& data, const AttackTypeId& id) { data = AttackType::getName(id
 void from_json(const Json& data, AttackTypeId& id) { id = AttackType::byName(data.get<std::string>()); }
 void to_json(Json& data, const TemperatureSourceId& id) { data = id.get(); }
 void from_json(const Json& data, TemperatureSourceId& id) { data.get_to(id.data); }
+void to_json(Json& data, const FluidGroupId& id) { data = id.get(); }
+void from_json(const Json& data, FluidGroupId& id) { data.get_to(id.data); }

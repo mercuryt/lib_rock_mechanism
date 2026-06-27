@@ -89,7 +89,6 @@ template struct SmallMap<FactionId, RTreeData<RTreeDataWrapper<Project*, nullptr
 template struct SmallMap<FactionId, SimulationHasUniformsForFaction>;
 template struct SmallMap<FactionId, SmallMap<SpaceDesignation, Quantity>>;
 template struct SmallMap<FactionId, StrongVector<Squad, SquadIndex>>;
-template struct SmallMap<FluidGroup*, SmallSet<Point3D>>;
 template struct SmallMap<FluidTypeId, CollisionVolume>;
 template struct SmallMap<FluidTypeId, FluidGroup*>;
 template struct SmallMap<FluidTypeId, FluidRequirementData>;

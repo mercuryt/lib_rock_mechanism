@@ -169,16 +169,14 @@ void AreaHasPaths::doStep(Area& area)
 	for(AreaHasPathsForMoveType& hasPathsForMoveType : m_data)
 		hasPathsForMoveType.writeStep(area);
 }
-void AreaHasPaths::registerMoveType(Area& area, const MoveTypeId moveType) { m_data.emplace_back(area, moveType); }
-void AreaHasPaths::maybeRegisterMoveType(Area& area, const MoveTypeId moveType)
-{
-	if(std::ranges::find(m_data, moveType, &AreaHasPathsForMoveType::m_moveType) == m_data.end())
-		registerMoveType(area, moveType);
-}
-AreaHasPathsForMoveType& AreaHasPaths::get(const MoveTypeId moveType)
+AreaHasPathsForMoveType& AreaHasPaths::get(Area& area, const MoveTypeId moveType)
 {
 	auto found = std::ranges::find(m_data, moveType, &AreaHasPathsForMoveType::m_moveType);
-	assert(found != m_data.end());
+	if(found == m_data.end())
+	{
+		m_data.emplace_back(area, moveType);
+		return m_data.back();
+	}
 	return *found;
 }
 void AreaHasPaths::clearPathRequests()
@@ -190,6 +188,12 @@ void AreaHasPaths::update(Area& area, const Cuboid cuboid)
 {
 	for(AreaHasPathsForMoveType& forMoveType : m_data)
 		forMoveType.update(area, cuboid);
+}
+void AreaHasPaths::update(Area& area, const CuboidSet& cuboids)
+{
+	// TODO:(optimization) locality would be better if each HasPathsForMoveType were passed the whole CuboidSet.
+	for(Cuboid cuboid : cuboids)
+		update(area, cuboid);
 }
 void AreaHasPaths::maybeSetImpassable(const Cuboid cuboid)
 {

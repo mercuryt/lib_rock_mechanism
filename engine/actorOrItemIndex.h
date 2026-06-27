@@ -1,6 +1,6 @@
 /*
- *  Polymorphic type for either an Actor or Item.
- *  TODO: bitbash
+ * Polymorphic type for either an Actor or Item.
+ * TODO: bitbash
  */
 #pragma once
 #include "numericTypes/types.h"
@@ -48,7 +48,7 @@ public:
 	void move_updateIndividualSpeed(Area& area) const;
 	void maybeSetStatic(Area& area) const;
 	void setStatic(Area& area) const;
-	std::string toString() const;
+	std::string toS() const;
 	[[nodiscard]] ActorIndex getActor() const { assert(isActor()); return ActorIndex::create(m_index.get()); }
 	[[nodiscard]] ItemIndex getItem() const { assert(isItem()); return ItemIndex::create(m_index.get()); }
 	[[nodiscard]] ActorOrItemReference toReference(Area& area) const;

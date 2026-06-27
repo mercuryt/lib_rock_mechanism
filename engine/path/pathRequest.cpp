@@ -128,7 +128,7 @@ PathRequest& PathRequest::load(const Json& data, DeserializationMemo& deserializ
 PathRequest& PathRequest::record(Area &area, const MoveTypeId moveType, std::unique_ptr<PathRequest> pathRequest)
 {
 	PathRequest& output = *pathRequest;
-	area.m_hasPaths.get(moveType).recordPathRequest(std::move(pathRequest));
+	area.m_hasPaths.get(area, moveType).recordPathRequest(std::move(pathRequest));
 	return output;
 }
 void PathRequest::writeStep(Area& area, bool useCurrentPosition)
@@ -139,7 +139,7 @@ void PathRequest::writeStep(Area& area, bool useCurrentPosition)
 }
 void PathRequest::cancel(Area& area)
 {
-	area.m_hasPaths.get(moveType).cancelPathRequest(*this);
+	area.m_hasPaths.get(area, moveType).cancelPathRequest(*this);
 }
 GoToPathRequest::GoToPathRequest(Point3D _start, Distance _maxRange, ActorReference _actor, ShapeId _shape, FactionId _faction, MoveTypeId _moveType, Facing4 _facing, bool _detour, bool _adjacent, bool _anyOccupiedPoint, bool _reserveDestination, Point3D d) :
 	PathRequest(_start, _maxRange, _actor, _shape, _faction, _moveType, _facing, _detour, _adjacent, _anyOccupiedPoint, _reserveDestination, d),

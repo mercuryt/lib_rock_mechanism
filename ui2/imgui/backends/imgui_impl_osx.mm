@@ -451,7 +451,7 @@ bool ImGui_ImplOSX_Init(NSView* view)
     {
         NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
         NSString* available = [pasteboard availableTypeFromArray: [NSArray arrayWithObject:NSPasteboardTypeString]];
-        if (![available isEqualToString:NSPasteboardTypeString])
+        if (![available isEqualtoS:NSPasteboardTypeString])
             return nullptr;
 
         NSString* string = [pasteboard stringForType:NSPasteboardTypeString];

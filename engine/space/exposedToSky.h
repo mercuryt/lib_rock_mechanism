@@ -19,7 +19,7 @@ public:
 	GDB_CALLABLE bool check(const Point3D point) const;
 	[[nodiscard]] bool canPrepare() const { return m_data.canPrepare(); }
 	[[nodiscard]] const RTreeBoolean& get() const { return m_data; }
-	[[nodiscard]] CuboidSet removeNotExposedFrom(const auto& shape)
+	[[nodiscard]] CuboidSet removeNotExposedFrom(const auto& shape) const
 	{
 		CuboidSet output = m_data.queryGetLeaves(shape);
 		return output.intersection(shape);

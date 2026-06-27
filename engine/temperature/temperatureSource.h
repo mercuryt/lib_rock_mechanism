@@ -22,12 +22,13 @@ struct TemperatureSource
 	void updateDelta(Area& area, TemperatureDelta newValue);
 	void clear() { m_location.clear(); m_id.clear(); m_delta.clear(); }
 	[[nodiscard]] std::strong_ordering operator<=>(const TemperatureSource& other) const = default;
+	[[nodiscard]] bool empty() const { return m_location.empty(); };
 	[[nodiscard]] Primitive get() const { return {m_location.get(), m_id.get(), m_delta.get()}; }
 	[[nodiscard]] constexpr static TemperatureSource null() { return {}; }
 	[[nodiscard]] constexpr static Primitive nullPrimitive() { return {Point3D::nullPrimitive(), TemperatureSourceId::nullPrimitive(), TemperatureDelta::nullPrimitive()}; }
 	[[nodiscard]] constexpr static TemperatureSource create(const Primitive& primitive) { return {Point3D::create(primitive.location), TemperatureSourceId::create(primitive.id), TemperatureDelta::create(primitive.delta)}; }
 	[[nodiscard]] constexpr static TemperatureSource create(Point3D location, TemperatureSourceId id, TemperatureDelta delta) { return {location, id, delta}; }
-	[[nodiscard]] std::string toString() const;
+	[[nodiscard]] std::string toS() const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(TemperatureSource, m_location, m_id, m_delta);
 };
 class AreaHasTemperatureSources
@@ -46,11 +47,11 @@ public:
 	void releaseId(TemperatureSourceId id);
 	void onTemperatureCanNoLongerTransmit(const CuboidSet& cuboids);
 	void onTemperatureCanNowTransmit(const CuboidSet& cuboids);
-	void queryForEach(const auto& shape, auto&& action) const  { return m_data.queryForEach(shape, action); }
+	void queryForEach(const auto& shape, auto&& action) const { return m_data.queryForEach(shape, action); }
 	[[nodiscard]] TemperatureDelta getDelta(const Point3D point);
 	[[nodiscard]] TemperatureSourceId getNextId();
 	[[nodiscard]] CuboidSet getPointsIntersectingExposedToSky(Area& area) const;
 	[[nodiscard]] static CuboidSet getAffectedArea(Area& area, const Point3D location, const TemperatureDelta delta);
-	GDB_CALLABLE std::string toString(Area& area, int x, int y, int z);
+	GDB_CALLABLE std::string toS(Area& area, int x, int y, int z);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(AreaHasTemperatureSources, m_data, m_sourcesToUpdate, m_nextId, m_unusedIds);
 };

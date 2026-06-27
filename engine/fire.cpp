@@ -56,7 +56,7 @@ void Fire::nextPhase(Area& area)
 	}
 }
 bool Fire::operator==(const Fire& fire) const { return &fire == this; }
-FireDelta Fire::createDelta() const  { return { m_location, m_materialType}; }
+FireDelta Fire::createDelta() const { return { m_location, m_materialType}; }
 TemperatureDelta Fire::getTemperatureDelta() const
 {
 	float modifier;

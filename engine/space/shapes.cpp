@@ -333,68 +333,7 @@ bool Space::shape_moveTypeCanEnterFrom(const Point3D point, const MoveTypeId mov
 }
 bool Space::shape_moveTypeCanEnter(const Point3D point, const MoveTypeId moveType) const
 {
-	assert(shape_anythingCanEnterEver(point));
-	const auto& fluidDataSet = m_fluid.queryGetAll(point);
-	// Floating.
-	if(MoveType::getFloating(moveType).first.exists() && !fluidDataSet.empty())
-		// Any floating move type can potentailly float in any amount of any type of fluid.
-		return true;
-	// Swiming.
-	for(const FluidData& fluidData : fluidDataSet)
-	{
-		auto found = MoveType::getSwim(moveType).find(fluidData.type);
-		if(found != MoveType::getSwim(moveType).end() && found.second() <= fluidData.volume)
-		{
-			// Can swim in fluid, check breathing requirements
-			if(MoveType::getBreathless(moveType))
-				return true;
-			if(shape_moveTypeCanBreath(point, moveType))
-				return true;
-			if(point.z() != m_sizeZ - 1)
-			{
-				const Point3D above = point.above();
-				if(shape_anythingCanEnterEver(above) && shape_moveTypeCanBreath(above, moveType))
-					return true;
-			}
-		}
-	}
-	// Not swimming or floating and fluid level is too high.
-	CollisionVolume total = m_totalFluidVolume.queryGetOneOr(point, {0});
-	if(total > Config::maxPointVolume / 2)
-		return false;
-	// Fly can always enter if fluid level isn't preventing it.
-	if(MoveType::getFly(moveType))
-		return true;
-	// Walk can enter only if can stand in or if also has climb2 and there is a isSupport() point adjacent.
-	if(MoveType::getSurface(moveType))
-	{
-		if(shape_canStandIn(point))
-			return true;
-		else
-
-			if(MoveType::getClimb(moveType) < 2)
-				return false;
-			else
-			{
-				// Only climb2 moveTypes can enter.
-				for(Point3D otherPoint : getDirectlyAdjacentOnSameZLevelOnly(point))
-					//TODO: check for climable features?
-					if(isSupport(otherPoint))
-						return true;
-				return false;
-			}
-	}
-	return false;
-}
-bool Space::shape_moveTypeCanBreath(const Point3D point, const MoveTypeId moveType) const
-{
-	if(m_totalFluidVolume.queryGetOneOr(point, {0}) < Config::maxPointVolume && !MoveType::getOnlyBreathsFluids(moveType))
-		return true;
-	for(const FluidData& fluidData : m_fluid.queryGetAll(point))
-		//TODO: Minimum volume should probably be scaled by body size somehow.
-		if(MoveType::getBreathableFluids(moveType).contains(fluidData.type) && fluidData.volume >= Config::minimumVolumeOfFluidToBreath)
-			return true;
-	return false;
+	return m_area.m_hasPaths.get(m_area, moveType).m_enterable.queryAll(point);
 }
 MoveCost Space::shape_moveCostFrom(const Point3D point, const MoveTypeId moveType, const Point3D from) const
 {

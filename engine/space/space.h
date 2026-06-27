@@ -14,6 +14,7 @@
 #include "../dataStructures/rtreeDataIndex.h"
 #include "../geometry/pointSet.h"
 #include "../geometry/mapWithCuboidKeys.h"
+#include "../rtreeHelpers/rtreeHelpers.h"
 
 #include "exposedToSky.h"
 #include "support.h"
@@ -27,43 +28,43 @@ struct FluidData
 {
 	struct Primitive
 	{
-		FluidGroup* group;
+		FluidGroupId::Primitive group;
 		FluidTypeId::Primitive type;
-		CollisionVolume::Primitive volume;
+		Density::Primitive density;
 		[[nodiscard]] bool operator==(const Primitive&) const = default;
 		[[nodiscard]] std::strong_ordering operator<=>(const Primitive&) const = default;
 	};
 	static_assert(std::is_trivial_v<Primitive>);
 	//TODO: Replace pointer with index or id.
-	FluidGroup* group = nullptr;
+	FluidGroupId group = FluidGroupId::null();
 	FluidTypeId type = FluidTypeId::null();
-	CollisionVolume volume = {0};
+	Density density = Density::null();
+	FluidData() = default;
+	FluidData(FluidGroupId _group, FluidTypeId _type) :
+		group(_group),
+		type(_type),
+		density(FluidType::getDensity(_type))
+	{ }
 	// Fluid data leafs should never overlap if they are the same fluid type.
 	[[nodiscard]] std::strong_ordering operator<=>(const FluidData& other) const { return type <=> other.type; }
-	[[nodiscard]] constexpr bool operator==(const FluidData& other) const = default;
-	[[nodiscard]] bool empty() const { return type.empty() || volume == 0; }
+	[[nodiscard]] constexpr bool operator==(const FluidData& other) const { return other.group == group; }
+	[[nodiscard]] bool empty() const { return type.empty(); }
 	[[nodiscard]] bool exists() const { return !empty(); }
-	[[nodiscard]] std::string toString() const { return "{type: " + FluidType::getName(type) + ", volume: " + volume.toString() + "}"; }
-	void clear() { group = nullptr; type.clear(); volume = {0}; }
-	constexpr Primitive get() const { return {group, type.get(), volume.get()}; }
+	[[nodiscard]] std::string toS() const { return "{type: " + FluidType::getName(type) + ", group: " + group.toS() + "}"; }
+	void clear() { group.clear(); type.clear(); density.clear(); }
+	constexpr Primitive get() const { return {group.get(), type.get(), density.get()}; }
 	static FluidData create(const Primitive& data)
 	{
 		FluidData output;
-		output.group = data.group;
-		output.type = FluidTypeId::create(data.type);
-		output.volume = CollisionVolume::create(data.volume);
+		output.group = {data.group};
+		output.type = {data.type};
+		output.density = {data.density};
 		return output;
 	}
 	static constexpr FluidData null() { return {}; }
-	static constexpr Primitive nullPrimitive() { return {.group=nullptr, .type=FluidTypeId::nullPrimitive(), .volume=0}; }
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(FluidData, type, volume);
-};
-using FluidBase = RTreeData<FluidData, RTreeDataConfigs::canOverlapAndMerge>;
-class FluidRTree final : public FluidBase
-{
-public:
-	// m_fluid leaves can overlap only if they have different fluid types.
-	[[nodiscard]] bool canOverlap(const FluidData& a, const FluidData& b) const;
+	static constexpr Primitive nullPrimitive() { return {.group=FluidGroupId::nullPrimitive(), .type=FluidTypeId::nullPrimitive(), .density=Density::nullPrimitive()}; }
+	// TODO:(optimization) density doesn't need to be serialized.
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(FluidData, group, type, density);
 };
 using PointFeatureBase = RTreeData<PointFeature, RTreeDataConfigs::canOverlapAndMerge>;
 class PointFeatureRTree final : public PointFeatureBase
@@ -79,10 +80,7 @@ class Space
 	RTreeData<PointHasFires, RTreeDataConfigs::noMergeOrOverlap> m_fires;
 	RTreeData<MaterialTypeId> m_solid;
 	PointFeatureRTree m_features;
-	FluidRTree m_fluid;
-	RTreeData<FluidTypeId> m_mist;
-	RTreeData<CollisionVolume, RTreeDataConfig{}, 0> m_totalFluidVolume;
-	RTreeData<DistanceSquared> m_mistInverseDistanceFromSourceSquared;
+	RTreeData<FluidData, RTreeDataConfigs::canOverlapAndMerge> m_fluid;
 	//TODO: store these 4 as overlaping RTree.
 	RTreeData<ActorIndex, RTreeDataConfigs::noMerge> m_actors;
 	RTreeData<ItemIndex, RTreeDataConfigs::noMerge> m_items;
@@ -108,10 +106,10 @@ public:
 	const Distance m_sizeY;
 	const Distance m_sizeZ;
 	const DistanceWidth m_zLevelSize;
-	Space(Area& area, const Distance  x, const Distance  y, const Distance  z);
+	Space(Area& area, const Distance x, const Distance y, const Distance z);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void moveContentsTo(const Point3D point, const Point3D other);
-	void maybeContentsFalls(const Point3D point);
+	void maybeContentsFalls(Cuboid cuboid);
 	void setDynamic(const auto& shape) { m_dynamic.maybeInsert(shape); }
 	void unsetDynamic(const auto& shape) { m_dynamic.maybeRemove(shape); }
 	void doSupportStep() { m_support.doStep(m_area); }
@@ -128,7 +126,7 @@ public:
 	[[nodiscard]] SmallSet<Point3D> getDirectlyAdjacentOnSameZLevelOnly(const Point3D point) const;
 	[[nodiscard]] Cuboid getAdjacentWithEdgeOnSameZLevelOnly(const Point3D point) const;
 	// getNthAdjacent is not const because the point offsets are created and cached.
-	[[nodiscard]] SmallSet<Point3D> getNthAdjacent(const Point3D point, const Distance  distance);
+	[[nodiscard]] SmallSet<Point3D> getNthAdjacent(const Point3D point, const Distance distance);
 	[[nodiscard]] bool isAdjacentToActor(const Point3D point, const ActorIndex actor) const;
 	[[nodiscard]] bool isAdjacentToItem(const Point3D point, const ItemIndex item) const;
 	[[nodiscard]] bool isConstructed(const auto& shape) const { return m_constructed.query(shape); }
@@ -144,10 +142,9 @@ public:
 	[[nodiscard]] bool isEdge(const Point3D point) const;
 	[[nodiscard]] bool isEdge(const Cuboid cuboid) const;
 	[[nodiscard]] bool hasLineOfSightTo(const Point3D point, const Point3D other) const;
-	[[nodiscard]] Cuboid getZLevel(const Distance  z);
+	[[nodiscard]] Cuboid getZLevel(const Distance z);
 	[[nodiscard]] const auto& getSolid() const { return m_solid; }
 	[[nodiscard]] const auto& getDynamic() const { return m_dynamic; }
-	[[nodiscard]] const auto& getFluidTotal() const { return m_totalFluidVolume; }
 	[[nodiscard]] const auto& getPointFeatures() const { return m_features; }
 	[[nodiscard]] const Support& getSupport() const { return m_support; }
 	[[nodiscard]] Support& getSupport() { return m_support; }
@@ -196,7 +193,7 @@ public:
 		return output;
 	}
 	template <typename F>
-	[[nodiscard]] Point3D getPointInRangeWithCondition(const Point3D point, const Distance  range, F&& condition)
+	[[nodiscard]] Point3D getPointInRangeWithCondition(const Point3D point, const Distance range, F&& condition)
 	{
 		std::stack<Point3D> open;
 		open.push(point);
@@ -216,7 +213,7 @@ public:
 		}
 		return Point3D::null();
 	}
-	[[nodiscard]] CuboidSet collectAdjacentsInRange(const Point3D point, const Distance  range);
+	[[nodiscard]] CuboidSet collectAdjacentsInRange(const Point3D point, const Distance range);
 	// -Designation
 	[[nodiscard]] bool designation_anyForFaction(const FactionId faction, const SpaceDesignation designation) const;
 	[[nodiscard]] bool designation_has(const Point3D shape, const FactionId faction, const SpaceDesignation designation) const;
@@ -276,13 +273,13 @@ public:
 	}
 	[[nodiscard]] std::pair<MaterialTypeId, int> solid_getHardest(const CuboidSet& cuboids);
 	// -PointFeature.
-	void pointFeature_add(const Cuboid cuboid, const PointFeature& feature);
-	// TODO: remove pointFeature_add, use cuboid instead.
-	void pointFeature_add(const Point3D point, const PointFeature& feature);
+	void pointFeature_add(Cuboid cuboid, PointFeature feature);
 	// TODO: make construct / hew / remove work with cuboids.
-	void pointFeature_construct(const Point3D point, const PointFeatureTypeId& featureType, const MaterialTypeId materialType);
-	void pointFeature_hew(const Point3D point, const PointFeatureTypeId& featureType);
-	void pointFeature_remove(const Point3D point, const PointFeatureTypeId& type);
+	void pointFeature_construct(Cuboid cuboid, PointFeatureTypeId featureType, MaterialTypeId materialType);
+	void pointFeature_construct(Point3D point, PointFeatureTypeId featureType, MaterialTypeId materialType) { pointFeature_construct(Cuboid::create(point), featureType, materialType); }
+	void pointFeature_hew(Cuboid cuboid, PointFeatureTypeId featureType);
+	void pointFeature_hew(const Point3D point, PointFeatureTypeId featureType);
+	void pointFeature_remove(const Point3D point, PointFeatureTypeId type);
 	void pointFeature_removeAll(const Point3D point);
 	void pointFeature_removeAllWithCondition(const auto& shape, auto&& condition)
 	{
@@ -297,30 +294,29 @@ public:
 					pointFeature_remove(point, feature.pointFeatureType);
 		}
 	}
-	void pointFeature_lock(const Point3D point, const PointFeatureTypeId& type);
-	void pointFeature_unlock(const Point3D point, const PointFeatureTypeId& type);
-	void pointFeature_close(const Point3D point, const PointFeatureTypeId& type);
-	void pointFeature_open(const Point3D point, const PointFeatureTypeId& type);
-	void pointFeature_setTemperature(const Point3D point, const Temperature temperature);
+	void pointFeature_lock(const Point3D point, PointFeatureTypeId type);
+	void pointFeature_unlock(const Point3D point, PointFeatureTypeId type);
+	void pointFeature_close(const Point3D point, PointFeatureTypeId type);
+	void pointFeature_open(const Point3D point, PointFeatureTypeId type);
 	void pointFeature_removeOpaque(CuboidSet& cuboids) const;
 	void pointFeature_queryForEachWithCuboids(const auto& shape, auto&& action) const { m_features.queryForEachWithCuboids(shape, action); }
 	void pointFeature_queryForEachCuboid(const auto& shape, auto&& action) const { return m_features.queryForEachCuboid(shape, action); }
 	[[nodiscard]] CuboidSet pointFeature_queryCuboids(const auto& shape) const { return m_features.queryGetAllCuboids(shape); }
 	[[nodiscard]] SmallMap<PointFeature, CuboidSet> pointFeature_queryWithCuboidsCollated(const auto& shape) const { return m_fluid.queryWithCuboidsCollated(shape); }
 	[[nodiscard]] MapWithCuboidKeys<PointFeature> pointFeature_getAllWithCuboidsAndRemove(const CuboidSet& cuboids);
-	[[nodiscard]] const PointFeature pointFeature_at(const Cuboid cuboid, const PointFeatureTypeId& pointFeatureType) const;
-	[[nodiscard]] const PointFeature pointFeature_at(const Point3D point, const PointFeatureTypeId& pointFeatureType) const { return pointFeature_at({point, point}, pointFeatureType); }
+	[[nodiscard]] const PointFeature pointFeature_at(const Cuboid cuboid, PointFeatureTypeId pointFeatureType) const;
+	[[nodiscard]] const PointFeature pointFeature_at(const Point3D point, PointFeatureTypeId pointFeatureType) const { return pointFeature_at({point, point}, pointFeatureType); }
 	[[nodiscard]] bool pointFeature_empty(const auto& shape) const { return !m_features.queryAny(shape); }
 	[[nodiscard]] bool pointFeature_blocksEntrance(const auto& shape) const
 	{
-		const auto condition  = [&](const PointFeature& feature){
+		const auto condition = [&](const PointFeature& feature){
 			return PointFeatureType::byId(feature.pointFeatureType).blocksEntrance || (feature.pointFeatureType == PointFeatureTypeId::Door && feature.isLocked());
 		};
 		return m_features.queryAnyWithCondition(shape, condition);
 	}
 	[[nodiscard]] bool pointFeature_blocksEntranceBatch(const auto& shapes) const
 	{
-		const auto condition  = [&](const PointFeature& feature){ return feature.pointFeatureType == PointFeatureTypeId::Door && feature.isLocked(); };
+		const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == PointFeatureTypeId::Door && feature.isLocked(); };
 		return m_features.batchQueryWithConditionAny(shapes, condition);
 	}
 	[[nodiscard]] bool pointFeature_canStandAbove(const Point3D point) const;
@@ -335,63 +331,35 @@ public:
 	[[nodiscard]] bool pointFeature_multiTileCanEnterAtNonZeroZOffset(const CuboidSet& point) const;
 	[[nodiscard]] bool pointFeature_isOpaque(const Point3D point) const;
 	[[nodiscard]] bool pointFeature_floorIsOpaque(const Point3D point) const;
-	[[nodiscard]] MaterialTypeId pointFeature_getMaterialType(const Point3D point, const PointFeatureTypeId& pointFeatureType) const;
+	[[nodiscard]] MaterialTypeId pointFeature_getMaterialType(const Point3D point, PointFeatureTypeId pointFeatureType) const;
 	[[nodiscard]] MaterialTypeId pointFeature_getMaterialTypeFirst(const Point3D point) const;
-	[[nodiscard]] bool pointFeature_contains(const Point3D point, const PointFeatureTypeId& pointFeatureType) const;
+	[[nodiscard]] bool pointFeature_contains(const Point3D point, PointFeatureTypeId pointFeatureType) const;
 	[[nodiscard]] CuboidSet pointFeature_getCuboidsIntersecting(const Cuboid cuboid) const;
 	[[nodiscard]] CuboidSet pointFeature_queryCuboids(const Cuboid cuboid, auto&& condition) const { return m_features.queryGetAllCuboidsWithCondition(cuboid, condition); }
 	[[nodiscard]] SmallSet<std::pair<Cuboid, PointFeature>> pointFeature_getAllWithCuboids(const Cuboid cuboid) const;
 	[[nodiscard]] SmallSet<PointFeature> pointFeature_getAll(const auto& shape) const { return m_features.queryGetAll(shape); }
 	// -Fluids
-	void fluid_spawnMist(const Point3D point, const FluidTypeId fluidType, const Distance maxMistSpread = Distance::create(0));
-	void fluid_clearMist(const Point3D point);
-	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
-	void fluid_add(const Point3D point, const CollisionVolume volume, const FluidTypeId fluidType);
-	void fluid_add(const Cuboid cuboid, const CollisionVolume volume, const FluidTypeId fluidType);
-	void fluid_add(const CuboidSet& points, const CollisionVolume volume, const FluidTypeId fluidType);
-	// To be used durring read step.
-	void fluid_remove(const Point3D point, const CollisionVolume volume, const FluidTypeId fluidType);
-	// To be used used durring write step.
-	void fluid_removeSyncronus(const Point3D point, const CollisionVolume volume, const FluidTypeId fluidType);
-	void fluid_removeAllSyncronus(const Point3D point);
-	// Move less dense fluids to their group's excessVolume until Config::maxPointVolume is achieved.
-	void fluid_resolveOverfull(const Point3D point);
-	void fluid_onPointSetSolid(const Point3D point);
-	void fluid_onPointSetNotSolid(const Point3D point);
-	void fluid_onCuboidSetSolid(const Cuboid cuboid);
-	void fluid_mistSetFluidTypeAndInverseDistance(const Point3D point, const FluidTypeId fluidType, const Distance  inverseDistance);
-	// TODO: This could probably be resolved in a better way.
-	// Exposing these two methods breaks encapusalition a bit but allows better performance from fluidGroup.
-	void fluid_setAllUnstableExcept(const CuboidSet& points, const FluidTypeId fluidType);
-	// To be used by DrainQueue / FillQueue.
-	void fluid_drainInternal(const Cuboid cuboid, const CollisionVolume volume, FluidGroup& Group);
-	void fluid_fillInternal(const Cuboid cuboid, const CollisionVolume volume, FluidGroup& fluidGroup);
-	// To be used by fluid group split, so the space which will be in soon to be created groups can briefly have fluid without having a fluidGroup.
-	// Fluid group will be set again in addPoint within the new group's constructor.
-	// This prevents a problem where addPoint attempts to remove a point from a group which it has already been removed from.
-	// TODO: Seems messy.
-	void fluid_unsetGroupsInternal(const CuboidSet& points, const FluidTypeId fluidType);
-	void fluid_setGroupsInternal(const CuboidSet& points, const FluidTypeId fluidType, FluidGroup& fluidGroup);
+	void fluid_add(const CuboidSet& shape, int64_t volume, FluidTypeId fluidtype);
+	void fluid_remove(const CuboidSet& shape, int64_t volume, FluidTypeId fluidtype);
+	// To be used by FluidGroup.
+	void fluid_flowInto(const CuboidSet& cuboids, FluidTypeId fluidType, FluidGroup& group);
+	void fluid_flowOutFrom(const CuboidSet& cuboid, FluidTypeId type);
+	void fluid_setGroupId(const CuboidSet& shape, FluidTypeId fluidType, FluidGroupId group);
+	void fluid_removeAllFilledWithDensityEqualOrGreaterThenFrom(CuboidSet& cuboids, FluidTypeId fluidType) const;
+	void fluid_forEach(const auto& shape, auto&& action) const { m_fluid.queryForEach(shape, action); }
+	void fluid_forEachAll(auto&& action) const { m_fluid.forEach(action); }
+	void fluid_forEachWithCuboid(const auto& shape, auto&& action) const { m_fluid.queryForEachWithCuboids(shape, action); }
+	void fluid_onSetNotSolid(const CuboidSet& cuboid);
+	void fluid_onSetSolid(const CuboidSet& cuboid);
 	void fluid_maybeRecordFluidOnDeck(const CuboidSet& points);
 	void fluid_maybeEraseFluidOnDeck(const CuboidSet& points);
-	void fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(CuboidSet& set) const;
 	void fluid_queryForEachWithCuboids(const auto& shape, auto&& action) const { m_fluid.queryForEachWithCuboids(shape, action); }
 	void fluid_queryForEach(const auto& shape, auto&& action) const { m_fluid.queryForEach(shape, action); }
-	void fluid_queryTotalsForEachWithCuboids(const auto& shape, auto&& action) const { m_totalFluidVolume.queryForEachWithCuboids(shape, action); }
-	void fluid_removeAllFrom(CuboidSet& cuboids) const { m_totalFluidVolume.queryRemove(cuboids); }
-	[[nodiscard]] Distance fluid_getMistInverseDistanceToSource(const Point3D point) const;
+	[[nodiscard]] SmallSet<FluidGroup*> fluid_getGroups(const CuboidSet& shape);
+	[[nodiscard]] SmallSet<FluidGroup*> fluid_getGroupsWithType(const CuboidSet& shape, FluidTypeId fluidType);
 	[[nodiscard]] FluidGroup* fluid_getGroup(const Point3D point, const FluidTypeId fluidType) const;
-	// To be called from FluidGroup::splitStep only.
-	[[nodiscard]] bool fluid_undisolveInternal(const Point3D point, FluidGroup& fluidGroup);
-private:void fluid_destroyData(const Point3D point, const FluidTypeId fluidType);
-	void fluid_setTotalVolume(const Point3D point, const CollisionVolume volume);
-public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const FluidTypeId fluidType) const;
-	[[nodiscard]] bool fluid_isAdjacentToGroup(const Point3D point, const FluidGroup& fluidGroup) const;
-	[[nodiscard]] CollisionVolume fluid_volumeOfTypeCanEnter(const Point3D point, const FluidTypeId fluidType) const;
+	[[nodiscard]] CuboidSet fluid_getAdjacentWithConditionRecursive(const auto& shape, auto&& condition) { return RTreeHelpers::getAdjacentWithConditionRecursive<FluidData>(m_fluid, shape, condition); }
 	[[nodiscard]] CollisionVolume fluid_volumeOfTypeContains(const Point3D point, const FluidTypeId fluidType) const;
-	[[nodiscard]] FluidTypeId fluid_getTypeWithMostVolume(const Point3D point) const;
-	[[nodiscard]] bool fluid_canEnterEver(const Point3D point) const;
-	[[nodiscard]] bool fluid_typeCanEnterCurrently(const Point3D point, const FluidTypeId fluidType) const;
 	[[nodiscard]] bool fluid_any(const auto& shape) const { return m_fluid.queryAny(shape); }
 	template<typename ShapeT>
 	[[nodiscard]] bool fluid_contains(ShapeT shape, const FluidTypeId fluidType) const;
@@ -399,11 +367,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 	template<typename ShapeT>
 	[[nodiscard]] Point3D fluid_containsPoint(ShapeT&& shape, const FluidTypeId fluidType) const;
 	[[nodiscard]] const SmallSet<FluidData> fluid_getAll(const auto& shape) const { return m_fluid.queryGetAll(shape); }
-	[[nodiscard]] const SmallSet<FluidData> fluid_getAllSortedByDensityAscending(const Point3D point);
-	[[nodiscard]] const MapWithCuboidKeys<std::pair<FluidTypeId, CollisionVolume>> fluid_getWithCuboidsAndRemoveAll(const CuboidSet& cuboids);
+	[[nodiscard]] const MapWithCuboidKeys<std::pair<FluidTypeId, int64_t>> fluid_getWithCuboidsAndRemoveAll(const CuboidSet& cuboids);
 	[[nodiscard]] CollisionVolume fluid_getTotalVolume(const Point3D point) const;
-	[[nodiscard]] FluidTypeId fluid_getMist(const Point3D point) const;
-	[[nodiscard]] const FluidData fluid_getData(const Point3D point, const FluidTypeId fluidType) const;
 	[[nodiscard]] CuboidSet fluid_queryGetCuboids(const Cuboid shape) const;
 	[[nodiscard]] CuboidSet fluid_queryGetCuboidsWithCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetAllCuboidsWithCondition(shape, condition); }
 	[[nodiscard]] Point3D fluid_queryGetPointWithCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetOnePointWithCondition(shape, condition); }
@@ -412,15 +377,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 	[[nodiscard]] const std::vector<std::pair<Cuboid, FluidData>> fluid_queryGetWithCuboidsAndCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetAllWithCuboidsAndCondition(shape, condition); }
 	[[nodiscard]] const SmallSet<std::pair<Cuboid, FluidData>> fluid_queryGetWithCuboids(const auto& shape) const { return m_fluid.queryGetAllWithCuboids(shape); }
 	[[nodiscard]] bool fluid_queryAnyWithCondition(const auto& shape, auto&& condition) const { return m_fluid.queryAnyWithCondition(shape, condition); }
-	[[nodiscard]] bool fluid_shapeIsMostlySurroundedByFluidOfTypeAtDistanceAboveLocationWithFacing(const ShapeId shape, const FluidTypeId fluidType, const Distance  distance, const Point3D location, const Facing4 facing) const;
-	void fluid_forEach(const auto& shape, auto&& action) const { m_fluid.queryForEach(shape, action); }
-	void fluid_forEachWithCuboid(const auto& shape, auto&& action) const { m_fluid.queryForEachWithCuboids(shape, action); }
-	[[nodiscard]] CuboidSet fluid_queryGetCuboidsOverfull(const auto& shape) const
-	{
-		return m_totalFluidVolume.queryGetAllCuboidsWithCondition(shape, [&](const CollisionVolume data) { return data > Config::maxPointVolume; });
-	}
-	GDB_CALLABLE void fluid_validateTotalForPoint(const Point3D point) const;
-	GDB_CALLABLE void fluid_validateAllTotals() const;
+	[[nodiscard]] bool fluid_shapeIsMostlySurroundedByFluidOfTypeAtDistanceAboveLocationWithFacing(const ShapeId shape, const FluidTypeId fluidType, const Distance distance, const Point3D location, const Facing4 facing) const;
+	[[nodiscard]] bool fluid_allPointsContainedWithCondition(const auto& shape, auto&& condition) const { return m_fluid.queryAllWithCondition(shape, condition); }
 	// Floating
 	void floating_maybeSink(const CuboidSet& points);
 	void floating_maybeFloatUp(const CuboidSet& points);
@@ -503,11 +461,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 	void plant_updateGrowingStatus(const Point3D point);
 	void plant_updateGrowingStatus(const CuboidSet& cuboids);
 	void plant_setTemperature(const Point3D point, const Temperature temperature);
-	void plant_erase(const auto& shape)
-	{
-		assert(m_plants.queryAny(shape));
-		m_plants.maybeRemove(shape);
-	}
+	void plant_erase(const auto& shape) { m_plants.maybeRemove(shape); }
 	void plant_set(const auto& shape, const PlantIndex plant)
 	{
 		// TODO: Make plants able to overlap.
@@ -525,6 +479,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 	[[nodiscard]] bool plant_canGrowHereEver(const Point3D point, const PlantSpeciesId plantSpecies) const;
 	[[nodiscard]] bool plant_anythingCanGrowHereEver(const Point3D point) const;
 	[[nodiscard]] bool plant_exists(const auto& shape) const { return m_plants.queryAny(shape); }
+	[[nodiscard]] bool plant_queryAnyWithCondition(const auto& shape, auto&& condition) const { return m_plants.queryAnyWithCondition(shape, condition); }
 	[[nodiscard]] int plant_count(const auto& shape) const { return m_plants.queryCount(shape); }
 	// -Shape / Move
 	void shape_addStaticVolume(const MapWithCuboidKeys<CollisionVolume>& cuboidsAndVolumes);
@@ -663,11 +618,8 @@ public:
 	}
 	[[nodiscard]] const auto& project_getAll() const { return m_projects; }
 	// -Temperature
-	void temperature_freeze(const Point3D point, const FluidTypeId fluidType);
 	void temperature_freeze(const CuboidSet& cuboids, const FluidTypeId fluidType);
-	void temperature_meltSolid(const Point3D point);
 	void temperature_meltSolid(const CuboidSet& cuboids, const MaterialTypeId materialType);
-	void temperature_meltFeature(const Point3D point, const MaterialTypeId materialType, const PointFeatureTypeId featureType);
 	void temperature_meltFeatures(const CuboidSet& cuboids, const MaterialTypeId materialType);
 	void temperature_meltItems(const CuboidSet& cuboids, const MaterialTypeId materialType);
 	[[nodiscard]] const Temperature temperature_getAmbient(const Point3D point) const;
@@ -675,7 +627,7 @@ public:
 	[[nodiscard]] Temperature temperature_get(const Point3D point) const;
 	[[nodiscard]] bool temperature_transmits(const Point3D point) const;
 	[[nodiscard]] CuboidSet temperature_queryTransmitsCuboidsIntersection(const CuboidSet& cuboids) const;
-	GDB_CALLABLE std::string toString(const Point3D point) const;
+	GDB_CALLABLE std::string toS(const Point3D point) const;
 	// Unrevealed.
 	void unrevealed_queryForEach(const auto& shape, auto&& action) const { m_unrevealed.queryForEach(shape, action); }
 	Space(Space&) = delete;
@@ -684,13 +636,11 @@ public:
 
 inline void to_json(Json& data, const FluidData::Primitive& p)
 {
-	data["group"] = (uintptr_t)p.group;
+	data["group"] = p.group;
 	data["type"] = p.type;
-	data["volume"] = p.volume;
 }
 inline void from_json(const Json& data, FluidData::Primitive& p)
 {
-	p.group = (FluidGroup*)data["group"].get<uintptr_t>();
+	data["group"].get_to(p.group);
 	data["type"].get_to(p.type);
-	data["volume"].get_to(p.volume);
 }

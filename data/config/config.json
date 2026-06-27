@@ -183,8 +183,6 @@
 	"projectileHitPercentPerSkillPoint": 1.0,
 	"projectileHitPercentPerUnitVolume": 0.00005,
 	"projectileMedianTargetVolume": 6500,
-	"rainMaximumOffset": 100,
-	"rainMaximumSpacing": 2000,
 	"rainWriteStepFreqencySeconds": 15,
 	"rateModifierForEvaporationPerDegreeTemperature": 0.0035,
 	"ratioOfHitAreaToBodyPartVolumeForSever": 0.5,

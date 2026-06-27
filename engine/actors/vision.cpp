@@ -61,7 +61,7 @@ void Actors::vision_clearCanSee(const ActorIndex index)
 		m_canBeSeenBy[other.getIndex(m_referenceData)].erase(ref);
 	m_canSee[index].clear();
 }
-void Actors::vision_maybeUpdateRange(const ActorIndex index, const Distance  range)
+void Actors::vision_maybeUpdateRange(const ActorIndex index, const Distance range)
 {
 	if(vision_canSeeAnything(index) && hasLocation(index))
 	{

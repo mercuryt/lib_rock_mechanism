@@ -196,3 +196,12 @@ public:
 };
 void to_json(Json& data, const TemperatureSourceId& index);
 void from_json(const Json& data, TemperatureSourceId& index);
+
+using FluidGroupIdWidth = int32_t;
+class FluidGroupId : public StrongInteger<FluidGroupId, FluidGroupIdWidth, INT32_MAX, 0>
+{
+public:
+	struct Hash { [[nodiscard]] size_t operator()(const FluidGroupId index) const { return index.get(); } };
+};
+void to_json(Json& data, const FluidGroupId& index);
+void from_json(const Json& data, FluidGroupId& index);

@@ -36,27 +36,29 @@ struct Cuboid
 	void setFrom(const Point3D high, const Point3D low);
 	void setFrom(const Offset3D high, const Offset3D low);
 	void clear();
-	void shift(const Facing6 direction, const Distance  distance);
-	void shift(const Offset3D offset, const Distance  distance);
+	void shift(const Facing6 direction, const Distance distance);
+	void shift(const Offset3D offset, const Distance distance);
 	// MaybeShift only shifts if the result is non negitive.
-	void maybeShift(const Facing6 direction, const Distance  distance);
-	void maybeShift(const Offset3D offset, const Distance  distance);
+	void maybeShift(const Facing6 direction, const Distance distance);
+	void maybeShift(const Offset3D offset, const Distance distance);
 	void rotateAroundPoint(const Point3D point, const Facing4 rotation);
-	void setMaxZ(const Distance  distance);
+	void setMaxZ(const Distance distance);
 	void maybeExpand(const Cuboid other);
 	void maybeExpand(const Point3D point);
-	void inflate(const Distance  distance);
-	void inflateHorizontal(const Distance  distance);
+	void inflate(const Distance distance);
+	void inflateHorizontal(const Distance distance);
+	void inflateVertical(const Distance distance);
 	[[nodiscard]] Cuboid shifted(const Facing6 facing, const Distance distance = {1}) const;
 	[[nodiscard]] Cuboid maybeShifted(const Facing6 facing, const Distance distance = {1}) const;
-	[[nodiscard]] Cuboid inflated(const Distance  distance) const;
+	[[nodiscard]] Cuboid inflated(const Distance distance) const;
 	[[nodiscard]] Cuboid inflatedHorizontal(const Distance distance) const;
 	[[nodiscard]] constexpr Primitive get() const { return {.data={m_high.x().get(), m_high.y().get(), m_high.z().get(), m_low.x().get(), m_low.y().get(), m_low.z().get()}}; }
 	[[nodiscard]] constexpr static Primitive nullPrimitive() { auto d = Distance::null().get(); return {.data={d, d, d, d, d, d}}; }
 	[[nodiscard]] Cuboid boundry() const { return *this; }
-	[[nodiscard]] SmallSet<Point3D> toSet() const;
+	[[nodiscard]] CuboidSet toSet() const;
 	[[nodiscard]] bool contains(const Point3D point) const;
 	[[nodiscard]] bool contains(const Cuboid cuboid) const;
+	[[nodiscard]] bool contains(const CuboidSet& cuboids) const;
 	[[nodiscard]] bool contains(const Offset3D offset) const;
 	[[nodiscard]] bool contains(const OffsetCuboid cuboid) const;
 	[[nodiscard]] bool containsAnyPoints(const auto& points) const
@@ -115,10 +117,10 @@ struct Cuboid
 	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitBy(const Cuboid cuboid) const { return getChildrenWhenSplitByCuboid(cuboid); }
 	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitBy(const Point3D point) const { return getChildrenWhenSplitByCuboid({point, point}); }
 	[[nodiscard]] std::pair<Cuboid, Cuboid> getChildrenWhenSplitBelowCuboid(const Cuboid cuboid) const;
-	[[nodiscard]] OffsetCuboid translate(const Point3D previousPivot, const Point3D nextPivot, const  Facing4 previousFacing, const Facing4 nextFacing) const;
+	[[nodiscard]] OffsetCuboid translate(const Point3D previousPivot, const Point3D nextPivot, const Facing4 previousFacing, const Facing4 nextFacing) const;
 	[[nodiscard]] OffsetCuboid offsetTo(const Point3D point) const;
 	[[nodiscard]] SmallSet<Cuboid> sliceAtEachZ() const;
-	[[nodiscard]] Cuboid sliceAtZ(const Distance  z) const;
+	[[nodiscard]] Cuboid slicedAtZ(const Distance z) const;
 	[[nodiscard]] Distance sizeX() const;
 	[[nodiscard]] Distance sizeY() const;
 	[[nodiscard]] Distance sizeZ() const;
@@ -139,7 +141,7 @@ struct Cuboid
 	[[nodiscard]] static Cuboid fromPoint(const Point3D point);
 	[[nodiscard]] static Cuboid fromPointPair(const Point3D a, const Point3D b);
 	[[nodiscard]] static Cuboid fromPointSet(const SmallSet<Point3D>& set);
-	[[nodiscard]] static Cuboid createCube(const Point3D center, const Distance  width);
+	[[nodiscard]] static Cuboid createCube(const Point3D center, const Distance width);
 	[[nodiscard]] static Cuboid create(const OffsetCuboid cuboid);
 	[[nodiscard]] static Cuboid create(const Primitive primitive);
 	class ConstIterator
@@ -166,7 +168,7 @@ struct Cuboid
 	//TODO:
 	//static_assert(std::forward_iterator<iterator>);
 	CuboidSurfaceView getSurfaceView() const;
-	std::string toString() const;
+	[[nodiscard]] GDB_CALLABLE std::string toS() const;
 	[[nodiscard]] std::strong_ordering operator<=>(const Cuboid other) const;
 	static Cuboid null() { return Cuboid(); }
 	static Cuboid create(const Offset3D high, const Offset3D low) { assert(low.z() >= 0); return {Point3D::create(high), Point3D::create(low)}; }

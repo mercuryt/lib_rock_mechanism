@@ -35,7 +35,7 @@ void screens::editDrama(Window& window, Area& area)
 		for(const DramaArcType type : DramaArc::getTypes())
 		{
 			if(!typesForArea.contains(type))
-				if(ImGuiSelectable(DramaArc::typeToString(type), false))
+				if(ImGuiSelectable(DramaArc::typetoS(type), false))
 					window.m_simulation->m_dramaEngine->createArcTypeForArea(type, area);
 		}
 		ImGui::EndCombo();

@@ -4,7 +4,6 @@
 #include "numericTypes/types.h"
 #include "dataStructures/bitset.h"
 struct PointFeatureType
-
 {
 	const std::string name;
 	const bool canBeHewn;
@@ -19,7 +18,7 @@ struct PointFeatureType
 	const int value;
 	bool operator==(const PointFeatureType& x) const { return this == &x; }
 	static const PointFeatureType& byName(const std::string& name);
-	static const PointFeatureType& byId(const PointFeatureTypeId& id);
+	static const PointFeatureType& byId( PointFeatureTypeId id);
 	static std::vector<PointFeatureType*> getAll();
 	static PointFeatureTypeId getId(const PointFeatureType& type);
 	static int size() { return 10; }
@@ -62,18 +61,20 @@ struct PointFeature
 	[[nodiscard]] bool blocksVerticalTravel() const;
 	[[nodiscard]] bool blocksVerticalTravelEver() const;
 	[[nodiscard]] bool blocksEntrance() const;
+	[[nodiscard]] bool blocksTemperature() const;
 	[[nodiscard]] constexpr bool isHewn() const { return hewnAndClosedAndLocked.test(0); }
 	[[nodiscard]] constexpr bool isClosed() const { return hewnAndClosedAndLocked.test(1); }
 	[[nodiscard]] constexpr bool isLocked() const { return hewnAndClosedAndLocked.test(2); }
 	[[nodiscard]] constexpr bool exists() const { return materialType.exists(); }
+	[[nodiscard]] constexpr bool empty() const { return materialType.empty(); }
 	[[nodiscard]] constexpr Primitive get() const { return {materialType.get(), pointFeatureType, hewnAndClosedAndLocked.data}; }
 	[[nodiscard]] constexpr std::strong_ordering operator<=>(const PointFeature& other) const { return pointFeatureType <=> other.pointFeatureType; }
 	[[nodiscard]] constexpr bool operator==(const PointFeature& other) const = default;
-	[[nodiscard]] std::string toString() const;
+	[[nodiscard]] std::string toS() const;
 	[[nodiscard]] constexpr static PointFeature null() { return {}; }
 	[[nodiscard]] constexpr static Primitive nullPrimitive() { return {.materialType=MaterialTypeId::nullPrimitive(), .pointFeatureType=PointFeatureTypeId::Null, .hewnAndClosedAndLocked=0}; }
 	[[nodiscard]] constexpr static PointFeature create(const Primitive& primitive) { return {MaterialTypeId::create(primitive.materialType), primitive.pointFeatureType, BitSet<uint8_t, 3>::create(primitive.hewnAndClosedAndLocked)}; }
-	[[nodiscard]] constexpr static PointFeature create(const MaterialTypeId materialType, const PointFeatureTypeId& pointFeatureType, bool hewn = false, bool closed = true, bool locked = false)
+	[[nodiscard]] constexpr static PointFeature create(const MaterialTypeId materialType,PointFeatureTypeId pointFeatureType, bool hewn = false, bool closed = true, bool locked = false)
 	{
 		BitSet<uint8_t, 3> hewnAndClosedAndLocked;
 		hewnAndClosedAndLocked.set(0, hewn);

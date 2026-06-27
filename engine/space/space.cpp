@@ -12,7 +12,7 @@
 #include "../portables.h"
 #include <string>
 
-Space::Space(Area& area, const Distance  x, const Distance  y, const Distance  z) :
+Space::Space(Area& area, const Distance x, const Distance y, const Distance z) :
 	m_area(area),
 	m_pointToIndexConversionMultipliers(1, x.get(), x.get() * y.get()),
 	m_dimensions(x.get(), y.get(), z.get()),
@@ -35,16 +35,7 @@ void Space::load(const Json& data, DeserializationMemo& deserializationMemo)
 	data["features"].get_to(m_features);
 	m_exposedToSky.beforeJsonLoad();
 	data["exposedToSky"].get_to(m_exposedToSky);
-	for(const Json& pair : data["fluid"])
-	{
-		FluidData fluidData = pair[0].get<FluidData>();
-		Cuboid cuboid = pair[1].get<Cuboid>();
-		fluid_add(cuboid, fluidData.volume, fluidData.type);
-	}
-	m_mist.beforeJsonLoad();
-	data["mist"].get_to(m_mist);
-	m_mistInverseDistanceFromSourceSquared.beforeJsonLoad();
-	data["mistInverseDistanceFromSource"].get_to(m_mistInverseDistanceFromSourceSquared);
+	// serialization of m_fluid is not handled here. Instead it is reconstructed by the deserialization of Area::m_hasFluidGroups.
 	for(const Json& pair : data["reservables"])
 	{
 		Cuboid cuboid = pair[0].get<Cuboid>();
@@ -60,18 +51,13 @@ Json Space::toJson() const
 		{"x", m_sizeX},
 		{"y", m_sizeY},
 		{"z", m_sizeZ},
-		{"fluid", Json::array()},
 		{"reservables", Json::array()},
 	};
 	output["exposedToSky"] = m_exposedToSky;
 	output["solid"] = m_solid;
 	output["features"] = m_features;
-	output["mist"] = m_mist;
-	output["mistInverseDistanceFromSource"] = m_mistInverseDistanceFromSourceSquared;
 	for(const auto& [data, cuboid] : m_reservables.queryGetAllWithCuboids(boundry()))
 		output["reservables"].push_back(std::pair(cuboid, reinterpret_cast<uintptr_t>(data.get())));
-	for(const auto& [fluids, cuboid] : m_fluid.queryGetAllWithCuboids(boundry()))
-		output["fluid"].push_back(std::pair(cuboid, fluids));
 	return output;
 }
 Cuboid Space::boundry() const
@@ -170,7 +156,7 @@ Cuboid Space::getAdjacentWithEdgeOnSameZLevelOnly(const Point3D point) const
 	Cuboid output = {high, low};
 	return output.intersection(boundry());
 }
-SmallSet<Point3D> Space::getNthAdjacent(const Point3D point, const Distance  n)
+SmallSet<Point3D> Space::getNthAdjacent(const Point3D point, const Distance n)
 {
 	const Cuboid spaceBoundry = boundry();
 	const auto& offsets = getNthAdjacentOffsets(n.get());
@@ -234,14 +220,14 @@ void Space::moveContentsTo(const Point3D from, const Point3D to)
 	}
 	//TODO: other stuff falls?
 }
-void Space::maybeContentsFalls(const Point3D point)
+void Space::maybeContentsFalls(Cuboid cuboid)
 {
 	Items& items = m_area.getItems();
-	auto itemsCopy = item_getAllReferences(items, point);
+	auto itemsCopy = item_getAllReferences(items, cuboid);
 	for(const ItemReference item : itemsCopy)
 		items.maybeFall(item.getIndex(items.m_referenceData));
 	Actors& actors = m_area.getActors();
-	auto actorsCopy = actor_getAllReferences(actors, point);
+	auto actorsCopy = actor_getAllReferences(actors, cuboid);
 	for(const ActorReference actor : actorsCopy)
 		actors.maybeFall(actor.getIndex(actors.m_referenceData));
 }
@@ -265,21 +251,12 @@ void Space::prepareRtrees()
 		if(m_features.canPrepare())
 			#pragma omp task
 				m_features.prepare();
-		if(m_mist.canPrepare())
-			#pragma omp task
-				m_mist.prepare();
-		if(m_mistInverseDistanceFromSourceSquared.canPrepare())
-			#pragma omp task
-				m_mistInverseDistanceFromSourceSquared.prepare();
 		if(m_actors.canPrepare())
 			#pragma omp task
 				m_actors.prepare();
 		if(m_items.canPrepare())
 			#pragma omp task
 				m_items.prepare();
-		if(m_totalFluidVolume.canPrepare())
-			#pragma omp task
-				m_totalFluidVolume.prepare();
 		if(m_fluid.canPrepare())
 			#pragma omp task
 				m_fluid.prepare();
@@ -376,7 +353,7 @@ bool Space::hasLineOfSightTo(const Point3D point, const Point3D other) const
 {
 	return m_area.m_opacityFacade.hasLineOfSight(point, other);
 }
-Cuboid Space::getZLevel(const Distance  z)
+Cuboid Space::getZLevel(const Distance z)
 {
 	return Cuboid({m_sizeX - 1, m_sizeY - 1, z}, {Distance::create(0), Distance::create(0), z});
 }
@@ -395,10 +372,9 @@ Distance Space::getVerticalClearance(Cuboid cuboid) const
 	}
 	return max;
 }
-CuboidSet Space::collectAdjacentsInRange(const Point3D point, const Distance  range)
+CuboidSet Space::collectAdjacentsInRange(const Point3D point, const Distance range)
 {
 	auto condition = [&](const Point3D b){ return b.taxiDistanceTo(point) <= range; };
 	return collectAdjacentsWithCondition(point, condition);
 }
-bool FluidRTree::canOverlap(const FluidData& a, const FluidData& b) const { return a.type != b.type; }
 bool PointFeatureRTree::canOverlap(const PointFeature& a, const PointFeature& b) const { return a.pointFeatureType != b.pointFeatureType; }

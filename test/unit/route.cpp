@@ -57,8 +57,8 @@ TEST_CASE("route_10_10_10")
 			.location=origin,
 		});
 		MoveTypeId moveType =  actors.getMoveType(actor);
-		Cuboid startingEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetOneCuboid(origin);
-		Cuboid topOfWallEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetOneCuboid(block1.above());
+		Cuboid startingEnterable = area.m_hasPaths.get(area, moveType).m_enterable.queryGetOneCuboid(origin);
+		Cuboid topOfWallEnterable = area.m_hasPaths.get(area, moveType).m_enterable.queryGetOneCuboid(block1.above());
 		CHECK(!space.move_cuboidCanBeEnteredFrom(startingEnterable, topOfWallEnterable, moveType));
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
@@ -187,7 +187,7 @@ TEST_CASE("route_10_10_10")
 		space.solid_setNot(wallStart);
 		actors.move_setDestination(actor, destination);
 		MoveTypeId moveType = actors.getMoveType(actor);
-		Enterable& enterable = area.m_hasPaths.get(moveType).m_enterable;
+		Enterable& enterable = area.m_hasPaths.get(area, moveType).m_enterable;
 		enterable.prepare();
 		Cuboid from = enterable.queryGetOneCuboid(origin);
 		Cuboid to = enterable.queryGetOneCuboid(wallStart);
@@ -213,7 +213,7 @@ TEST_CASE("route_10_10_10")
 		});
 		CHECK(Shape::getIsMultiTile(actors.getShape(actor)));
 		// Check that height 2 actor is within vertical clearance for starting cuboid.
-		const Enterable& enterable = area.m_hasPaths.get(actors.getMoveType(actor)).m_enterable;
+		const Enterable& enterable = area.m_hasPaths.get(area, actors.getMoveType(actor)).m_enterable;
 		Cuboid start = enterable.queryGetOneCuboid(origin);
 		Distance verticalClearance = enterable.queryGetOne(origin).verticalClearance;
 		CHECK(verticalClearance + start.sizeZ() >= actors.boundry(actor).sizeZ());
@@ -329,7 +329,7 @@ TEST_CASE("route_5_5_3")
 		actors.move_setType(actor, twoLegsAndSwimInWater);
 		actors.move_setDestination(actor, destination);
 		CHECK(space.shape_moveTypeCanEnter(midpoint, actors.getMoveType(actor)));
-		const Enterable& enterable = area.m_hasPaths.get(twoLegsAndSwimInWater).m_enterable;
+		const Enterable& enterable = area.m_hasPaths.get(area, twoLegsAndSwimInWater).m_enterable;
 		Cuboid from = enterable.queryGetOneCuboid(origin);
 		Cuboid to = enterable.queryGetOneCuboid(midpoint);
 		CHECK(space.move_cuboidCanBeEnteredFrom(from, to, twoLegsAndSwimInWater));
@@ -395,7 +395,7 @@ TEST_CASE("route_5_5_5")
 		CHECK(test);
 		test = space.shape_moveTypeCanEnterFrom(destination, twoLegsAndClimb2, belowDestination);
 		CHECK(test);
-		const Enterable& enterable = area.m_hasPaths.get(twoLegsAndClimb2).m_enterable;
+		const Enterable& enterable = area.m_hasPaths.get(area, twoLegsAndClimb2).m_enterable;
 		Cuboid from = enterable.queryGetOneCuboid(start);
 		Cuboid to = enterable.queryGetOneCuboid(belowDestination);
 		CHECK(space.move_cuboidCanBeEnteredFrom(from, to, twoLegsAndClimb2));
@@ -426,7 +426,7 @@ TEST_CASE("route_5_5_5")
 			.location=origin,
 		});
 		CHECK(actors.getMoveType(actor) == twoLegsAndSwimInWater);
-		const Enterable& enterable = area.m_hasPaths.get(twoLegsAndSwimInWater).m_enterable;
+		const Enterable& enterable = area.m_hasPaths.get(area, twoLegsAndSwimInWater).m_enterable;
 		Cuboid from = enterable.queryGetOneCuboid(origin);
 		Cuboid to = enterable.queryGetOneCuboid(middle);
 		CHECK(space.move_cuboidCanBeEnteredFrom(from, to, twoLegsAndSwimInWater));
@@ -453,7 +453,7 @@ TEST_CASE("route_5_5_5")
 		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(rampLocation, actors.getShape(actor), moveType, adjacentToRamp));
 		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(destination, actors.getShape(actor), moveType, rampLocation));
 		CHECK(space.getAdjacentWithEdgeAndCornerAdjacent(adjacentToRamp).contains(rampLocation));
-		const Enterable& enterable = area.m_hasPaths.get(moveType).m_enterable;
+		const Enterable& enterable = area.m_hasPaths.get(area, moveType).m_enterable;
 		Cuboid from = enterable.queryGetOneCuboid(adjacentToRamp);
 		Cuboid to = enterable.queryGetOneCuboid(rampLocation);
 		CHECK(space.move_cuboidCanBeEnteredFrom(from, to, moveType));
@@ -691,12 +691,15 @@ TEST_CASE("route_5_5_5")
 		Point3D deep = Point3D::create(3,3,2);
 		Cuboid pit{surface, deep};
 		space.solid_setNotCuboid(pit);
-		space.fluid_add(pit, Config::maxPointVolume, water);
+		space.fluid_add(pit.toSet(), Config::maxPointVolume.get() * 2, water);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=Point3D::create(1,1,4),
 		});
 		CHECK(!MoveType::getBreathableFluids(actors.getMoveType(actor)).contains(water));
+		const auto& hasPathsForMoveType = area.m_hasPaths.get(area, actors.getMoveType(actor));
+		CHECK(hasPathsForMoveType.m_enterable.queryAny(surface));
+		CHECK(!hasPathsForMoveType.m_enterable.queryAny(deep));
 		CHECK(actors.move_canPathTo(actor, surface));
 		CHECK(!actors.move_canPathTo(actor, deep));
 	}

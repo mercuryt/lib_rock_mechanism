@@ -54,13 +54,17 @@ namespace RTreeHelpers
 	{
 		return findCuboidSetWithMaxVolumeAndMaxRangeStartingFromCuboid(maxVolume, maxRange, Cuboid::create(start, start), std::move(query));
 	}
+	template<typename T>
 	CuboidSet getAdjacentWithConditionRecursive(auto& rtree, const auto start, auto&& condition)
 	{
 		Cuboid startCuboid = rtree.queryGetOneCuboidWithCondition(start, condition);
 		CuboidSet output;
+		if(startCuboid.empty())
+			return output;
 		output.add(startCuboid);
 		CuboidSet openList;
 		openList.add(startCuboid);
+		constexpr bool unary = std::is_invocable_v<decltype(condition), T>;
 		while(!openList.empty())
 		{
 			Cuboid candidate = openList.back();
@@ -68,7 +72,13 @@ namespace RTreeHelpers
 			// Get adjacent.
 			candidate.inflate({1});
 			rtree.queryForEachWithCuboids(candidate, [&](const Cuboid cuboid, const auto& value){
-				if(condition(value) && !output.contains(cuboid))
+				bool result;
+				if constexpr(unary)
+					result = condition(value);
+				else
+					result = condition(cuboid, value);
+				// Output is also closed list.
+				if(result && !output.contains(cuboid))
 				{
 					output.add(cuboid);
 					openList.add(cuboid);

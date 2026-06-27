@@ -64,35 +64,21 @@ void AreaHasRain::stop()
 }
 void AreaHasRain::doStep()
 {
+	if(m_currentlyRainingFluidType.empty() || m_intensityPercent == 0)
+		return;
 	assert(m_intensityPercent <= 100);
 	assert(m_intensityPercent > 0);
-	if(m_currentlyRainingFluidType.empty())
-		return;
-	auto& random = m_area.m_simulation.m_random;
-	Distance spacing = Distance::create(util::scaleByInversePercent(Config::rainMaximumSpacing.get(), m_intensityPercent));
-	Distance offset = Distance::create(random.getInRange((DistanceWidth)0, Config::rainMaximumOffset.get()));
-	Distance i = Distance::create(0);
-	Space& space = m_area.getSpace();
-	Cuboid cuboid = space.boundry().getFace(Facing6::Above);
-	for(const Point3D point : cuboid)
+	Step frequency{
+		util::scaleByPercentRange(Config::minimumRainIntensityModifier, Config::maximumRainIntensityModifier, m_intensityPercent) *
+		Config::rainWriteStepFreqency.get()
+	};
+	if(m_area.m_simulation.m_step % frequency == 0)
 	{
-		if(offset != 0)
-			--offset;
-		else if(i != 0)
-			--i;
-		else
-		{
-			Point3D current = point;
-			while(!space.solid_isAny(current) && space.fluid_canEnterCurrently(current, m_currentlyRainingFluidType))
-			{
-				current = current.below();
-				if(current.z() == 0)
-					break;
-			}
-			if(current != point)
-				space.fluid_add(current.above(), CollisionVolume::create(1), m_currentlyRainingFluidType);
-			i = spacing;
-		}
+		Space& space = m_area.getSpace();
+		CuboidSet topLevel = CuboidSet::create(space.boundry().getFaceAbove());
+		space.solid_removeAllFrom(topLevel);
+		int64_t volume = topLevel.volume();
+		space.fluid_add(topLevel, volume, m_currentlyRainingFluidType);
 	}
 }
 void AreaHasRain::scheduleRestart()
@@ -123,7 +109,7 @@ void RainEvent::execute(Simulation&, Area* area)
 	else
 	{
 		auto random = area->m_hasRain.m_area.m_simulation.m_random;
-		Percent humidity = area->m_hasRain.humidityForSeason();
+		Percent humidity{area->m_hasRain.humidityForSeason()};
 		float modifier = random.getInRange(Config::minimumRainIntensityModifier, Config::maximumRainIntensityModifier);
 		assert(modifier != 0.0f);
 		Percent intensity = Percent::create((float)humidity.get() * modifier);

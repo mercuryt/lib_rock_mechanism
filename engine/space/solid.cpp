@@ -56,7 +56,7 @@ void Space::solid_setCuboid(const Cuboid cuboid, const MaterialTypeId materialTy
 	// Remove from stockpiles.
 	m_area.m_hasStockPiles.removeFromAll(cuboid);
 	// Remove fluids and shift them elsewhere.
-	fluid_onCuboidSetSolid(cuboid);
+	fluid_onSetSolid(cuboid.toSet());
 	m_exposedToSky.maybeUnsetBeneathTopLayer(m_area, cuboid);
 	m_support.set(cuboid);
 	// Vision cuboid.
@@ -93,23 +93,20 @@ void Space::solid_setNotCuboid(const Cuboid cuboid)
 	m_support.unset(cuboid);
 	Cuboid inflated = cuboid;
 	inflated.inflate({1});
-	const Cuboid spaceBoundry = boundry();
+	Cuboid spaceBoundry = boundry();
 	m_area.m_hasPaths.update(m_area, spaceBoundry.intersection(inflated));
 	m_exposedToSky.maybeSetCuboid(m_area, cuboid);
 	m_area.m_hasTemperature.onSetNotSolid(m_area, CuboidSet::create(cuboid), materialType);
-	for(const Point3D point : cuboid)
-		fluid_onPointSetNotSolid(point);
+	fluid_onSetNotSolid(cuboid.toSet());
 	// Vision cuboid.
 	if(!wasTransparent)
 		m_area.m_opacityFacade.maybeRemoveFull(cuboid);
 	// Gravity.
-	const Point3D aboveHighest = cuboid.m_high.above();
-	if(aboveHighest.exists())
+	if(cuboid.m_high.z() != m_sizeZ - 1)
 	{
 		Cuboid aboveCuboid = cuboid.getFace(Facing6::Above);
 		aboveCuboid.shift(Facing6::Above, Distance::create(1));
-		for(const Point3D above : aboveCuboid)
-			maybeContentsFalls(above);
+		maybeContentsFalls(aboveCuboid);
 	}
 }
 MapWithCuboidKeys<MaterialTypeId> Space::solid_getAllWithCuboidsAndRemove(const CuboidSet& cuboids)

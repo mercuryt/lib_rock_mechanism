@@ -219,7 +219,7 @@ int LimitedSet<T, capacity>::findLastIndex(const T& value) const
 	return std::distance(m_data.begin(), it.base()) - 1;
 }
 template<typename T, int capacity>
-std::string LimitedSet<T, capacity>::toString() const
+std::string LimitedSet<T, capacity>::toS() const
 {
 	std::string output;
 	const auto begin = m_data.begin();
@@ -227,8 +227,8 @@ std::string LimitedSet<T, capacity>::toString() const
 	for(auto iter = begin; iter != end; ++iter)
 	{
 		const T& value = *iter;
-		if constexpr(HasToStringMethod<T>)
-			output += value.toString() + ", ";
+		if constexpr(HastoSMethod<T>)
+			output += value.toS() + ", ";
 		else if constexpr(std::is_pointer<T>())
 			output += std::to_string((uintptr_t)value) + ", ";
 		else if constexpr(Numeric<T>)

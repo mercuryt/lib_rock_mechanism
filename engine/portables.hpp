@@ -141,8 +141,6 @@ void Portables<Derived, Index, ReferenceIndex, isActors>::setMoveType(const Inde
 {
 	assert(m_moveType[index] != moveType);
 	m_moveType[index] = moveType;
-	Area& area = getArea();
-	area.m_hasPaths.maybeRegisterMoveType(area, moveType);
 	maybeFall(index);
 }
 template<class Derived, class Index, class ReferenceIndex, bool isActors>
@@ -150,24 +148,24 @@ void Portables<Derived, Index, ReferenceIndex, isActors>::log(const Index index)
 {
 	std::cout << ", moveType: " << MoveType::getName(m_moveType[index]);
 	if(m_follower[index].exists())
-		std::cout << ", leading: " << m_follower[index].toString();
+		std::cout << ", leading: " << m_follower[index].toS();
 	if(m_leader[index].exists())
-		std::cout << ", following: " << m_leader[index].toString();
+		std::cout << ", following: " << m_leader[index].toS();
 	if(m_carrier[index].exists())
-		std::cout << ", carrier: " << m_carrier[index].toString();
+		std::cout << ", carrier: " << m_carrier[index].toS();
 	const Point3D location = getLocation(index);
 	if(location.exists())
 	{
-		std::cout << ", location: " << location.toString();
+		std::cout << ", location: " << location.toS();
 		for(const Cuboid cuboid : this->m_occupied[index])
 			for(const Point3D occupied : cuboid)
 				if(occupied != location)
-					std::cout << "-" << occupied.toString();
+					std::cout << "-" << occupied.toS();
 	}
 	//if(!m_onDeck[index].empty())
-		//std::cout << ", on deck " << m_onDeck[index].toString();
+		//std::cout << ", on deck " << m_onDeck[index].toS();
 	if(m_isOnDeckOf[index].exists())
-		std::cout << ", is on deck of " << m_isOnDeckOf[index].toString();
+		std::cout << ", is on deck of " << m_isOnDeckOf[index].toS();
 }
 template<class Derived, class Index, class ReferenceIndex, bool isActors>
 ActorOrItemIndex Portables<Derived, Index, ReferenceIndex, isActors>::getActorOrItemIndex(const Index index)
@@ -206,7 +204,7 @@ void Portables<Derived, Index, ReferenceIndex, isActors>::followActorAllowTelepo
 	// if piloting something then set that thing to follow rather then the pilot.
 	if constexpr(isActors)
 	{
-		const ActorOrItemIndex followerPiloting =  actors.getIsPiloting(ActorIndex::create(index.get()));
+		const ActorOrItemIndex followerPiloting = actors.getIsPiloting(ActorIndex::create(index.get()));
 		if(followerPiloting.exists())
 		{
 			followerPiloting.followActor(getArea(), actor);
@@ -456,11 +454,11 @@ bool Portables<Derived, Index, ReferenceIndex, isActors>::canFloatAtInFluidTypeW
 		// Cannot float in this fluid at any depth.
 		return false;
 	const Space& space = getArea().getSpace();
-	const FluidGroup* fluidGroup = space.fluid_getGroup(point, fluidType);
+	FluidGroup* fluidGroup = space.fluid_getGroup(point, fluidType);
 	if(fluidGroup->m_stable)
-		return fluidGroup->m_drainQueue.m_set.highestZ() - floatDepth >= point.z();
+		return fluidGroup->m_highZ - floatDepth >= point.z();
 	else
-		return space.fluid_shapeIsMostlySurroundedByFluidOfTypeAtDistanceAboveLocationWithFacing(getShape(index), fluidType, floatDepth, point,  facing);
+		return space.fluid_shapeIsMostlySurroundedByFluidOfTypeAtDistanceAboveLocationWithFacing(getShape(index), fluidType, floatDepth, point, facing);
 }
 template<class Derived, class Index, class ReferenceIndex, bool isActors>
 Speed Portables<Derived, Index, ReferenceIndex, isActors>::lead_getSpeed(const Index index)
@@ -594,7 +592,7 @@ Mass Portables<Derived, Index, ReferenceIndex, isActors>::onDeck_getMass(const I
 	return output;
 }
 template<class Derived, class Index, class ReferenceIndex, bool isActors>
-void Portables<Derived, Index, ReferenceIndex, isActors>::onSetLocation(const Index index, const Point3D previousLocation, const  Facing4 previousFacing)
+void Portables<Derived, Index, ReferenceIndex, isActors>::onSetLocation(const Index index, const Point3D previousLocation, const Facing4 previousFacing)
 {
 	Area& area = getArea();
 	Space& space = area.getSpace();

@@ -28,7 +28,7 @@ PathResult UniformPathRequest::readStep(Area& area, const AreaHasPathsForMoveTyp
 {
 	auto shortRangeCondition = [&area, this](const Cuboid cuboid) -> Point3D
 	{
-		return  m_objective.getLocationOfItemInCuboid(area, cuboid);
+		return m_objective.getLocationOfItemInCuboid(area, cuboid);
 	};
 	auto longRangeCondition = [&shortRangeCondition](const Cuboid cuboid) -> bool
 	{

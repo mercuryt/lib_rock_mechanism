@@ -19,7 +19,7 @@ struct AreaHasTemperature
 	AreaHasPortalsBetweenOutSideAndInside m_portals;
 	AreaHasTemperatureSources m_sources;
 	SmallMap<MaterialTypeId, OnSurfaceData> m_meltableMaterialTypeOnSurface;
-	SmallMap<FluidTypeId, SmallSet<FluidGroup*>> m_freezableFluidTypeOnSurface;
+	SmallMap<FluidTypeId, SmallSet<FluidGroupId>> m_freezableFluidTypeOnSurface;
 	CuboidSet m_toUpdate;
 	Temperature m_ambiant;
 	void markToUpdate(const CuboidSet& cuboids);
@@ -33,9 +33,9 @@ struct AreaHasTemperature
 	void onSetNotSolid(Area& area, const CuboidSet& cuboids, const MaterialTypeId materialType);
 	void onSetFeature(Area& area, const Point3D point, const MaterialTypeId materialType);
 	void onUnsetFeature(const Point3D point, const MaterialTypeId materialType);
-	void onFluidEnters(Area& area, const CuboidSet& cuobids, FluidGroup& group);
-	void onFluidExits(Area& area, const CuboidSet& cuobids, FluidGroup& group);
-	void maybeRemoveFreezeableFluidGroupAboveGround(FluidGroup& group);
+	void onFluidEnters(Area& area, const CuboidSet& cuobids, FluidTypeId type, FluidGroupId group);
+	void onFluidExits(Area& area, const CuboidSet& cuobids, FluidTypeId type, FluidGroupId group);
+	void maybeRemoveFreezeableFluidGroupAboveGround(FluidTypeId type, FluidGroupId group);
 	void addItemAboveGround(Area& area, const ItemIndex item);
 	void removeItemAboveGround(Area& area, const ItemIndex item);
 	void afterLoad(Area& area);

@@ -1,6 +1,7 @@
 #include "space.h"
 #include "../definitions/moveType.h"
 #include "../rtreeHelpers/rtreeHelpers.h"
+#include "../area/area.h"
 
 CuboidSet Space::move_queryPathable(const Cuboid cuboid, const MoveTypeId moveType) const
 {
@@ -11,13 +12,7 @@ CuboidSet Space::move_queryPathable(const Cuboid cuboid, const MoveTypeId moveTy
 	{
 		int climb = MoveType::getClimb(moveType);
 		// Add on top of solid cuboids.
-		Cuboid cuboidShiftedDownOne = cuboid;
-		if(cuboid.m_high.z() != 0)
-		{
-			cuboidShiftedDownOne.m_high.setZ(cuboid.m_high.z() - 1);
-			if(cuboid.m_low.z() != 0)
-				cuboidShiftedDownOne.m_low.setZ(cuboid.m_low.z() - 1);
-		}
+		Cuboid cuboidShiftedDownOne = cuboid.maybeShifted(Facing6::Below, {1});
 		m_solid.queryForEachCuboid(cuboidShiftedDownOne, [&](const Cuboid solidCuboid){
 			if(solidCuboid.m_high.z() != m_sizeZ - 1)
 			{
@@ -68,7 +63,9 @@ CuboidSet Space::move_queryPathable(const Cuboid cuboid, const MoveTypeId moveTy
 		const SmallSet<FluidTypeId>& breathable = MoveType::getBreathableFluids(moveType);
 		m_fluid.queryForEachWithCuboids(cuboid, [&](const Cuboid fluidCuboid, const FluidData fluidData){
 			auto found = swimData.find(fluidData.type);
-			bool canEnter = found != swimData.end() && found->second <= fluidData.volume;
+			int64_t volumeOfFluidInCuboid = m_area.m_hasFluidGroups.byId(fluidData.group).getVolume(CuboidSet::create(cuboid));
+			CollisionVolume perBlockVolume{(CollisionVolumeWidth)(volumeOfFluidInCuboid / cuboid.intersection(fluidCuboid).volume())};
+			bool canEnter = found != swimData.end() && found->second <= perBlockVolume;
 			if(canEnter)
 			{
 				if(breathable.contains(fluidData.type))
@@ -90,9 +87,6 @@ CuboidSet Space::move_queryPathable(const Cuboid cuboid, const MoveTypeId moveTy
 					});
 					if(enterable.empty())
 						return;
-					m_totalFluidVolume.queryRemove(enterable);
-					if(enterable.empty())
-						return;
 					enterable.shift({0, 0, -1}, {1});
 					output.maybeAddAll(enterable);
 					CuboidSet toRemove = CuboidSet::create(fluidCuboid);
@@ -104,6 +98,9 @@ CuboidSet Space::move_queryPathable(const Cuboid cuboid, const MoveTypeId moveTy
 				output.maybeRemove(fluidCuboid);
 		});
 	}
+	else if(!MoveType::getBreathless(moveType) && !output.empty())
+		// No swiming ability.
+		m_fluid.queryRemove(output);
 	auto [fluidType, depth] = MoveType::getFloating(moveType);
 	if(fluidType.exists())
 	{
@@ -126,7 +123,7 @@ CuboidSet Space::move_queryPathable(const Cuboid cuboid, const MoveTypeId moveTy
 			{
 				CuboidSet filtered = CuboidSet::create(fluidCuboid);
 				//Find any gaps in the fluid between the bottom of fluid cuboid and zLevel.
-				CuboidSet containsFluid = m_totalFluidVolume.queryGetAllCuboids(fluidCuboid);
+				CuboidSet containsFluid = m_fluid.queryGetAllCuboids(fluidCuboid);
 				CuboidSet doesNotContainFluid = containsFluid.inverted();
 				CuboidSet doesNotContainFluidProjectedOnToZLevel;
 				for(Cuboid doesNotContainCuboid : doesNotContainFluid)
@@ -256,7 +253,8 @@ bool Space::move_canSwimInAny(const Cuboid cuboid, const MoveTypeId moveType) co
 		auto found = swimData.find(data.type);
 		if(found == swimData.end())
 			return;
-		if(found->second <= data.volume)
+		int64_t volumeOfFluidInCuboid = m_area.m_hasFluidGroups.byId(data.group).getVolume(CuboidSet::create(cuboid));
+		if(found->second.get() <= volumeOfFluidInCuboid / cuboid.getFaceBelow().volume())
 			result = true;
 	});
 	return result;

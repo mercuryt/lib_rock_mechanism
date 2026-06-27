@@ -196,9 +196,6 @@ void Config::load()
 	data["projectileHitPercentPerSkillPoint"].get_to(projectileHitPercentPerSkillPoint);
 	data["projectileHitPercentPerUnitVolume"].get_to(projectileHitPercentPerUnitVolume);
 	data["projectileMedianTargetVolume"].get_to(projectileMedianTargetVolume);
-	data["rainMaximumOffset"].get_to(rainMaximumOffset);
-	data["rainMaximumSpacing"].get_to(rainMaximumSpacing);
-	data["rainMaximumSpacing"].get_to(rainMaximumSpacing);
 	rainWriteStepFreqency = Step::create(data["rainWriteStepFreqencySeconds"].get<float>() * stepsPerSecond.get());
 	data["rateModifierForEvaporationPerDegreeTemperature"].get_to(rateModifierForEvaporationPerDegreeTemperature);
 	data["ratioOfHitAreaToBodyPartVolumeForSever"].get_to(ratioOfHitAreaToBodyPartVolumeForSever);

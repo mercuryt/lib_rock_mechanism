@@ -1,18 +1,18 @@
 #include "bitset.h"
-// Included to use for toString.
+// Included to use for toS.
 #include <bitset>
 #include <limits>
 
 #if defined(__AVX512F__) || defined(__AVX2__)
-  #include <immintrin.h>
+ #include <immintrin.h>
 #endif
 
 #if defined(__ARM_NEON) || defined(__aarch64__)
-  #include <arm_neon.h>
+ #include <arm_neon.h>
 #endif
 
 #if defined(__wasm_simd128__)
-  #include <wasm_simd128.h>
+ #include <wasm_simd128.h>
 #endif
 
 #pragma once
@@ -124,7 +124,7 @@ BitSet<IntType, capacity> BitSet<IntType, capacity>::create(const Eigen::Array<b
 		// ---------- ARM NEON (AArch64) ----------
 		// NEON has no movemask instruction; we synthesize it.
 		uint8x16_t zero = vdupq_n_u8(0);
-		uint8x16_t v0 = vld1q_u8(ptr +  0);
+		uint8x16_t v0 = vld1q_u8(ptr + 0);
 		uint8x16_t v1 = vld1q_u8(ptr + 16);
 		uint8x16_t v2 = vld1q_u8(ptr + 32);
 		uint8x16_t v3 = vld1q_u8(ptr + 48);
@@ -140,7 +140,7 @@ BitSet<IntType, capacity> BitSet<IntType, capacity>::create(const Eigen::Array<b
 		uint8x16_t bits3 = vshrq_n_u8(c3, 7);
 		// Pack to scalars
 		uint64_t mask = 0;
-		for (int i = 0; i < 16; ++i) mask |= uint64_t(vgetq_lane_u8(bits0, i)) << (i +  0);
+		for (int i = 0; i < 16; ++i) mask |= uint64_t(vgetq_lane_u8(bits0, i)) << (i + 0);
 		for (int i = 0; i < 16; ++i) mask |= uint64_t(vgetq_lane_u8(bits1, i)) << (i + 16);
 		for (int i = 0; i < 16; ++i) mask |= uint64_t(vgetq_lane_u8(bits2, i)) << (i + 32);
 		for (int i = 0; i < 16; ++i) mask |= uint64_t(vgetq_lane_u8(bits3, i)) << (i + 48);
@@ -149,7 +149,7 @@ BitSet<IntType, capacity> BitSet<IntType, capacity>::create(const Eigen::Array<b
 		// ---------- WASM SIMD ----------
 		// WASM has i8x16 comparisons but no movemask → same issue as NEON.
 		v128_t zero = wasm_i8x16_splat(0);
-		v128_t v0 = wasm_v128_load(ptr +  0);
+		v128_t v0 = wasm_v128_load(ptr + 0);
 		v128_t v1 = wasm_v128_load(ptr + 16);
 		v128_t v2 = wasm_v128_load(ptr + 32);
 		v128_t v3 = wasm_v128_load(ptr + 48);
@@ -163,7 +163,7 @@ BitSet<IntType, capacity> BitSet<IntType, capacity>::create(const Eigen::Array<b
 		c2 = wasm_u8x16_shr(c2, 7);
 		c3 = wasm_u8x16_shr(c3, 7);
 		uint64_t mask = 0;
-		for (int i = 0; i < 16; ++i) mask |= uint64_t(wasm_u8x16_extract_lane(c0, i)) << (i +  0);
+		for (int i = 0; i < 16; ++i) mask |= uint64_t(wasm_u8x16_extract_lane(c0, i)) << (i + 0);
 		for (int i = 0; i < 16; ++i) mask |= uint64_t(wasm_u8x16_extract_lane(c1, i)) << (i + 16);
 		for (int i = 0; i < 16; ++i) mask |= uint64_t(wasm_u8x16_extract_lane(c2, i)) << (i + 32);
 		for (int i = 0; i < 16; ++i) mask |= uint64_t(wasm_u8x16_extract_lane(c3, i)) << (i + 48);
@@ -179,6 +179,6 @@ BitSet<IntType, capacity> BitSet<IntType, capacity>::create(const Eigen::Array<b
 template<typename IntType, IntType capacity>
 bool BitSet<IntType, capacity>::testDbg(const IntType& index) const { assert(index < capacity); return (data >> index) & one; }
 template<typename IntType, IntType capacity>
-std::string BitSet<IntType, capacity>::toString() const { return std::bitset<capacity>(data).to_string(); }
+std::string BitSet<IntType, capacity>::toS() const { return std::bitset<capacity>(data).to_string(); }
 template<typename IntType, IntType capacity>
 int BitSet<IntType, capacity>::popCount() const { return __builtin_popcountll(data); }

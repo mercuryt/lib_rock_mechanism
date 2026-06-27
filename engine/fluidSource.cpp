@@ -17,12 +17,11 @@ void AreaHasFluidSources::doStep()
 	{
 		CollisionVolume delta = source.level - space.fluid_getTotalVolume(source.point);
 		if(delta > 0)
-			space.fluid_add(source.point, delta, source.fluidType);
+			space.fluid_add(CuboidSet::create(source.point), delta.get(), source.fluidType);
 		else if(delta < 0)
-			//TODO: can this be changed to use the async version?
-			space.fluid_removeSyncronus(source.point, -delta, source.fluidType);
+			space.fluid_remove(CuboidSet::create(source.point), -delta.get(), source.fluidType);
 	}
-	m_area.m_hasFluidGroups.clearMergedFluidGroups();
+	m_area.m_hasFluidGroups.clearMerged();
 }
 void AreaHasFluidSources::create(Point3D point, FluidTypeId fluidType, CollisionVolume level)
 {

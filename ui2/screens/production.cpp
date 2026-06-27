@@ -46,7 +46,7 @@ void screens::production(Window& window)
 		ImGui::TextUnformatted(craftJob->describe().c_str());
 		ImGui::TableNextColumn();
 		if(_quantity != 1)
-			ImGui::TextUnformatted(_quantity.toString().c_str());
+			ImGui::TextUnformatted(_quantity.toS().c_str());
 		ImGui::TableNextColumn();
 		if(ImGui::Button("-"))
 			hasCrafting.removeJob(*craftJob);

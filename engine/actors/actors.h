@@ -254,7 +254,7 @@ public:
 	void setFaction(const ActorIndex index, const FactionId faction);
 	void setBirthStep(const ActorIndex index, const Step step);
 	void setName(const ActorIndex index, std::string name){ m_name[index] = name; }
-	void takeFallDamage(const ActorIndex index, const Distance  distance, const MaterialTypeId materialType);
+	void takeFallDamage(const ActorIndex index, const Distance distance, const MaterialTypeId materialType);
 	void resetMoveType(const ActorIndex index);
 	bool tryToMoveSoAsNotOccuping(const ActorIndex index, const Point3D point);
 	[[nodiscard]] SmallSet<ActorIndex> getAll() const;
@@ -302,7 +302,7 @@ public:
 	void vision_setNoLongerCanSee(const ActorIndex index, const ActorReference other);
 	void vision_setNoLongerCanBeSeenBy(const ActorIndex index, const ActorReference other);
 	void vision_clearCanSee(const ActorIndex index);
-	void vision_maybeUpdateRange(const ActorIndex index, const Distance  range);
+	void vision_maybeUpdateRange(const ActorIndex index, const Distance range);
 	void vision_maybeUpdateLocation(const ActorIndex index, const Point3D location);
 	void vision_removeOpaqueFromCuboidSet(const CuboidSet& cuboidSet) const;
 	[[nodiscard]] SmallSet<ActorReference>& vision_getCanSee(const ActorIndex index) { return m_canSee[index]; }
@@ -514,7 +514,7 @@ public:
 	// Default dishonor callback is canNotCompleteCurrentObjective.
 	void canReserve_reserveLocation(const ActorIndex index, const Point3D point, std::unique_ptr<DishonorCallback> callback = nullptr);
 	void canReserve_reserveItem(const ActorIndex index, const ItemIndex item, const Quantity quantity, std::unique_ptr<DishonorCallback> callback = nullptr);
-	[[nodiscard]] bool canReserve_translateAndReservePositions(const ActorIndex index, SmallMap<Point3D, std::unique_ptr<DishonorCallback>>&& pointsAndCallbacks, const Point3D prevousPivot, const Point3D newPivot, const  Facing4 previousFacing, const Facing4 newFacing);
+	[[nodiscard]] bool canReserve_translateAndReservePositions(const ActorIndex index, SmallMap<Point3D, std::unique_ptr<DishonorCallback>>&& pointsAndCallbacks, const Point3D prevousPivot, const Point3D newPivot, const Facing4 previousFacing, const Facing4 newFacing);
 	[[nodiscard]] bool canReserve_tryToReserveLocation(const ActorIndex index, const Point3D point, std::unique_ptr<DishonorCallback> callback = nullptr);
 	[[nodiscard]] bool canReserve_tryToReserveItem(const ActorIndex index, const ItemIndex item, const Quantity quantity, std::unique_ptr<DishonorCallback> callback = nullptr);
 	[[nodiscard]] SmallMap<Point3D, std::unique_ptr<DishonorCallback>> canReserve_unreserveAndReturnPointsAndCallbacksOnSameDeck(const ActorIndex index);

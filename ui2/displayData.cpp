@@ -32,7 +32,7 @@ std::string displayData::formatTemperature(Temperature temperature)
 	switch(temperatureDisplayUnits)
 	{
 		case TemperatureDisplayUnits::K:
-			return temperature.toString() + "K";
+			return temperature.toS() + "K";
 		case TemperatureDisplayUnits::C:
 			return std::to_string((int)temperature.get() - 273) + "C";
 		case TemperatureDisplayUnits::F:

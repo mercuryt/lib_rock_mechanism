@@ -113,8 +113,8 @@ void SmallSet<T>::maybeEraseAllWhereBothSetsAreSorted(const This& other)
 				return std::binary_search(other.m_data.begin(), other.m_data.end(), x);
 			}
 		);
-    // Erase the elements at the end of the vector
-    m_data.erase(new_end, m_data.end());
+  // Erase the elements at the end of the vector
+  m_data.erase(new_end, m_data.end());
 }
 template<typename T>
 void SmallSet<T>::eraseIndex(const int index)
@@ -242,13 +242,13 @@ std::pair<SmallSet<T>, SmallSet<T>> SmallSet<T>::getDeltaPair(SmallSet<T>& other
 	return output;
 }
 template<typename T>
-std::string SmallSet<T>::toString() const
+std::string SmallSet<T>::toS() const
 {
 	std::string output;
 	for(const T& value : m_data)
 	{
-		if constexpr(HasToStringMethod<T>)
-			output += value.toString() + ", ";
+		if constexpr(HastoSMethod<T>)
+			output += value.toS() + ", ";
 		else if constexpr(std::is_pointer<T>())
 			output += std::to_string((uintptr_t)value) + ", ";
 		else if constexpr(Numeric<T>)

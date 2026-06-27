@@ -103,7 +103,7 @@ SetLocationAndFacingResult Actors::location_tryToSetStatic(const ActorIndex inde
 	Space& space = m_area.getSpace();
 	const Point3D previousLocation = getCombinedLocation(index);
 	const Offset3D offset = previousLocation.offsetTo(location);
-	const  Facing4 previousFacing = getFacing(index);
+	const Facing4 previousFacing = getFacing(index);
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	const MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
 	// Apply the new location to the offsets.
@@ -125,7 +125,7 @@ SetLocationAndFacingResult Actors::location_tryToSetDynamic(const ActorIndex ind
 	// Get offsets and volumes for facing. Use compound shape to include anything on deck.
 	const Point3D previousLocation = getCombinedLocation(index);
 	const Offset3D offset = previousLocation.offsetTo(location);
-	const  Facing4 previousFacing = getFacing(index);
+	const Facing4 previousFacing = getFacing(index);
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
 	// Apply the new location to the offsets.

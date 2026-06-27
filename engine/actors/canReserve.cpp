@@ -23,7 +23,7 @@ void Actors::canReserve_reserveItem(const ActorIndex index, const ItemIndex item
 		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, m_area.getActors().m_referenceData.getReference(index));
 	m_area.getItems().reservable_reserve(item, canReserve_get(index), quantity, std::move(callback));
 }
-bool Actors::canReserve_translateAndReservePositions(const ActorIndex index, SmallMap<Point3D, std::unique_ptr<DishonorCallback>>&& pointsAndCallbacks, const Point3D prevousPivot, const Point3D newPivot, const  Facing4 previousFacing, const Facing4 newFacing)
+bool Actors::canReserve_translateAndReservePositions(const ActorIndex index, SmallMap<Point3D, std::unique_ptr<DishonorCallback>>&& pointsAndCallbacks, const Point3D prevousPivot, const Point3D newPivot, const Facing4 previousFacing, const Facing4 newFacing)
 {
 	return m_canReserve[index]->translateAndReservePositions(m_area.getSpace(), std::move(pointsAndCallbacks), prevousPivot, newPivot, previousFacing, newFacing);
 }

@@ -36,7 +36,7 @@ protected:
 	DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
 	void actorsLeave(SmallSet<ActorIndex> actors);
 	[[nodiscard]] Point3D getEntranceToArea(const ShapeId shape, const MoveTypeId moveType) const;
-	[[nodiscard]] Point3D findLocationOnEdgeForNear(const ShapeId shape, const MoveTypeId moveType, const Point3D origin, const Distance  distance, const SmallSet<Point3D>& exclude) const;
+	[[nodiscard]] Point3D findLocationOnEdgeForNear(const ShapeId shape, const MoveTypeId moveType, const Point3D origin, const Distance distance, const SmallSet<Point3D>& exclude) const;
 	[[nodiscard]] bool pointIsConnectedToAtLeast(const Point3D point, const ShapeId shape, const MoveTypeId moveType, int count) const;
 	[[nodiscard]] Facing4 getFacingAwayFromEdge(const Point3D point) const;
 	[[nodiscard]] std::vector<AnimalSpeciesId> getSentientSpecies() const;
@@ -46,11 +46,11 @@ protected:
 public:
 	DramaArcType m_type;
 	virtual void trigger() { assert(false); }
-	[[nodiscard]] std::string name() const { return typeToString(m_type); }
+	[[nodiscard]] std::string name() const { return typetoS(m_type); }
 	[[nodiscard]] Area* getArea() { return m_area; }
 	[[nodiscard]] virtual bool canTriggerFromEditor() const { return false; }
 	[[nodiscard]] static std::vector<DramaArcType> getTypes();
-	[[nodiscard]] static std::string typeToString(DramaArcType type);
+	[[nodiscard]] static std::string typetoS(DramaArcType type);
 	[[nodiscard]] static DramaArcType stringToType(std::string string);
 	// This method doesn't have to be defined but if it isn't then it should never be called.
 	virtual void actorGoesOffScript(Area&, const ActorIndex) { std::unreachable(); }

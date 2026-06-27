@@ -16,7 +16,7 @@ namespace nlohmann {
 	struct adl_serializer<std::bitset<N>> {
 		static void to_json(Json& j, const std::bitset<N>& b)
 		{
-			j = b.to_string();  // Store as string like "101"
+			j = b.to_string(); // Store as string like "101"
 		}
 		static void from_json(const Json& j, std::bitset<N>& b)
 		{

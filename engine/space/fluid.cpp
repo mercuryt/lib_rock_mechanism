@@ -1,549 +1,204 @@
 #include "space.h"
 #include "../fluidType.h"
-#include "../mistDisperseEvent.h"
-#include "../fluidGroups/fluidGroup.h"
+#include "../fluid/fluidGroup.h"
 #include "../area/area.h"
 #include "../items/items.h"
 #include "../deserializationMemo.h"
 #include "../numericTypes/types.h"
 #include "../geometry/point3D.h"
-const FluidData Space::fluid_getData(const Point3D point, const FluidTypeId fluidType) const
+#include "../geometry/cuboidSetHelper.h"
+
+void Space::fluid_flowInto(const CuboidSet& cuboids, FluidTypeId fluidType, FluidGroup& group)
 {
-	const auto condition = [fluidType](const FluidData& data) { return data.type == fluidType; };
-	return m_fluid.queryGetOneWithCondition(point, condition);
+	m_fluid.insert(cuboids, FluidData(group.m_id, fluidType));
+	// Update temperature.
+	if(!group.m_aboveGround && m_exposedToSky.check(cuboids))
+	{
+		group.m_aboveGround = true;
+		if(FluidType::getFreezesInto(fluidType).exists())
+			m_area.m_hasTemperature.onFluidEnters(m_area, cuboids, fluidType, group.m_id);
+	}
+	m_area.m_hasPaths.update(m_area, cuboids.inflated({1}));
+	floating_maybeFloatUp(cuboids);
+	fluid_maybeRecordFluidOnDeck(cuboids);
+}
+void Space::fluid_flowOutFrom(const CuboidSet& cuboids, FluidTypeId type)
+{
+	m_fluid.removeWithCondition(cuboids, [type](FluidData fluid) { return fluid.type == type; });
+	m_area.m_hasPaths.update(m_area, cuboids.inflated({1}));
+	floating_maybeSink(cuboids);
+	fluid_maybeEraseFluidOnDeck(cuboids);
+}
+void Space::fluid_setGroupId(const CuboidSet& shape, FluidTypeId type, FluidGroupId group)
+{
+	auto action = [group](FluidData& fluidData){ fluidData.group = group; };
+	auto condition = [type](const FluidData& data){ return data.type == type; };
+	constexpr decltype(m_fluid)::UpdateActionConfig queryConfig{.allowNotChanged = true};
+	m_fluid.updateActionWithCondition<queryConfig>(shape, action, condition);
+}
+void Space::fluid_removeAllFilledWithDensityEqualOrGreaterThenFrom(CuboidSet& cuboids, FluidTypeId fluidType) const
+{
+	Density density = FluidType::getDensity(fluidType);
+	SmallSet<FluidGroupId> groupIds;
+	m_fluid.queryForEach(cuboids.boundry(), [&groupIds, density](FluidData fluid){
+		if(fluid.density > density)
+			groupIds.maybeInsert(fluid.group);
+	});
+	for(FluidGroupId id : groupIds)
+	{
+		FluidGroup& group = m_area.m_hasFluidGroups.byId(id);
+		group.removeFullFrom(cuboids);
+		if(cuboids.empty())
+			break;
+	}
+}
+void Space::fluid_add(const CuboidSet& shape, int64_t volume, FluidTypeId fluidType)
+{
+	m_area.m_hasFluidGroups.createGroup(shape, volume, fluidType);
+	FluidGroup& group = m_area.m_hasFluidGroups.m_groups.back();
+	fluid_flowInto(shape, fluidType, group);
+}
+void Space::fluid_remove(const CuboidSet& shape, int64_t volume, FluidTypeId fluidType)
+{
+	SmallSet<FluidGroupId> toDestroy;
+	for(FluidGroup* group : fluid_getGroupsWithType(shape, fluidType))
+	{
+		// partially drained groups are resolved during next fluid step, fully drained ones are destroyed immediately.
+		if(group->m_volume > volume)
+		{
+			group->m_volume -= volume;
+			group->m_stable = false;
+		}
+		else
+		{
+			volume -= group->m_volume;
+			toDestroy.insert(group->m_id);
+		}
+	}
+	for(FluidGroupId id : toDestroy)
+	{
+		FluidGroup& group = m_area.m_hasFluidGroups.byId(id);
+		fluid_flowOutFrom(group.m_occupied, group.m_fluidType);
+		m_area.m_hasPaths.update(m_area, group.m_occupied);
+		m_area.m_hasFluidGroups.destroyGroup(id);
+	}
+}
+SmallSet<FluidGroup*> Space::fluid_getGroups(const CuboidSet& shape)
+{
+	SmallSet<FluidGroupId> ids;
+	m_fluid.queryForEach(shape, [&ids](FluidData data){ ids.maybeInsert(data.group); });
+	SmallSet<FluidGroup*> output;
+	output.reserve(ids.size());
+	for(FluidGroupId id : ids)
+		output.insert(&m_area.m_hasFluidGroups.byId(id));
+	return output;
+}
+SmallSet<FluidGroup*> Space::fluid_getGroupsWithType(const CuboidSet& shape, FluidTypeId fluidType)
+{
+	SmallSet<FluidGroupId> ids;
+	m_fluid.queryForEach(shape, [&ids, fluidType](FluidData data){ if(data.type == fluidType) ids.maybeInsert(data.group); });
+	SmallSet<FluidGroup*> output;
+	output.reserve(ids.size());
+	for(FluidGroupId id : ids)
+		output.insert(&m_area.m_hasFluidGroups.byId(id));
+	return output;
 }
 CuboidSet Space::fluid_queryGetCuboids(const Cuboid shape) const
 {
 	return m_fluid.queryGetAllCuboids(shape);
 }
-void Space::fluid_destroyData(const Point3D point, const FluidTypeId fluidType)
-{
-	const auto condition = [fluidType](const FluidData& data) { return data.type == fluidType; };
-	m_fluid.removeWithCondition(point, condition);
-}
-void Space::fluid_setTotalVolume(const Point3D point, const CollisionVolume newTotal)
-{
-	if(newTotal == 0)
-		m_totalFluidVolume.remove(point);
-	else
-	{
-		[[maybe_unused]] bool breakIf = m_area.m_simulation.m_step == 7 && point == Point3D::create(4, 6, 2);
-		m_totalFluidVolume.maybeInsertOrOverwrite(point, newTotal);
-	}
-}
-void Space::fluid_spawnMist(const Point3D point, const FluidTypeId fluidType, const Distance maxMistSpread)
-{
-	const FluidTypeId mist = m_mist.queryGetOne(point);
-	if(mist.exists() && (mist == fluidType || FluidType::getDensity(mist) > FluidType::getDensity(fluidType)))
-		return;
-	m_mist.maybeInsertOrOverwrite(point, fluidType);
-	const Distance inverseDistance = maxMistSpread != 0 ? maxMistSpread : FluidType::getMaxMistSpread(fluidType);
-	m_mistInverseDistanceFromSourceSquared.maybeInsertOrOverwrite(point, inverseDistance.squared());
-	MistDisperseEvent::emplace(m_area, FluidType::getMistDuration(fluidType), fluidType, point);
-}
-void Space::fluid_clearMist(const Point3D point)
-{
-	m_mist.maybeRemove(point);
-	m_mistInverseDistanceFromSourceSquared.maybeRemove(point);
-}
-Distance Space::fluid_getMistInverseDistanceToSource(const Point3D point) const
-{
-	return m_mistInverseDistanceFromSourceSquared.queryGetOne(point).unsquared();
-}
-void Space::fluid_mistSetFluidTypeAndInverseDistance(const Point3D point, const FluidTypeId fluidType, const Distance inverseDistance)
-{
-	m_mist.maybeInsertOrOverwrite(point, fluidType);
-	m_mistInverseDistanceFromSourceSquared.maybeInsertOrOverwrite(point, inverseDistance.squared());
-}
 FluidGroup* Space::fluid_getGroup(const Point3D point, const FluidTypeId fluidType) const
 {
-	const FluidData& found = fluid_getData(point, fluidType);
-	if(found.empty())
+	FluidData data = m_fluid.queryGetOneWithCondition(point, [fluidType](FluidData fluid) { return fluid.type == fluidType; });
+	if(data.empty())
 		return nullptr;
-	return found.group;
-}
-void Space::fluid_add(const CuboidSet& points, const CollisionVolume volume, const FluidTypeId fluidType)
-{
-	assert(!solid_isAny(points));
-	// Find overlaping groups to join / merge.
-	const auto fluidTypeCondition = [fluidType](const FluidData data) { return data.type == fluidType; };
-	SmallSet<FluidGroup*> groups;
-	FluidGroup* largestGroup = nullptr;
-	CuboidSet inflatedPoints = points.inflateFaces({1}).intersection(boundry());
-	CuboidSet wasEmpty = points;
-	int numberOfPointsOverlappingExistingGroups = 0;
-	for(const auto& [cuboid, fluidData] : m_fluid.queryGetAllWithCuboidsAndCondition(inflatedPoints, fluidTypeCondition))
-	{
-		groups.maybeInsert(fluidData.group);
-		wasEmpty.maybeRemove(cuboid);
-		numberOfPointsOverlappingExistingGroups += points.intersection(cuboid).volume();
-	}
-	// Add only to those points which are not already part of a group for totalVolume. Points which are part of a group will be converted into excess volume for the largest group instead.
-	m_totalFluidVolume.updateAdd(wasEmpty, volume);
-	for(FluidGroup* group : groups)
-		if(largestGroup == nullptr || largestGroup->m_drainQueue.m_set.volume() < group->m_drainQueue.m_set.volume())
-			largestGroup = group;
-	if(largestGroup == nullptr)
-	{
-		// No FluidGroup exists at point or adjacent. Create fluid group.
-		// Possibly clear space first to prevent reallocation.
-		m_area.m_hasFluidGroups.clearMergedFluidGroups();
-		largestGroup = m_area.m_hasFluidGroups.createFluidGroup(fluidType, points);
-	}
-	// Set group to nullptr for now, will be changed when added to group.
-	m_fluid.insert(wasEmpty, FluidData{.group=nullptr, .type=fluidType, .volume=volume});
-	largestGroup->addFluid(m_area, volume * numberOfPointsOverlappingExistingGroups);
-	// Merge all found groups into largest.
-	for(FluidGroup* group : groups)
-		if(group != largestGroup)
-			largestGroup->merge(m_area, group);
-	m_area.m_hasFluidGroups.markUnstable(*largestGroup);
-	// Add points which formerly did not have any fluid of fluidType to the largest group.
-	largestGroup->addPoints(m_area, wasEmpty, false);
-	if(!largestGroup->m_aboveGround && m_exposedToSky.check(points))
-	{
-		largestGroup->m_aboveGround = true;
-		if(FluidType::getFreezesInto(largestGroup->m_fluidType).exists())
-			m_area.m_hasTemperature.onFluidEnters(m_area, points, *largestGroup);
-	}
-	floating_maybeFloatUp(points);
-	fluid_maybeRecordFluidOnDeck(wasEmpty);
-	CuboidSet overfull = fluid_queryGetCuboidsOverfull(points);
-	for(const Cuboid cuboid : overfull)
-		for(const Point3D point : cuboid)
-			fluid_resolveOverfull(point);
-	CuboidSet inflated = points;
-	inflated.inflate({1});
-	for(const Cuboid cuboid : points)
-		m_area.m_hasPaths.update(m_area, cuboid);
-}
-void Space::fluid_add(const Cuboid cuboid, const CollisionVolume volume, const FluidTypeId fluidType)
-{
-	fluid_add(CuboidSet::create(cuboid), volume, fluidType);
-}
-void Space::fluid_add(const Point3D point, const CollisionVolume volume, const FluidTypeId fluidType)
-{
-	assert(!solid_isAny(point));
-	// If a suitable fluid group exists at the point already then just add to it.
-	const auto condition = [fluidType](const FluidData& data) { return data.type == fluidType; };
-	FluidData fluidData = m_fluid.queryGetOneWithCondition(point, condition);
-	if(fluidData.exists())
-	{
-		fluidData.group->addFluid(m_area, volume);
-		return;
-	}
-	auto totalFluidVolume = m_totalFluidVolume.updateAdd(point, volume);
-	bool wasEmpty = totalFluidVolume == volume;
-	// Try to find any adjacent groups to join.
-	const Cuboid adjacent = getAdjacentWithEdgeAndCornerAdjacent(point);
-	FluidData found = m_fluid.queryGetOneWithCondition(adjacent, condition);
-	// FluidData::group nullptr will be filled in by either group->addPoint or createFluidGroup.
-	m_fluid.maybeInsert(point, {nullptr, fluidType, volume});
-	fluid_validateTotalForPoint(point);
-	FluidGroup* group = nullptr;
-	if(found.empty())
-	{
-		// No FluidGroup exists at point or adjacent. Create fluid group.
-		// Possibly clear space first to prevent reallocation.
-		m_area.m_hasFluidGroups.clearMergedFluidGroups();
-		group = m_area.m_hasFluidGroups.createFluidGroup(fluidType, CuboidSet::create(point));
-	}
-	else
-	{
-		group = found.group;
-		group->addPoint(m_area, point, true);
-	}
-	assert(group != nullptr);
-	m_area.m_hasFluidGroups.markUnstable(*group);
-	group->m_stable = false;
-	// Shift less dense fluids to excessVolume.
-	if(totalFluidVolume > Config::maxPointVolume)
-		fluid_resolveOverfull(point);
-	m_area.m_hasPaths.update(m_area, adjacent);
-	if(!group->m_aboveGround && isExposedToSky(point))
-	{
-		group->m_aboveGround = true;
-		if(FluidType::getFreezesInto(group->m_fluidType).exists())
-			m_area.m_hasTemperature.onFluidEnters(m_area, CuboidSet::create(point), *group);
-	}
-	floating_maybeFloatUp(CuboidSet::create(point));
-	// Float.
-	Items& items = m_area.getItems();
-	for(const ItemIndex item : item_getAll(point))
-	{
-		const Point3D location = items.getLocation(item);
-		const Facing4& facing = items.getFacing(item);
-		if(!items.isFloating(item))
-		{
-			if(items.canFloatAt(item, location, facing))
-			{
-				//TODO:(optimization) This call is redundant.
-				Distance depth = items.floatsInAtDepth(item, fluidType);
-				items.setFloating(item, fluidType, depth);
-			}
-		}
-		else
-		{
-			const Point3D above = location.above();
-			if(items.canFloatAt(item, above, facing))
-				items.location_set(item, above, items.getFacing(item));
-		}
-	}
-	if(wasEmpty)
-		fluid_maybeRecordFluidOnDeck(CuboidSet::create(point));
-}
-void Space::fluid_setAllUnstableExcept(const CuboidSet& points, const FluidTypeId fluidType)
-{
-	const auto condition = [&](const FluidData& data) -> bool { return data.type != fluidType; };
-	for(const FluidData& data : m_fluid.queryGetAllWithCondition(points, condition))
-	{
-		data.group->m_stable = false;
-		m_area.m_hasFluidGroups.markUnstable(*data.group);
-	}
-}
-void Space::fluid_drainInternal(const Cuboid cuboid, const CollisionVolume volume, FluidGroup& fluidGroup)
-{
-	auto action = [&](FluidData& data) mutable {
-		if(data.volume == volume)
-			data.clear();
-		else
-			data.volume -= volume;
-	};
-	auto condition = [&](const FluidData& data){ return data.type == fluidGroup.m_fluidType; };
-	m_fluid.updateOrDestroyActionWithConditionAll(cuboid, action, condition);
-	m_totalFluidVolume.updateSubtract(cuboid, volume);
-	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
-	Cuboid adjacent = cuboid;
-	adjacent.inflate({1});
-	m_area.m_hasPaths.update(m_area, adjacent);
-	floating_maybeSink(CuboidSet::create(cuboid));
-	// TODO: replace wrapping in CuboidSet with use of templated method.
-	fluid_maybeEraseFluidOnDeck(CuboidSet::create(cuboid));
-	m_area.m_hasTemperature.onFluidExits(m_area, CuboidSet::create(cuboid), fluidGroup);
-}
-void Space::fluid_fillInternal(const Cuboid cuboid, const CollisionVolume volume, FluidGroup& fluidGroup)
-{
-	CuboidSet wasEmpty = CuboidSet::create(cuboid);
-	auto condition = [&](const FluidData& data){ return data.type == fluidGroup.m_fluidType; };
-	//TODO: this query is redundant with the update or create query.
-	wasEmpty.maybeRemoveAll(m_fluid.queryGetAllCuboidsWithCondition(cuboid, condition));
-	auto action = [&](FluidData& data){
-		if(data.empty())
-		{
-			data.group = &fluidGroup;
-			data.type = fluidGroup.m_fluidType;
-			assert(data.volume == 0);
-		}
-		data.volume += volume;
-	};
-	m_fluid.updateOrCreateActionWithConditionAll(cuboid, action, condition);
-	m_totalFluidVolume.updateAdd(cuboid, volume);
-	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
-	Cuboid adjacent = cuboid;
-	adjacent.inflate({1});
-	m_area.m_hasPaths.update(m_area, adjacent);
-	fluid_maybeRecordFluidOnDeck(wasEmpty);
-	floating_maybeFloatUp(wasEmpty);
-	m_area.m_hasTemperature.onFluidEnters(m_area, CuboidSet::create(cuboid), fluidGroup);
-}
-void Space::fluid_unsetGroupsInternal(const CuboidSet& points, const FluidTypeId fluidType)
-{
-	auto condition = [&](const FluidData& data){ return data.type == fluidType; };
-	auto action = [](FluidData& data){ data.group = nullptr; };
-	m_fluid.updateActionWithConditionAll(points, action, condition);
-}
-void Space::fluid_setGroupsInternal(const CuboidSet& points, const FluidTypeId fluidType, FluidGroup& group)
-{
-	auto condition = [&](const FluidData& data) { return data.type == fluidType; };
-	auto action = [&](FluidData& data) { data.group = &group; };
-	m_fluid.updateActionWithConditionAllAllowNotChanged(points, action, condition);
-}
-bool Space::fluid_undisolveInternal(const Point3D point, FluidGroup& fluidGroup)
-{
-	// Try to find group to add to.
-	FluidGroup* groupToAddTo = fluid_getGroup(point, fluidGroup.m_fluidType);
-	if(groupToAddTo != nullptr)
-	{
-		// Group found, merge and mark for destruction.
-		groupToAddTo->m_excessVolume += fluidGroup.m_excessVolume;
-		fluidGroup.m_destroy = true;
-		return true;
-	}
-	else
-	{
-		// No group found, try to create one.
-		CollisionVolume capacity = fluid_volumeOfTypeCanEnter(point, fluidGroup.m_fluidType);
-		if(capacity == 0)
-			return false;
-		CollisionVolume flow = std::min(capacity, CollisionVolume::create(fluidGroup.m_excessVolume));
-		FluidData data = {.group = nullptr, .type = fluidGroup.m_fluidType, .volume = flow};
-		m_fluid.maybeInsert(point, data);
-		fluidGroup.addPoint(m_area, point, false);
-		fluidGroup.m_disolved = false;
-		fluidGroup.m_excessVolume -= flow.get();
-		m_totalFluidVolume.updateAdd(point, flow);
-		fluid_validateTotalForPoint(point);
-		m_area.m_hasPaths.update(m_area, point.inflated({1}));
-		return true;
-	}
-	return false;
-}
-void Space::fluid_remove(const Point3D point, const CollisionVolume volume, const FluidTypeId fluidType)
-{
-	assert(volume <= fluid_volumeOfTypeContains(point, fluidType));
-	fluid_getGroup(point, fluidType)->removeFluid(m_area, volume);
-}
-void Space::fluid_removeSyncronus(const Point3D point, const CollisionVolume volume, const FluidTypeId fluidType)
-{
-	assert(volume <= fluid_volumeOfTypeContains(point, fluidType));
-	assert(m_totalFluidVolume.queryGetOneOr(point, {0}) >= volume);
-	auto condition = [&](const FluidData& data) { return data.type == fluidType; };
-	auto action = [&](FluidData& data) {
-		if(data.volume == volume)
-		{
-			FluidGroup& group = *data.group;
-			if(group.countPoints() == 1)
-				m_area.m_hasFluidGroups.removeFluidGroup(group);
-			else
-				group.removePoint(m_area, point);
-			m_area.m_hasTemperature.onFluidExits(m_area, CuboidSet::create(point), group);
-			data.clear();
-		}
-		else
-			data.volume -= volume;
-	};
-	m_fluid.updateOrDestroyActionWithConditionOne(point, action, condition);
-	m_totalFluidVolume.updateSubtract(point, volume);
-	fluid_validateTotalForPoint(point);
-	m_area.m_hasPaths.update(m_area, point.inflated({1}));
-	floating_maybeSink(CuboidSet::create(point));
-	fluid_maybeEraseFluidOnDeck(CuboidSet::create(point));
-}
-void Space::fluid_removeAllSyncronus(const Point3D point)
-{
-	for(const FluidData& data : m_fluid.queryGetAll(point))
-		fluid_removeSyncronus(point, data.volume, data.type);
-	assert(!m_totalFluidVolume.queryAny(point));
-}
-bool Space::fluid_canEnterCurrently(const Point3D point, const FluidTypeId fluidType) const
-{
-	if(m_totalFluidVolume.queryGetOneOr(point, {0}) < Config::maxPointVolume)
-		return true;
-	for(const FluidData& fluidData : m_fluid.queryGetAll(point))
-		if(FluidType::getDensity(fluidData.type) < FluidType::getDensity(fluidType))
-			return true;
-	return false;
-}
-bool Space::fluid_canEnterEver(const Point3D point) const
-{
-	return !solid_isAny(point);
-}
-bool Space::fluid_isAdjacentToGroup(const Point3D point, const FluidGroup& fluidGroup) const
-{
-	for(const Point3D adjacent : getDirectlyAdjacent(point))
-		if(fluid_contains(adjacent, fluidGroup.m_fluidType) && fluid_getGroup(adjacent, fluidGroup.m_fluidType) == &fluidGroup)
-			return true;
-	return false;
-}
-CollisionVolume Space::fluid_volumeOfTypeCanEnter(const Point3D point, const FluidTypeId fluidType) const
-{
-	CollisionVolume output = Config::maxPointVolume;
-	for(const FluidData& fluidData : m_fluid.queryGetAll(point))
-		if(FluidType::getDensity(fluidData.type) >= FluidType::getDensity(fluidType))
-			output -= fluidData.volume;
-	return output;
+	return &m_area.m_hasFluidGroups.byId(data.group);
 }
 CollisionVolume Space::fluid_volumeOfTypeContains(const Point3D point, const FluidTypeId fluidType) const
 {
-	const auto condition = [fluidType](const FluidData& data) { return data.type == fluidType; };
-	const FluidData& data = m_fluid.queryGetOneWithCondition(point, condition);
-	// If no data is found with the correct fluid type this will return the default value of 0.
-	return data.volume.exists() ? data.volume : CollisionVolume::create(0);
+	FluidGroup* group = fluid_getGroup(point, fluidType);
+	if(group == nullptr)
+		return {0};
+	bool isTrailingPoint = group->m_flowingUp ?
+		point.z() == group->m_lowZ :
+		point.z() == group->m_highZ;
+	if(isTrailingPoint)
+		return CollisionVolume::create(group->trailingLevelFluidVolumePerPoint());
+	else
+		return Config::maxPointVolume;
 }
-FluidTypeId Space::fluid_getTypeWithMostVolume(const Point3D point) const
+void Space::fluid_onSetSolid(const CuboidSet& cuboids)
 {
-	assert(m_fluid.queryAny(point));
-	CollisionVolume volume = {0};
-	FluidTypeId output;
-	for(const FluidData& fluidData : m_fluid.queryGetAll(point))
-		if(volume < fluidData.volume)
-			output = fluidData.type;
-	assert(output.exists());
-	return output;
-}
-FluidTypeId Space::fluid_getMist(const Point3D point) const
-{
-	return m_mist.queryGetOne(point);
-}
-void Space::fluid_resolveOverfull(const Point3D point)
-{
-	std::vector<FluidTypeId> toErase;
-	CollisionVolume totalFluidVolume = m_totalFluidVolume.queryGetOneOr(point, {0});
-	assert(totalFluidVolume > Config::maxPointVolume);
-	// Iterate fluids starting from the least dense, remove either the total volume of the fluid or the remaining quantity to get the total down to Config::maxPointVolume.
-	// The groups' are updated but the fluidData is only a copy.
-	auto fluidDataSet = fluid_getAllSortedByDensityAscending(point);
-	for(FluidData& fluidData : fluidDataSet)
+	SmallSet<FluidGroupId> displaced;
+	for(FluidGroup* group : fluid_getGroups(cuboids))
 	{
-		assert(fluidData.type == fluidData.group->m_fluidType);
-		// Displace lower density fluids.
-		CollisionVolume displaced = std::min(fluidData.volume, totalFluidVolume - Config::maxPointVolume);
-		assert(displaced != 0);
-		fluidData.volume -= displaced;
-		totalFluidVolume -= displaced;
-		fluidData.group->addFluid(m_area, displaced);
-		if(fluidData.volume == 0)
-			toErase.push_back(fluidData.type);
-		if(fluidData.volume < Config::maxPointVolume)
-			fluidData.group->m_fillQueue.m_set.maybeAdd(point);
-		if(totalFluidVolume == Config::maxPointVolume)
-			break;
-	}
-	for(FluidTypeId fluidType : toErase)
-	{
-		// If the last point of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
-		FluidGroup* fluidGroup = fluid_getGroup(point, fluidType);
-		assert(fluidGroup->m_fluidType == fluidType);
-		fluidGroup->removePoint(m_area, point);
-		if(fluidGroup->m_drainQueue.m_set.empty())
-		{
-			for(FluidData& otherFluidData : fluidDataSet)
-				if(FluidType::getDensity(otherFluidData.type) > FluidType::getDensity(fluidType))
-				{
-					//TODO: find.
-					if(otherFluidData.group->m_disolvedInThisGroup.contains(fluidType))
-					{
-						otherFluidData.group->m_disolvedInThisGroup[fluidType]->m_excessVolume += fluidGroup->m_excessVolume;
-						fluidGroup->m_destroy = true;
-					}
-					else
-					{
-						otherFluidData.group->m_disolvedInThisGroup.insert(fluidType, fluidGroup);
-						fluidGroup->m_disolved = true;
-					}
-					break;
-				}
-			assert(fluidGroup->m_disolved || fluidGroup->m_destroy);
-		}
-		fluid_destroyData(point, fluidType);
-	}
-	[[maybe_unused]] bool breakIf = m_area.m_simulation.m_step == 5 && point == Point3D::create(1,3,6);
-	fluid_setTotalVolume(point, totalFluidVolume);
-	for(const FluidData& data : fluidDataSet)
-	{
-		const auto condition = [&](const FluidData& otherData) { return otherData.type == data.type; };
-		if(data.volume == 0)
-			m_fluid.maybeRemoveWithConditionOne(point, condition);
+		if(cuboids.contains(group->m_occupied))
+			displaced.insert(group->m_id);
 		else
 		{
-			const auto action = [&](FluidData& otherData) { otherData.volume = data.volume; };
-			m_fluid.updateActionWithConditionOneAllowNotChanged(point, action, condition);
+			CuboidSet removed = group->m_occupied.intersection(cuboids);
+			group->m_occupied.remove(removed);
+			group->m_stable = false;
+			group->m_noLongerOccupied.add(removed);
 		}
 	}
-	fluid_validateTotalForPoint(point);
-	m_area.m_hasPaths.update(m_area, point.inflated({1}));
-}
-void Space::fluid_onPointSetSolid(const Point3D point)
-{
-	// Displace fluids.
-	bool anyFluidsExist = false;
-	SmallSet<FluidData> fluidDataSet;
-	m_fluid.maybeUpdateOrDestroyActionAll(point, [&](FluidData& data){
-		anyFluidsExist = true;
-		data.group->removePoint(m_area, point);
-		fluidDataSet.insert(data);
-		data.clear();
-	});
-	if(anyFluidsExist)
-		fluid_setTotalVolume(point, {0});
-	// Collect adjacent while also removing now solid point from all fill queues of adjacent groups.
-	SmallSet<Point3D> candidates;
-	SmallSet<Point3D> candidatesAbove;
-	for(const Point3D adjacent : getAdjacentWithEdgeAndCornerAdjacent(point))
-		if(fluid_canEnterEver(adjacent))
+	CuboidSet candidates = cuboids.inflated({1});
+	candidates.removeAll(cuboids);
+	solid_removeAllFrom(candidates);
+	if(!candidates.empty())
+	{
+		Point3D destinination = candidates[0].m_low;
+		for(FluidGroupId id : displaced)
 		{
-			if(adjacent.z() == point.z())
-				candidates.insert(adjacent);
-			else if(adjacent.z() == point.z() + 1)
-				candidatesAbove.insert(adjacent);
-			auto adjacentFluidDataSet = m_fluid.queryGetAll(adjacent);
-			for(FluidData& fluidData : adjacentFluidDataSet)
-				fluidData.group->m_fillQueue.m_set.maybeRemove(point);
+			FluidGroup& group = m_area.m_hasFluidGroups.byId(id);
+			group.m_stable = false;
+			group.m_occupied.clear();
+			group.m_occupied.add(destinination);
 		}
-	if(candidates.empty())
-		candidates = std::move(candidatesAbove);
-	if(candidates.empty())
-	{
-		// TODO: maybe piston.
-		return;
 	}
-	// Add fluid to adjacent.
-	float size = candidates.size();
-	SmallMap<FluidTypeId, CollisionVolume> toDispersePerBlock;
-	SmallMap<FluidTypeId, CollisionVolume> toDisperseRemainder;
-	for(const FluidData& data : fluidDataSet)
+	else
 	{
-		CollisionVolume perBlock = CollisionVolume::create(std::floor((float)data.volume.get() / size));
-		CollisionVolume remainder = data.volume - (perBlock * size);
-		toDispersePerBlock.insert(data.type, perBlock);
-		if(remainder != 0)
-			toDisperseRemainder.insert(data.type, remainder);
+		// Nowhere to put displaced, destroy it.
+		for(FluidGroupId id : displaced)
+			m_area.m_hasFluidGroups.destroyGroup(id);
 	}
-	for(const Point3D candidate : candidates)
-		for(const auto& [fluidType, volume] : toDispersePerBlock)
-			fluid_add({candidate, candidate}, volume, fluidType);
-	auto& random = m_area.m_simulation.m_random;
-	for(const auto& [fluidType, volume] : toDisperseRemainder)
-	{
-		Point3D candidate = random.getInVector(candidates.getVector());
-		fluid_add({candidate, candidate}, volume, fluidType);
-	}
-	fluid_validateTotalForPoint(point);
+	m_fluid.maybeRemove(cuboids);
 }
-void Space::fluid_onCuboidSetSolid(const Cuboid cuboid)
+void Space::fluid_onSetNotSolid(const CuboidSet& cuboids)
 {
-	// TODO: Could be much better by rewriting onPointSetSolid as onCuboidSetSolid.
-	CuboidSet containsFluid = m_totalFluidVolume.queryGetAllCuboids(cuboid);
-	for(const Cuboid fluidCuboid : containsFluid)
-		for(const Point3D point : fluidCuboid)
-			fluid_onPointSetSolid(point);
-}
-void Space::fluid_onPointSetNotSolid(const Point3D point)
-{
-	for(const Point3D adjacent : getDirectlyAdjacent(point))
-		if(fluid_canEnterEver(adjacent))
-		{
-			auto fluidDataSetCopy = m_fluid.queryGetAll(adjacent);
-			for(FluidData& fluidData : fluidDataSetCopy)
-			{
-				fluidData.group->m_fillQueue.m_set.add(point);
-				fluidData.group->m_stable = false;
-			}
-		}
+	for(FluidGroup* group : fluid_getGroups(cuboids.inflated({1})))
+	group->m_stable = false;
 }
 CollisionVolume Space::fluid_getTotalVolume(const Point3D point) const
 {
-	auto output = m_totalFluidVolume.queryGetOneOr(point, {0});
-	CollisionVolume total = {0};
-	for(FluidData data : m_fluid.queryGetAll(point))
-		total += data.volume;
-	assert(total == output);
+	SmallSet<FluidGroupId> ids;
+	m_fluid.queryForEach(point, [&ids](FluidData data){ ids.maybeInsert(data.group); });
+	CollisionVolume output{0};
+	for(FluidGroupId id : ids)
+	{
+		FluidGroup& group = m_area.m_hasFluidGroups.byId(id);
+		if(
+			(group.m_flowingUp && group.m_lowZ != point.z()) ||
+			(!group.m_flowingUp && group.m_highZ != point.z())
+		)
+			return Config::maxPointVolume;
+		else
+			output += group.trailingLevelFluidVolume();
+	}
 	return output;
 }
-const SmallSet<FluidData> Space::fluid_getAllSortedByDensityAscending(const Point3D point)
+const MapWithCuboidKeys<std::pair<FluidTypeId, int64_t>> Space::fluid_getWithCuboidsAndRemoveAll(const CuboidSet& cuboids)
 {
-	auto fluidData = m_fluid.queryGetAll(point);
-	std::ranges::sort(fluidData.m_data, std::less<Density>(), [](const FluidData& data) -> Density { return FluidType::getDensity(data.type); });
-	return fluidData;
-}
-const MapWithCuboidKeys<std::pair<FluidTypeId, CollisionVolume>> Space::fluid_getWithCuboidsAndRemoveAll(const CuboidSet& cuboids)
-{
-	MapWithCuboidKeys<std::pair<FluidTypeId, CollisionVolume>> output;
-	for(const Cuboid cuboid : cuboids)
-		for(const auto& [fluidCuboid, fluidData] : m_fluid.queryGetAllWithCuboids(cuboid))
-			output.insert({fluidCuboid, {fluidData.type, fluidData.volume}});
+	MapWithCuboidKeys<std::pair<FluidTypeId, int64_t>> output;
+	for(const auto& [fluidCuboid, fluidData] : m_fluid.queryGetAllWithCuboids(cuboids))
+	{
+		FluidGroup& group = m_area.m_hasFluidGroups.byId(fluidData.group);
+		int64_t volume = (group.m_volume * fluidCuboid.volume()) / group.m_occupied.volume();
+		group.m_volume -= volume;
+		group.m_stable = false;
+		output.insert(fluidCuboid, {fluidData.type, volume});
+	}
 	m_fluid.removeAll(cuboids);
-	m_totalFluidVolume.removeAll(cuboids);
 	return output;
 }
 template<typename ShapeT>
@@ -575,7 +230,6 @@ template Point3D Space::fluid_containsPoint<Cuboid>(Cuboid&& shape, const FluidT
 template Point3D Space::fluid_containsPoint<const Cuboid&>(const Cuboid& shape, const FluidTypeId fluidType) const;
 void Space::fluid_maybeRecordFluidOnDeck(const CuboidSet& points)
 {
-	assert(m_totalFluidVolume.queryAll(points));
 	const DeckId deckId = m_area.m_decks.queryDeckId(points);
 	if(deckId.exists())
 	{
@@ -596,22 +250,7 @@ void Space::fluid_maybeEraseFluidOnDeck(const CuboidSet& points)
 		m_area.getItems().onDeck_erasePointsContainingFluid(item, points);
 	}
 }
-void Space::fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(CuboidSet& set) const
-{
-	set.maybeRemoveAll(m_solid.queryGetAllCuboids(set.boundry()));
-}
-void Space::fluid_validateTotalForPoint(const Point3D point) const
-{
-	if constexpr(Config::validateFluidTotals)
-		[[maybe_unused]] auto r = fluid_getTotalVolume(point);
-}
-void Space::fluid_validateAllTotals() const
-{
-	for(const Cuboid cuboid : m_fluid.getLeafCuboids())
-		for(const Point3D point : cuboid)
-			fluid_validateTotalForPoint(point);
-}
-bool Space::fluid_shapeIsMostlySurroundedByFluidOfTypeAtDistanceAboveLocationWithFacing(const ShapeId shape, const FluidTypeId fluidType, const Distance  distance, const Point3D location, const Facing4 facing) const
+bool Space::fluid_shapeIsMostlySurroundedByFluidOfTypeAtDistanceAboveLocationWithFacing(const ShapeId shape, const FluidTypeId fluidType, const Distance distance, const Point3D location, const Facing4 facing) const
 {
 	const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(shape, *this, location, facing);
 	const Distance floatLevel = location.z() + distance;

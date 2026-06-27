@@ -18,7 +18,7 @@ MustDrink::MustDrink(Area& area, const ActorIndex a) :
 }
 MustDrink::MustDrink(Area& area, const Json& data, const ActorIndex a, const AnimalSpeciesId species) :
 	m_thirstEvent(area.m_eventSchedule), m_fluidType(AnimalSpecies::getFluidType(species)),
-    	m_volumeDrinkRequested(data["volumeDrinkRequested"].get<CollisionVolume>())
+  	m_volumeDrinkRequested(data["volumeDrinkRequested"].get<CollisionVolume>())
 {
 	ActorReferenceData& referenceData = area.getActors().m_referenceData;
 	m_actor.setIndex(a, referenceData);
@@ -148,7 +148,7 @@ void DrinkEvent::execute(Simulation&, Area* area)
 		Space& space = area->getSpace();
 		FluidTypeId fluidType = actors.drink_getFluidType(actor);
 		volume = std::min(volume, space.fluid_volumeOfTypeContains(drinkPoint, fluidType));
-		space.fluid_remove(drinkPoint, volume, fluidType);
+		space.fluid_remove(CuboidSet::create(drinkPoint), volume.get(), fluidType);
 	}
 	actors.drink_do(actor, volume);
 }

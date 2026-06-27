@@ -28,7 +28,7 @@ Json HasDigDesignationsForFaction::toJson() const
 	}
 	return {{"projects", projects}};
 }
-void HasDigDesignationsForFaction::designate(Area& area, const Point3D point, [[maybe_unused]] const PointFeatureTypeId pointFeatureType)
+void HasDigDesignationsForFaction::designate(Area& area, const Point3D point, [[maybe_unused]] PointFeatureTypeId pointFeatureType)
 {
 	assert(!m_data.contains(point));
 	Space& space = area.getSpace();
@@ -98,7 +98,7 @@ void AreaHasDigDesignations::removeFaction(const FactionId faction)
 	m_data.erase(faction);
 }
 // If pointFeatureType is null then dig out fully rather then digging out a feature.
-void AreaHasDigDesignations::designate(const FactionId faction, const Point3D point, const PointFeatureTypeId pointFeatureType)
+void AreaHasDigDesignations::designate(const FactionId faction, const Point3D point, PointFeatureTypeId pointFeatureType)
 {
 	if(!m_data.contains(faction))
 		addFaction(faction);

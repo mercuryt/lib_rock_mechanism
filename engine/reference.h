@@ -176,7 +176,7 @@ public:
 	}
 	[[nodiscard]] size_t hash() const { return m_referenceIndex.get(); }
 	[[nodiscard]] Json toJson() const { return m_referenceIndex.get(); }
-	[[nodiscard]] std::string toString() const { return m_referenceIndex.toString(); }
+	[[nodiscard]] std::string toS() const { return m_referenceIndex.toS(); }
 	struct Hash { [[nodiscard]] size_t operator()(const Reference<Index, ReferenceIndex>& reference) const { return reference.getReferenceIndex().get(); } };
 };
 template<typename Index, typename ReferenceIndex>
@@ -376,8 +376,8 @@ public:
 	[[nodiscard]] ItemReference toItemReference() const { return std::get<2>(m_reference); }
 	[[nodiscard]] ActorIndex toActorIndex(const ActorReferenceData& data) const { return std::get<1>(m_reference).getIndex(data); }
 	[[nodiscard]] ItemIndex toItemIndex(const ItemReferenceData& data) const { return std::get<2>(m_reference).getIndex(data); }
-	[[nodiscard]] static ActorOrItemReference createForActor(const ActorReference target) {  ActorOrItemReference output; output.setActor(target); return output;}
-	[[nodiscard]] static ActorOrItemReference createForItem(const ItemReference target) {  ActorOrItemReference output; output.setItem(target); return output;}
+	[[nodiscard]] static ActorOrItemReference createForActor(const ActorReference target) { ActorOrItemReference output; output.setActor(target); return output;}
+	[[nodiscard]] static ActorOrItemReference createForItem(const ItemReference target) { ActorOrItemReference output; output.setItem(target); return output;}
 	[[nodiscard]] Json toJson() const
 	{
 		if(isActor())
@@ -385,12 +385,12 @@ public:
 		else
 			return {false, std::get<2>(m_reference).toJson()};
 	}
-	[[nodiscard]] std::string toString() const
+	[[nodiscard]] std::string toS() const
 	{
 		if(isActor())
-			return toActorReference().toString();
+			return toActorReference().toS();
 		else
-			return toItemReference().toString();
+			return toItemReference().toS();
 	}
 	struct Hash
 	{

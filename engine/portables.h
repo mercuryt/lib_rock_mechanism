@@ -96,7 +96,7 @@ public:
 	void unsetLeader(const Index index, const ActorOrItemIndex leader) { assert(m_follower[index] == leader); m_leader[index].clear(); }
 	void fall(const Index index);
 	void maybeFall(const Index index);
-	void onSetLocation(const Index index, const Point3D previousLocation, const  Facing4 previousFacing);
+	void onSetLocation(const Index index, const Point3D previousLocation, const Facing4 previousFacing);
 	void onRemove(const Index index);
 	void setFloating(const Index index, const FluidTypeId fluidType, Distance depth);
 	void unsetFloating(const Index index);

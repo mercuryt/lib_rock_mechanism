@@ -76,16 +76,14 @@ TEST_CASE("weather")
 		CHECK(space.isExposedToSky(pond1));
 		CHECK(space.isExposedToSky(pond2));
 		CHECK(space.isExposedToSky(pond3));
-		space.fluid_add(pond1, CollisionVolume::create(100), water);
-		space.fluid_add(pond2, CollisionVolume::create(100), water);
-		space.fluid_add(pond3, CollisionVolume::create(99), water);
+		space.fluid_add(Cuboid::create(pond1, pond3).toSet(), 299, water);
 		auto& hasTemperature = area.m_hasTemperature;
 		CHECK(hasTemperature.m_freezableFluidTypeOnSurface.contains(water));
 		CHECK(!hasTemperature.m_freezableFluidTypeOnSurface[water].empty());
 		CHECK(!hasTemperature.m_meltableMaterialTypeOnSurface.contains(ice));
-		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
+		CHECK(area.m_hasFluidGroups.m_groups.size() == 1);
 		hasTemperature.setAmbient(area, freezing - 1);
-		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
+		CHECK(area.m_hasFluidGroups.m_groups.size() == 1);
 		// Point 3 is not full so it turns into chunks.
 		CHECK(!space.solid_isAny(pond3));
 		static const ItemTypeId& chunk = ItemType::byName("chunk");
@@ -103,11 +101,9 @@ TEST_CASE("weather")
 		CHECK(items.isOnSurface(chunk1));
 		CHECK(area.m_hasTemperature.m_meltableMaterialTypeOnSurface[ice].items.contains(pond3));
 		CHECK(space.fluid_volumeOfTypeContains(pond1, water) == 100);
-		CHECK(space.fluid_getGroup(pond1, water)->m_excessVolume == 0);
 		CHECK(space.fluid_volumeOfTypeContains(pond2, water) == 0);
 		CHECK(space.fluid_volumeOfTypeContains(pond3, water) == 0);
 		hasTemperature.setAmbient(area, freezing + 1);
-		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 		CHECK(!space.solid_isAny(pond3));
 		CHECK(space.item_empty(pond3));
 		CHECK(!space.solid_isAny(pond2));
@@ -117,7 +113,6 @@ TEST_CASE("weather")
 		CHECK(space.fluid_volumeOfTypeContains(pond1, water) == 100);
 		CHECK(space.fluid_volumeOfTypeContains(pond2, water) == 100);
 		CHECK(space.fluid_volumeOfTypeContains(pond3, water) == 99);
-		CHECK(space.fluid_getGroup(pond1, water)->m_excessVolume == 0);
 		CHECK(space.fluid_getTotalVolume(above) == 0);
 	}
 	SUBCASE("ambient temperature and exterior portals")

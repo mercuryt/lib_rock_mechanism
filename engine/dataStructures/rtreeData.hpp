@@ -251,13 +251,19 @@ void RTreeData<T, config_, nullPrimitive>::Node::updateLeaf(const RTreeArrayInde
 	m_cuboids.insert(offset.get(), cuboid);
 }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
+void RTreeData<T, config_, nullPrimitive>::Node::updateLeafWithoutValidation(const RTreeArrayIndex offset, const Cuboid cuboid)
+{
+	assert(offset < m_leafEnd);
+	assert(!m_cuboids[offset.get()].empty());
+	m_cuboids.insert(offset.get(), cuboid);
+}
+template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 void RTreeData<T, config_, nullPrimitive>::Node::updateValue(const RTreeArrayIndex offset, const T& value)
 {
 	assert(offset < m_leafEnd);
 	assert(value != T::create(nullPrimitive));
 	[[maybe_unused]] const auto cuboid = m_cuboids[offset.get()];
 	assert(!cuboid.empty());
-	assert(!containsLeaf(cuboid, value));
 	m_dataAndChildIndices[offset].data = value.get();
 }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
@@ -290,26 +296,26 @@ void RTreeData<T, config_, nullPrimitive>::Node::updateBranchBoundry(const RTree
 	m_cuboids.insert(offset.get(), cuboid);
 }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
-std::string RTreeData<T, config_, nullPrimitive>::Node::toString() const
+std::string RTreeData<T, config_, nullPrimitive>::Node::toS() const
 {
-	std::string output = "parent: " + m_parent.toString() + "; ";
+	std::string output = "parent: " + m_parent.toS() + "; ";
 	if(m_leafEnd != 0)
 	{
 		output += "leaves: {";
 		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < m_leafEnd; ++i)
-			if constexpr(HasToStringMethod<T>)
-				output += "(" + m_cuboids[i.get()].toString()  + ":" + T::create(m_dataAndChildIndices[i].data).toString() + "), ";
+			if constexpr(HastoSMethod<T>)
+				output += "(" + m_cuboids[i.get()].toS() + ":" + T::create(m_dataAndChildIndices[i].data).toS() + "), ";
 			else if constexpr(std::is_pointer_v<typename T::Primitive>)
-				output += "(" + m_cuboids[i.get()].toString()  + ":" + std::to_string((intptr_t)m_dataAndChildIndices[i].data) + "), ";
+				output += "(" + m_cuboids[i.get()].toS() + ":" + std::to_string((intptr_t)m_dataAndChildIndices[i].data) + "), ";
 			else
-				output += "(" + m_cuboids[i.get()].toString()  + ":" + std::to_string(m_dataAndChildIndices[i].data) + "), ";
+				output += "(" + m_cuboids[i.get()].toS() + ":" + std::to_string(m_dataAndChildIndices[i].data) + "), ";
 		output += "}; ";
 	}
 	if(m_childBegin != nodeSize)
 	{
 		output += "children: {";
 		for(RTreeArrayIndex i = m_childBegin; i < nodeSize; ++i)
-			output += "(" + m_cuboids[i.get()].toString() + ":" + std::to_string(m_dataAndChildIndices[i].child) + "), ";
+			output += "(" + m_cuboids[i.get()].toS() + ":" + std::to_string(m_dataAndChildIndices[i].child) + "), ";
 		output += "}; ";
 	}
 	return output;
@@ -317,24 +323,24 @@ std::string RTreeData<T, config_, nullPrimitive>::Node::toString() const
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 void RTreeData<T, config_, nullPrimitive>::Node::log() const
 {
-	std::cout << "parent: " << m_parent.toString() << "; ";
+	std::cout << "parent: " << m_parent.toS() << "; ";
 	if(m_leafEnd != 0)
 	{
 		std::cout << "leaves: {";
 		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < m_leafEnd; ++i)
-			if constexpr(HasToStringMethod<T>)
-				std::cout << "(" << m_cuboids[i.get()].toString() << ":" << T::create(m_dataAndChildIndices[i].data).toString() << "), ";
+			if constexpr(HastoSMethod<T>)
+				std::cout << "(" << m_cuboids[i.get()].toS() << ":" << T::create(m_dataAndChildIndices[i].data).toS() << "), ";
 			else if constexpr(std::is_pointer_v<typename T::Primitive>)
-				std::cout << "(" << m_cuboids[i.get()].toString() << ":" << std::to_string((intptr_t)m_dataAndChildIndices[i].data) << "), ";
+				std::cout << "(" << m_cuboids[i.get()].toS() << ":" << std::to_string((intptr_t)m_dataAndChildIndices[i].data) << "), ";
 			else
-				std::cout << "(" << m_cuboids[i.get()].toString() << ":" << std::to_string(m_dataAndChildIndices[i].data) << "), ";
+				std::cout << "(" << m_cuboids[i.get()].toS() << ":" << std::to_string(m_dataAndChildIndices[i].data) << "), ";
 		std::cout << "}; ";
 	}
 	if(m_childBegin != nodeSize)
 	{
 		std::cout << "children: {";
 		for(RTreeArrayIndex i = m_childBegin; i < nodeSize; ++i)
-			std::cout << "(" << m_cuboids[i.get()].toString() << ":" << std::to_string(m_dataAndChildIndices[i].child) << "), ";
+			std::cout << "(" << m_cuboids[i.get()].toS() << ":" << std::to_string(m_dataAndChildIndices[i].child) << "), ";
 		std::cout << "}; ";
 	}
 }
@@ -452,9 +458,13 @@ void RTreeData<T, config_, nullPrimitive>::tryToMergeLeaves(Node& parent)
 				}
 				else
 				{
-					// T is not mergable so values must be equal.
+					// T doesn't provide a 'merge' method so the values must be equal.
 					assert(parentDataAndChildIndices[i].data == parentDataAndChildIndices[offset].data);
-					parent.updateLeaf(i, merged);
+					// If offset already contained i or vice versa then updating i with merge would result in duplicate leaves. Since the offset leaf is about to be removed anyway just skip the validation. Presumably this branch will be optimized out since without asserts the two methods are identical.
+					if(parentCuboids[offset.get()] == merged || parentCuboids[i.get()] == merged)
+						parent.updateLeafWithoutValidation(i, merged);
+					else
+						parent.updateLeaf(i, merged);
 				}
 				parent.eraseLeaf(offset);
 				// Eraseing offset invalidates mergeMask. Break for now and return with next outer loop iteration.
@@ -1297,18 +1307,28 @@ int RTreeData<T, config_, nullPrimitive>::totalLeafVolume() const
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 int RTreeData<T, config_, nullPrimitive>::getNodeSize() { return nodeSize; }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
-std::string RTreeData<T, config_, nullPrimitive>::toString(int x, int y, int z) const
+std::string RTreeData<T, config_, nullPrimitive>::toS(int x, int y, int z) const
 {
-	if constexpr(HasToStringMethod<T>)
+	if constexpr(HastoSMethod<T>)
 	{
 		std::string output;
 		for(const T& value : queryGetAll(Point3D::create(x, y, z)))
-			output += value.toString();
+			output += value.toS();
 		return output;
 	}
 	else
 		assert(false);
 }
+template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
+std::string RTreeData<T, config_, nullPrimitive>::toS() const
+{
+	std::string output;
+	for(const Node& node : m_nodes)
+		output += node.toS();
+	return output;
+}
+template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
+std::string RTreeData<T, config_, nullPrimitive>::operator()() const { return toS(); }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 void RTreeData<T, config_, nullPrimitive>::log() const
 {

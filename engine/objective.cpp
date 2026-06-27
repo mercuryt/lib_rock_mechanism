@@ -444,7 +444,7 @@ void HasObjectives::cannotCompleteSubobjective(Area& area)
 Objective& HasObjectives::getCurrent()
 {
 	assert(m_currentObjective != nullptr);
-   	return *m_currentObjective;
+  	return *m_currentObjective;
 }
 bool HasObjectives::queuesAreEmpty() const
 {

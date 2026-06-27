@@ -86,7 +86,7 @@ void AreaHasSoldiers::unsetLocation(Area& area, const ActorIndex actor, const Co
 void AreaHasSoldiers::updateLocation(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	CuboidSet& previousMalicePoints =  actors.soldier_getRecordedMalicePoints(actor);
+	CuboidSet& previousMalicePoints = actors.soldier_getRecordedMalicePoints(actor);
 	//TODO: getMalicePoints should be moved to soldier?
 	const CuboidSet newMalicePoints = actors.combat_makeMalicePoints(actor);
 	const FactionId& faction = actors.getFaction(actor);

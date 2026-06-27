@@ -34,7 +34,7 @@ void RTreeDataIndex<T, config>::clear() { m_tree.clear(); m_data.clear(); }
 template<typename T, RTreeDataConfig config>
 void RTreeDataIndex<T, config>::prepare() { m_tree.prepare(); }
 template<typename T, RTreeDataConfig config>
-bool  RTreeDataIndex<T, config>::canPrepare() const { return m_tree.canPrepare(); }
+bool RTreeDataIndex<T, config>::canPrepare() const { return m_tree.canPrepare(); }
 template<typename T, RTreeDataConfig config>
 bool RTreeDataIndex<T, config>::empty() const { return m_tree.empty(); }
 template<typename T, RTreeDataConfig config>

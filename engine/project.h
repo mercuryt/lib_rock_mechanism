@@ -50,7 +50,7 @@ struct FluidRequirementData final
 {
 	ProjectRequirementCounts counts;
 	SmallMap<ItemReference, CollisionVolume> containersAndVolumes;
-	SmallSet<Point3D> foundPoints;
+	CuboidSet foundPoints;
 	CollisionVolume volumeRequired;
 	CollisionVolume volumeFound = CollisionVolume::create(0);
 	FluidRequirementData() = default;

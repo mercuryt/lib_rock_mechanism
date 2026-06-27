@@ -28,7 +28,7 @@ void HasInstallItemDesignationsForFaction::remove(Area& area, const ItemIndex it
 }
 Point3D HasInstallItemDesignationsForFaction::getPointInCuboid(const Cuboid cuboid) const
 {
-	for(const auto& [point, project]  : m_designations)
+	for(const auto& [point, project] : m_designations)
 		if(cuboid.contains(point))
 			return point;
 	return Point3D::null();

@@ -18,12 +18,9 @@ Cuboid::Cuboid(const Point3D highest, const Point3D lowest) : m_high(highest), m
 	}
 	assert((m_high.data >= m_low.data).all());
 }
-SmallSet<Point3D> Cuboid::toSet() const
+CuboidSet Cuboid::toSet() const
 {
-	SmallSet<Point3D> output;
-	for(const Point3D point : (*this))
-		output.insert(point);
-	return output;
+	return CuboidSet::create(*this);
 }
 bool Cuboid::contains(const Point3D point) const
 {
@@ -54,6 +51,7 @@ bool Cuboid::contains(const OffsetCuboid cuboid) const
 {
 	return contains(cuboid.m_high) && contains(cuboid.m_low);
 }
+bool Cuboid::contains(const CuboidSet& cuboids) const { return contains(cuboids.boundry()); }
 bool Cuboid::canMerge(const Cuboid other) const
 {
 	// Can merge requires that the two cuboids share 2 out of 3 axies of symetry.
@@ -353,6 +351,11 @@ void Cuboid::inflateHorizontal(const Distance distance)
 	m_high.setZ(highZ);
 	m_low.setZ(lowZ);
 }
+void Cuboid::inflateVertical(const Distance distance)
+{
+	m_high.setZ(m_high.z().addWithMaximum(distance));
+	m_low.setZ(m_low.z().subtractWithMinimum(distance));
+}
 Cuboid Cuboid::shifted(const Facing6 facing, const Distance distance) const
 {
 	Cuboid output = *this;
@@ -613,7 +616,7 @@ SmallSet<Cuboid> Cuboid::sliceAtEachZ() const
 	}
 	return output;
 }
-Cuboid Cuboid::sliceAtZ(const Distance z) const
+Cuboid Cuboid::slicedAtZ(const Distance z) const
 {
 	Point3D high = m_high;
 	high.setZ(z);
@@ -727,7 +730,7 @@ Cuboid::ConstIterator Cuboid::ConstIterator::operator++(int)
 }
 const Point3D Cuboid::ConstIterator::operator*() const { return m_current; }
 CuboidSurfaceView Cuboid::getSurfaceView() const { return CuboidSurfaceView(*this); }
-std::string Cuboid::toString() const { return m_high.toString() + ", " + m_low.toString(); }
+std::string Cuboid::toS() const { return m_high.toS() + ", " + m_low.toS(); }
 CuboidSurfaceView::Iterator::Iterator(const CuboidSurfaceView& v) :
 	view(v)
 {

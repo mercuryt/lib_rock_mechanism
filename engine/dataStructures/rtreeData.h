@@ -38,6 +38,7 @@ class RTreeData
 	static constexpr RTreeDataConfig config = config_;
 	using BitSet = BitSet64;
 	using OpenList = ThreadStripedWatermarkingStack<RTreeNodeIndex>;
+
 	union DataOrChild { T::Primitive data; RTreeNodeIndex::Primitive child; };
 	class Node
 	{
@@ -79,13 +80,14 @@ class RTreeData
 		void clear();
 		void setParent(const RTreeNodeIndex index) { m_parent = index; }
 		void updateLeaf(const RTreeArrayIndex offset, const Cuboid cuboid);
+		void updateLeafWithoutValidation(const RTreeArrayIndex offset, const Cuboid cuboid);
 		void updateValue(const RTreeArrayIndex offset, const T& value);
 		void updateLeafWithValue(const RTreeArrayIndex offset, const Cuboid cuboid, const T& value);
 		void maybeUpdateLeafWithValue(const RTreeArrayIndex offset, const Cuboid cuboid, const T& value);
 		void updateLeafWithValue(const RTreeArrayIndex offset, const Point3D point, const T& value) { updateLeafWithValue(offset, Cuboid{point, point}, value); }
 		void updateBranchBoundry(const RTreeArrayIndex offset, const Cuboid cuboid);
 		GDB_CALLABLE void log() const;
-		GDB_CALLABLE std::string toString() const;
+		GDB_CALLABLE std::string toS() const;
 	};
 	StrongVector<Node, RTreeNodeIndex> m_nodes;
 	SmallSet<RTreeNodeIndex> m_emptySlots;
@@ -255,7 +257,12 @@ public:
 					T initialValue = T::create(nodeDataAndChildIndices[arrayIndex].data);
 					assert(initialValue != T::create(nullPrimitive));
 					T value = initialValue;
-					if(!condition(value))
+					if constexpr(std::is_invocable_v<decltype(condition), T>)
+					{
+						if(!condition(value))
+							continue;
+					}
+					else if(!condition(leafCuboid, value))
 						continue;
 					action(value);
 					// Note space where action has been applied so we can create into empty space later.
@@ -300,7 +307,7 @@ public:
 						else
 						{
 							// Update leaf value and cuboid.
-							node.updateLeafWithValue(arrayIndex, leafCuboid.intersection(shape),  value);
+							node.updateLeafWithValue(arrayIndex, leafCuboid.intersection(shape), value);
 						}
 					}
 					if constexpr(queryConfig.stopAfterOne)
@@ -330,7 +337,8 @@ public:
 		validate();
 		// ReAdd fragments created by destroying or shrinking leaves.
 		for(const auto& [cuboid, value] : fragmentsToReAdd)
-			insert(cuboid, value);
+			// Use maybeInsert rather then insert here becasue the fragment might already exist.
+			maybeInsert(cuboid, value);
 		if constexpr(queryConfig.create)
 		{
 			// Create new leaves in the space within shape where no leaf currently exists.
@@ -504,11 +512,11 @@ public:
 		}
 		return false;
 	}
-	[[nodiscard]] bool queryAllWithCondition(const auto& shape, auto&& condition)
+	[[nodiscard]] bool queryAllWithCondition(const auto& shape, auto&& condition) const
 	{
 		return queryGetAllCuboidsWithCondition(shape, condition).contains(shape);
 	}
-	[[nodiscard]] bool queryAll(const auto& shape)
+	[[nodiscard]] bool queryAll(const auto& shape) const
 	{
 		auto condition = [&](const T&){ return true; };
 		return queryAllWithCondition(shape, condition);
@@ -602,9 +610,15 @@ public:
 				while(leafBitSet.any())
 				{
 					const RTreeArrayIndex arrayIndex{leafBitSet.getNextAndClear()};
-					const auto candidate = T::create(nodeDataAndChildIndices[arrayIndex].data);
-					if(condition(candidate))
-						return {candidate, nodeCuboids[arrayIndex.get()]};
+					T candidate = T::create(nodeDataAndChildIndices[arrayIndex].data);
+					Cuboid cuboid = nodeCuboids[arrayIndex.get()];
+					if constexpr(std::is_invocable_v<decltype(condition), T>)
+					{
+						if(condition(candidate))
+							return {candidate, cuboid};
+					}
+					else if(condition(cuboid, candidate))
+						return {candidate, cuboid};
 				}
 			}
 			if(node.hasChildren())
@@ -694,6 +708,20 @@ public:
 				addIntersectedChildrenToOpenList(node, intersectBitSet, openList);
 			}
 		}
+	}
+	void forEach(auto&& action) const
+	{
+		const int nodeEnd = m_nodes.size();
+		for(RTreeNodeIndex nodeIndex{0}; nodeIndex != nodeEnd; ++nodeIndex)
+			// If empty slots were sorted this could be done in one pass.
+			if(!m_emptySlots.contains(nodeIndex))
+			{
+				const Node& node = m_nodes[nodeIndex];
+				const auto& data = node.getDataAndChildIndices();
+				const int leafEnd = node.getLeafCount();
+				for(RTreeArrayIndex arrayIndex{0}; arrayIndex != leafEnd; ++arrayIndex)
+					action(T::create(data[arrayIndex].data));
+			}
 	}
 	void forEachWithCuboids(auto&& action) const
 	{
@@ -1075,7 +1103,9 @@ public:
 	GDB_CALLABLE int totalNodeVolume() const;
 	GDB_CALLABLE void assertAllLeafsAreUnique() const;
 	[[nodiscard]] static GDB_CALLABLE int getNodeSize();
-	GDB_CALLABLE std::string toString(int x, int y, int z) const;
+	GDB_CALLABLE std::string toS(int x, int y, int z) const;
+	GDB_CALLABLE std::string toS() const;
+	GDB_CALLABLE std::string operator()() const;
 	GDB_CALLABLE void log() const;
 };
 template<Sortable T, RTreeDataConfig config_>

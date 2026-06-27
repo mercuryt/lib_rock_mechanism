@@ -25,32 +25,32 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 	ImGui::TableNextColumn();
 	ImGuiText("strength");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.getStrength(actor).toString());
+	ImGuiText(actors.getStrength(actor).toS());
 	ImGui::TableNextRow();
 	ImGui::TableNextColumn();
 	ImGuiText("dextarity");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.getDextarity(actor).toString());
+	ImGuiText(actors.getDextarity(actor).toS());
 	ImGui::TableNextRow();
 	ImGui::TableNextColumn();
 	ImGuiText("agility");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.getAgility(actor).toString());
+	ImGuiText(actors.getAgility(actor).toS());
 	ImGui::TableNextRow();
 	ImGui::TableNextColumn();
 	ImGuiText("unencombered carry mass");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.getUnencomberedCarryMass(actor).toString());
+	ImGuiText(actors.getUnencomberedCarryMass(actor).toS());
 	ImGui::TableNextRow();
 	ImGui::TableNextColumn();
 	ImGuiText("move speed");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.move_getSpeed(actor).toString());
+	ImGuiText(actors.move_getSpeed(actor).toS());
 	ImGui::TableNextRow();
 	ImGui::TableNextColumn();
 	ImGuiText("base combat score");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.combat_getCombatScore(actor).toString());
+	ImGuiText(actors.combat_getCombatScore(actor).toS());
 	ImGui::EndTable();
 	// Skills.
 	const SkillSet& skillSet = actors.skill_getSet(actor);
@@ -70,9 +70,9 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 		{
 			ImGuiText(SkillType::getName(skillType));
 			ImGui::TableNextColumn();
-			ImGuiText(skill.m_level.toString());
+			ImGuiText(skill.m_level.toS());
 			ImGui::TableNextColumn();
-			auto xpText = (skill.m_xp.toString() + "/" + skill.m_xpForNextLevel.toString());
+			auto xpText = (skill.m_xp.toS() + "/" + skill.m_xpForNextLevel.toS());
 			ImGuiText(xpText);
 			ImGui::TableNextRow();
 		}
@@ -107,7 +107,7 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 			ImGui::TableNextColumn();
 			if(items.isGeneric(item))
 			{
-				ImGuiText(items.getQuantity(item).toString());
+				ImGuiText(items.getQuantity(item).toS());
 				ImGui::TableNextColumn();
 				ImGuiText(" ");
 			}
@@ -115,17 +115,17 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 			{
 				ImGuiText(" ");
 				ImGui::TableNextColumn();
-				ImGuiText(items.getQuality(item).toString());
+				ImGuiText(items.getQuality(item).toS());
 			}
 			ImGui::TableNextColumn();
-			ImGuiText(items.getMass(item).toString());
+			ImGuiText(items.getMass(item).toS());
 			ImGui::TableNextColumn();
 			ImGuiText(items.getName(item));
 			ImGui::TableNextRow();
 		}
 		ImGui::EndTable();
 	}
-	ImGuiText("equipment total mass: " + actors.equipment_getMass(actor).toString());
+	ImGuiText("equipment total mass: " + actors.equipment_getMass(actor).toS());
 	// Wounds.
 	const auto& wounds = actors.body_getWounds(actor);
 	if(!wounds.empty())

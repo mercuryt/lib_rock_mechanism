@@ -83,7 +83,7 @@ TEST_CASE("construct")
 		CHECK(actors.objective_getCurrentName(dwarf1) == "construct");
 		ConstructObjective& objective = actors.objective_getCurrent<ConstructObjective>(dwarf1);
 		CHECK(objective.joinableProjectExistsAt(area, {wallLocation,wallLocation}, dwarf1).exists());
-		const auto& hasPaths = area.m_hasPaths.get(actors.getMoveType(dwarf1));
+		const auto& hasPaths = area.m_hasPaths.get(area, actors.getMoveType(dwarf1));
 		CHECK(hasPaths.accessable(PathParamaters({
 			.area = area,
 			.start = dwarf1Start,

@@ -73,7 +73,7 @@ TEST_CASE("json")
 			space.plant_create(Point3D::create(8, 8, 1), sage, Percent::create(99));
 			PlantIndex sage1 = space.plant_get(Point3D::create(8, 8, 1));
 			plants.setMaybeNeedsFluid(sage1);
-			space.fluid_add(Point3D::create(3, 8, 1), CollisionVolume::create(10), water);
+			space.fluid_add(Point3D::create(3, 8, 1).toSet(), Config::maxPointVolume.get() / 10, water);
 			items.create(ItemParamaters{.itemType = axe, .materialType = bronze, .location = Point3D::create(1, 2, 1), .quality = Quality::create(10), .percentWear = Percent::create(10)});
 			space.pointFeature_construct(Point3D::create(1, 8, 1), PointFeatureTypeId::Stairs, wood);
 			space.pointFeature_construct(Point3D::create(9, 1, 1), PointFeatureTypeId::Door, wood);
@@ -119,7 +119,7 @@ TEST_CASE("json")
 		CHECK(space2.fluid_getTotalVolume(waterLocation) == 10);
 		CHECK(space2.fluid_volumeOfTypeContains(waterLocation, water) == 10);
 		FluidGroup& fluidGroup = *space2.fluid_getGroup(waterLocation, water);
-		CHECK(area2.m_hasFluidGroups.getUnstable().contains(&fluidGroup));
+		CHECK(!fluidGroup.m_stable);
 		// Actor.
 		CHECK(!space2.actor_empty(Point3D::create(5,5,1)));
 		ActorIndex dwarf2 = space2.actor_getAll(Point3D::create(5,5,1))[0];

@@ -229,7 +229,7 @@ void ConfrontationObjective::onCoolDown(const ActorReference actorRef, const Act
 void ConfrontationObjective::onActorCoolDown(const ActorReference ref, Area& area)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor =  ref.getIndex(actors.m_referenceData);
+	ActorIndex actor = ref.getIndex(actors.m_referenceData);
 	onCoolDown(ref, actor, area);
 	const auto& [actorsPtr, target] = area.m_simulation.m_actors.getDataLocation(m_target);
 	bool finished = false;

@@ -42,7 +42,7 @@ TEST_CASE("basicNeedsSentient")
 	{
 		Point3D pondLocation = Point3D::create(3, 3, 1);
 		space.solid_setNot(pondLocation);
-		space.fluid_add(pondLocation, CollisionVolume::create(100), water);
+		space.fluid_add(pondLocation.toSet(), 100, water);
 		actors.drink_setNeedsFluid(actor);
 		actors.eat_setNeverHungry(actor);
 		CHECK(!actors.grow_isGrowing(actor));
@@ -207,7 +207,7 @@ TEST_CASE("basicNeedsNonsentient")
 	CHECK(actors.drink_hasThristEvent(actor));
 	Point3D pondLocation = Point3D::create(3, 3, 1);
 	space.solid_setNot(pondLocation);
-	space.fluid_add(pondLocation, CollisionVolume::create(100), water);
+	space.fluid_add(pondLocation.toSet(), 100, water);
 	SUBCASE("sleep outside at current location")
 	{
 		// Generate objectives, discard eat if it exists.
@@ -329,7 +329,7 @@ TEST_CASE("basicNeedsNonsentient")
 		CHECK(actors.eat_getMassFoodRequested(bear) != 0);
 		CHECK(actors.objective_getCurrentName(bear) == "eat");
 		CHECK(actors.move_hasPathRequest(bear));
-		PathResult result = area.m_hasPaths.get(actors.getMoveType(bear)).pathTo(PathParamaters({
+		PathResult result = area.m_hasPaths.get(area, actors.getMoveType(bear)).pathTo(PathParamaters({
 			.area = area,
 			.start = actors.getLocation(bear),
 			.huristicDestination = actors.getLocation(deer),

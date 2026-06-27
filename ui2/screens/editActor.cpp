@@ -32,7 +32,7 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 	// Basic info.
 	if(ImGui::InputText("name", &name))
 		actors.setName(actor, name);
-	ImGuiText(("age in years" + actors.getAgeInYears(actor).toString()));
+	ImGuiText(("age in years" + actors.getAgeInYears(actor).toS()));
 	if(ImGui::InputInt("birth Year", &birthDate.year))
 		onBirthDateChanged();
 	ImGui::SameLine();
@@ -61,7 +61,7 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 	ImGui::TableNextColumn();
 	ImGuiText("strength");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.getStrength(actor).toString());
+	ImGuiText(actors.getStrength(actor).toS());
 	ImGui::TableNextColumn();
 	if(ImGui::InputInt("##strengthBonus", &strengthBonus))
 		actors.setStrengthBonusOrPenalty(actor, {strengthBonus});
@@ -72,7 +72,7 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 	ImGui::TableNextColumn();
 	ImGuiText("agility");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.getAgility(actor).toString());
+	ImGuiText(actors.getAgility(actor).toS());
 	ImGui::TableNextColumn();
 	if(ImGui::InputInt("##agilityBonus", &agilityBonus))
 		actors.setAgilityBonusOrPenalty(actor, {agilityBonus});
@@ -83,7 +83,7 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 	ImGui::TableNextColumn();
 	ImGuiText("dextarity");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.getDextarity(actor).toString());
+	ImGuiText(actors.getDextarity(actor).toS());
 	ImGui::TableNextColumn();
 	if(ImGui::InputInt("##dextarityBonus", &dextarityBonus))
 		actors.setDextarityBonusOrPenalty(actor, {dextarityBonus});
@@ -96,17 +96,17 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 	ImGui::TableNextColumn();
 	ImGuiText("unencombered carry weight");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.getUnencomberedCarryMass(actor).toString());
+	ImGuiText(actors.getUnencomberedCarryMass(actor).toS());
 	ImGui::TableNextRow();
 	ImGui::TableNextColumn();
 	ImGuiText("move speed");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.attributes_getMoveSpeed(actor).toString());
+	ImGuiText(actors.attributes_getMoveSpeed(actor).toS());
 	ImGui::TableNextRow();
 	ImGui::TableNextColumn();
 	ImGuiText("base combat score");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.attributes_getCombatScore(actor).toString());
+	ImGuiText(actors.attributes_getCombatScore(actor).toS());
 	ImGui::EndTable();
 	// Skills.
 	ImGui::BeginTable("skills", 4);
@@ -174,14 +174,14 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 		ImGuiText(MaterialType::getName(items.getMaterialType(item)));
 		ImGui::TableNextColumn();
 		if(items.isGeneric(item))
-			ImGuiText(items.getQuantity(item).toString());
+			ImGuiText(items.getQuantity(item).toS());
 		ImGui::TableNextColumn();
 		if(!items.isGeneric(item))
-			ImGuiText(items.getQuality(item).toString());
+			ImGuiText(items.getQuality(item).toS());
 		ImGui::TableNextColumn();
-		ImGuiText(items.getMass(item).toString());
+		ImGuiText(items.getMass(item).toS());
 		ImGui::TableNextColumn();
-		if(ImGuiButton("x##" + item.toString()))
+		if(ImGuiButton("x##" + item.toS()))
 			equipmentSet.removeEquipment(area, item);
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();

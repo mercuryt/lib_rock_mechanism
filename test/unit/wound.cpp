@@ -28,7 +28,7 @@ TEST_CASE("wound")
 	});
 	Point3D pondLocation = Point3D::create(3, 7, 1);
 	space.solid_setNot(pondLocation);
-	space.fluid_add(pondLocation, Config::maxPointVolume, FluidType::byName("water"));
+	space.fluid_add(pondLocation.toSet(), Config::maxPointVolume.get(), FluidType::byName("water"));
 	Point3D fruitLocation = Point3D::create(6, 5, 2);
 	items.create({.itemType=ItemType::byName("apple"), .materialType=MaterialType::byName("fruit"), .location=fruitLocation, .quantity=Quantity::create(50u)});
 	SUBCASE("bleed to death")

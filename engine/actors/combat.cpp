@@ -155,14 +155,14 @@ void Actors::combat_update(const ActorIndex index)
 	Body& body = *m_body[index].get();
 	for(Attack& attack : body.getMeleeAttacks())
 	{
-		const CombatScore score  = combat_getCombatScoreForAttack(index, attack);
+		const CombatScore score = combat_getCombatScoreForAttack(index, attack);
 		m_meleeAttackTable[index].add(score, attack);
 		if(attack.isNonLethalAgainst(m_species[index]))
 			m_meleeAttackTableNonLethal[index].add(score, attack);
 	}
 	for(Attack& attack : m_equipmentSet[index]->getMeleeAttacks(m_area))
 	{
-		const CombatScore score  = combat_getCombatScoreForAttack(index, attack);
+		const CombatScore score = combat_getCombatScoreForAttack(index, attack);
 		m_meleeAttackTable[index].add(score, attack);
 		if(attack.isNonLethalAgainst(m_species[index]))
 			m_meleeAttackTableNonLethal[index].add(score, attack);
@@ -192,7 +192,7 @@ void Actors::combat_update(const ActorIndex index)
 	}
 	// Find the on miss cool down.
 	Step baseOnMissCoolDownDuration = m_equipmentSet[index]->hasWeapons() ?
-	    	m_equipmentSet[index]->getLongestMeleeWeaponCoolDown(m_area) :
+	  	m_equipmentSet[index]->getLongestMeleeWeaponCoolDown(m_area) :
 		Config::attackCoolDownDurationBaseSteps;
 	m_onMissCoolDownMelee[index] = std::max(Step::create(1), Step::create((float)baseOnMissCoolDownDuration.get() * m_coolDownDurationModifier[index]));
 	Items& items = m_area.getItems();
@@ -374,7 +374,7 @@ CuboidSet Actors::combat_makeMalicePoints(const ActorIndex index) const
 	Cuboid zone = Cuboid::create(location, location);
 	zone.inflate(Distance::create((float)m_speedActual[index].get() * Config::fractionOfMoveSpeedToMakeDistanceHuristicForCanMoveToSoon));
 	// Get points in zone which are enterable by this move type.
-	CuboidSet set = m_area.m_hasPaths.get(m_moveType[index]).m_enterable.queryGetAllCuboids(zone);
+	CuboidSet set = m_area.m_hasPaths.get(m_area, m_moveType[index]).m_enterable.queryGetAllCuboids(zone);
 	// Trim parts of set which could be entered by this move type somewhere but are not directly connected to location.
 	// TODO:(bug) does not respect zero thickness partitions such as floor.
 	set = set.adjacentRecursive(location);

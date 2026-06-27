@@ -84,7 +84,7 @@ ActorIndex Actors::canPickUp_tryToPutDownActor(const ActorIndex index, const Poi
 		auto predicate2 = [&](const Point3D point)
 		{
 			return space.shape_anythingCanEnterEver(point) &&
-				  space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(point, shape, moveTypeNone);
+				 space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(point, shape, moveTypeNone);
 		};
 		targetLocation = space.getPointInRangeWithCondition(location, maxRange, predicate2);
 	}
@@ -403,7 +403,7 @@ void Actors::canPickUp_addFluidToContainerFromAdjacentPointsIncludingOtherContai
 					continue;
 				const CollisionVolume volumeToTransfer = std::min(capacity, avalible);
 				assert(volumeToTransfer != 0);
-				space.fluid_remove(point, volumeToTransfer, fluidType);
+				space.fluid_remove(CuboidSet::create(point), volumeToTransfer.get(), fluidType);
 				items.cargo_addFluid(container, fluidType, volumeToTransfer);
 				capacity -= volumeToTransfer;
 				if(capacity == 0)

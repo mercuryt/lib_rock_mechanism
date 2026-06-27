@@ -5,7 +5,7 @@
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../plants.h"
-#include "../fluidGroups/fluidGroup.h"
+#include "../fluid/fluidGroup.h"
 #include "../config/physics.h"
 void AreaHasTemperature::markToUpdate(const CuboidSet& cuboids) { m_toUpdate.maybeAddAll(cuboids); }
 void AreaHasTemperature::markToUpdate(const Cuboid cuboid) { m_toUpdate.maybeAdd(cuboid); }
@@ -51,6 +51,8 @@ void AreaHasTemperature::doStep(Area& area)
 	SmallMap<FluidTypeId, CuboidSet> m_toFreeze;
 	space.fluid_queryForEachWithCuboids(m_toUpdate, [&](const Cuboid cuboid, const FluidData fluidData){
 		const Temperature freezingPoint = FluidType::getFreezingPoint(fluidData.type);
+		if(freezingPoint.empty())
+			return;
 		const CuboidSet intersection = m_toUpdate.intersection(cuboid);
 		CuboidSet toFreezeInCuboid;
 		for(const Cuboid intersectionCuboid : intersection)
@@ -64,9 +66,7 @@ void AreaHasTemperature::doStep(Area& area)
 			m_toFreeze.getOrCreate(fluidData.type).addAll(toFreezeInCuboid);
 	});
 	for(const auto& [fluidType, cuboidSet] : m_toFreeze)
-		for(const Cuboid cuboid : cuboidSet)
-			for(const Point3D point : cuboid)
-				space.temperature_freeze(point, fluidType);
+		space.temperature_freeze(cuboidSet, fluidType);
 	// Melt or burn features.
 	SmallMap<MaterialTypeId, CuboidSet> toMeltFeatures;
 	SmallMap<MaterialTypeId, CuboidSet> toBurnFeatures;
@@ -137,15 +137,17 @@ void AreaHasTemperature::setAmbient(Area& area, const Temperature newAmbiant)
 	// Collect space in range of a temperature source, do not proccess these, they will be handled seperately.
 	CuboidSet inRangeOfSource = m_sources.onChangeAmbiantSurfaceTemperatureReturnIntersection(area);
 	// Freeze.
-	// Create a copy to modifiy
-	for(auto [fluidType, groups] : m_freezableFluidTypeOnSurface)
+	for(auto& [fluidType, groups] : m_freezableFluidTypeOnSurface)
 	{
 		Temperature freezingPoint = FluidType::getFreezingPoint(fluidType);
 		if(freezingPoint < newAmbiant)
 			continue;
 		CuboidSet toFreeze;
-		for(const FluidGroup* group : groups)
-			toFreeze.maybeAddAll(group->getPoints());
+		for(const FluidGroupId groupId : groups)
+		{
+			FluidGroup& group = area.m_hasFluidGroups.byId(groupId);
+			toFreeze.maybeAddAll(group.m_occupied);
+		}
 		for(Cuboid& cuboid : toFreeze)
 			if(cuboid.sizeZ() > 2)
 				cuboid.m_low.setZ(std::max(cuboid.m_low.z(), cuboid.m_high.z() - 1));
@@ -230,34 +232,34 @@ void AreaHasTemperature::onUnsetFeature(const Point3D point, const MaterialTypeI
 	if(found != m_meltableMaterialTypeOnSurface.end())
 		found->second.features.maybeRemove(point);
 }
-void AreaHasTemperature::onFluidEnters(Area& area, const CuboidSet& cuboids, FluidGroup& group)
+void AreaHasTemperature::onFluidEnters(Area& area, const CuboidSet& cuboids, FluidTypeId fluidType, FluidGroupId group)
 {
-	if(FluidType::canFreeze(group.m_fluidType))
+	if(FluidType::canFreeze(fluidType))
 	{
 		// TODO: profile this branch.
-		if(m_freezableFluidTypeOnSurface.contains(group.m_fluidType) && m_freezableFluidTypeOnSurface[group.m_fluidType].contains(&group))
+		if(m_freezableFluidTypeOnSurface.contains(fluidType) && m_freezableFluidTypeOnSurface[fluidType].contains(group))
 			return;
 		if(area.getSpace().m_exposedToSky.get().query(cuboids))
-			m_freezableFluidTypeOnSurface.getOrCreate(group.m_fluidType).insert(&group);
+			m_freezableFluidTypeOnSurface.getOrCreate(fluidType).insert(group);
 	}
 }
-void AreaHasTemperature::onFluidExits(Area& area, const CuboidSet& cuboids, FluidGroup& group)
+void AreaHasTemperature::onFluidExits(Area& area, const CuboidSet& cuboids, FluidTypeId fluidType, FluidGroupId group)
 {
-	if(FluidType::canFreeze(group.m_fluidType))
+	if(FluidType::canFreeze(fluidType))
 	{
-		if(!m_freezableFluidTypeOnSurface.contains(group.m_fluidType) || !m_freezableFluidTypeOnSurface[group.m_fluidType].contains(&group))
+		if(!m_freezableFluidTypeOnSurface.contains(fluidType) || !m_freezableFluidTypeOnSurface[fluidType].contains(group))
 			return;
 		if(!area.getSpace().m_exposedToSky.get().query(cuboids))
 			return;
-		if(!area.getSpace().m_exposedToSky.get().query(group.getPoints()))
-			m_freezableFluidTypeOnSurface[group.m_fluidType].erase(&group);
+		if(!area.getSpace().m_exposedToSky.get().query(area.m_hasFluidGroups.byId(group).m_occupied))
+			m_freezableFluidTypeOnSurface[fluidType].erase(group);
 	}
 }
-void AreaHasTemperature::maybeRemoveFreezeableFluidGroupAboveGround(FluidGroup& group)
+void AreaHasTemperature::maybeRemoveFreezeableFluidGroupAboveGround(FluidTypeId fluidType, FluidGroupId group)
 {
-	if(!m_freezableFluidTypeOnSurface.contains(group.m_fluidType))
+	if(!m_freezableFluidTypeOnSurface.contains(fluidType))
 		return;
-	m_freezableFluidTypeOnSurface[group.m_fluidType].maybeErase(&group);
+	m_freezableFluidTypeOnSurface[fluidType].maybeErase(group);
 }
 void AreaHasTemperature::addItemAboveGround(Area& area, const ItemIndex item)
 {

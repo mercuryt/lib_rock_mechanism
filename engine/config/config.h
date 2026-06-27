@@ -205,8 +205,6 @@ namespace Config
 	inline float projectileHitPercentPerSkillPoint;
 	inline float projectileHitPercentPerUnitVolume;
 	inline FullDisplacement projectileMedianTargetVolume;
-	inline Distance rainMaximumOffset;
-	inline Distance rainMaximumSpacing;
 	inline Step rainWriteStepFreqency;
 	inline float rateModifierForEvaporationPerDegreeTemperature;
 	inline float ratioOfHitAreaToBodyPartVolumeForSever;

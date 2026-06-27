@@ -17,7 +17,7 @@ void Space::stockpile_recordMembership(const Point3D point, StockPile& stockPile
 template<typename ShapeT>
 StockPile* Space::stockpile_getOneForFactionBody(const ShapeT shape, const FactionId faction)
 {
-	const auto found =  m_stockPiles.find(faction);
+	const auto found = m_stockPiles.find(faction);
 	if(found == m_stockPiles.end())
 		return nullptr;
 	return found->second.queryGetOne(shape).get();

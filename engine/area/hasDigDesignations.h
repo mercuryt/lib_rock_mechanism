@@ -24,7 +24,7 @@ public:
 	HasDigDesignationsForFaction(const FactionId p) : m_faction(p) { }
 	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId faction, Area& area);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	void designate(Area& area, const Point3D point, const PointFeatureTypeId pointFeatureType);
+	void designate(Area& area, const Point3D point, PointFeatureTypeId pointFeatureType);
 	void undesignate(const Point3D point);
 	// To be called by undesignate as well as by DigProject::onCancel.
 	void remove(Area& area, const Point3D point);
@@ -54,7 +54,7 @@ public:
 	void addFaction(const FactionId faction);
 	void removeFaction(const FactionId faction);
 	// If pointFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(const FactionId faction, const Point3D point, const PointFeatureTypeId pointFeatureType);
+	void designate(const FactionId faction, const Point3D point, PointFeatureTypeId pointFeatureType);
 	void undesignate(const FactionId faction, const Point3D point);
 	void remove(const FactionId faction, const Point3D point);
 	void clearAll(const Point3D point);

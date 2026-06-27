@@ -74,7 +74,7 @@ void ConstructProject::onComplete()
 		space.solid_set(location, materialType, true);
 	}
 	else
-		space.pointFeature_construct(location, pointFeatureType, materialType);
+		space.pointFeature_construct(Cuboid::create(location), pointFeatureType, materialType);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }

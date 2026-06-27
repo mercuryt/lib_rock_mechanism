@@ -457,7 +457,7 @@ bool CuboidArray<capacity>::anyOverlap() const
 	return false;
 }
 template<int capacity>
-std::string CuboidArray<capacity>::toString() const
+std::string CuboidArray<capacity>::toS() const
 {
 	SmallSet<Cuboid> cuboids;
 	std::string output;
@@ -466,7 +466,7 @@ std::string CuboidArray<capacity>::toString() const
 			cuboids.insert(cuboid);
 	cuboids.sort();
 	for(const Cuboid cuboid : cuboids)
-		output += cuboid.toString() + " ";
+		output += cuboid.toS() + " ";
 	return output;
 }
 template<int capacity>

@@ -44,7 +44,7 @@ TEST_CASE("sow")
 	Point3D pondLocation = Point3D::create(8, 8, 1);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	space.solid_setNot(pondLocation);
-	space.fluid_add(pondLocation, Config::maxPointVolume, FluidType::byName("water"));
+	space.fluid_add(pondLocation.toSet(), Config::maxPointVolume.get(), FluidType::byName("water"));
 	Point3D foodLocation = Point3D::create(8,9,2);
 	items.create({.itemType=ItemType::byName("apple"), .materialType=MaterialType::byName("plant matter"), .location=foodLocation, .quantity=Quantity::create(50)});
 	area.m_hasFarmFields.registerFaction(faction);
@@ -75,7 +75,7 @@ TEST_CASE("sow")
 		CHECK(actors.objective_getCurrentName(actor) == "sow seeds");
 		CHECK(actors.move_hasPathRequest(actor));
 		CHECK(actors.objective_getCurrent<SowSeedsObjective>(actor).canSowAt(area, fieldLocation, actor));
-		PathResult result = area.m_hasPaths.get(actors.getMoveType(actor)).pathTo(PathParamaters({
+		PathResult result = area.m_hasPaths.get(area, actors.getMoveType(actor)).pathTo(PathParamaters({
 			.area = area,
 			.start = actors.getLocation(actor),
 			.huristicDestination = fieldLocation,
@@ -366,7 +366,7 @@ TEST_CASE("givePlantFluid")
 		ItemIndex bucket = items.create({.itemType=ItemType::byName("bucket"),.materialType=MaterialType::byName("poplar wood"), .location=bucketLocation, .quality=Quality::create(50u), .percentWear=Percent::create(0)});
 		Point3D pondLocation = Point3D::create(3, 9, 1);
 		space.solid_setNot(pondLocation);
-		space.fluid_add(pondLocation, CollisionVolume::create(100), water);
+		space.fluid_add(pondLocation.toSet(), Config::maxPointVolume.get(), water);
 		CHECK(actors.canPickUp_quantityWhichCanBePickedUpUnencombered(actor, items.getItemType(bucket), items.getMaterialType(bucket)) != 0);
 		plants.setMaybeNeedsFluid(plant);
 		CHECK(space.plant_exists(block));

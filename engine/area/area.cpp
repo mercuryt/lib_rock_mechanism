@@ -25,7 +25,7 @@
 #include <string>
 #include <sys/types.h>
 
-Area::Area(AreaId id, std::string n, Simulation& s, const Distance  x, const Distance  y, const Distance  z) :
+Area::Area(AreaId id, std::string n, Simulation& s, const Distance x, const Distance y, const Distance z) :
 	#ifndef NDEBUG
 		m_space(std::make_unique<Space>(*this, x, y, z)),
 		m_actors(std::make_unique<Actors>(*this)),
@@ -97,7 +97,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_simulation.m_hasAreas->recordId(*this);
 	setup();
 	getSpace().load(data["space"], deserializationMemo);
-	m_hasFluidGroups.clearMergedFluidGroups();
+	data["fluidGroups"].get_to(m_hasFluidGroups);
 	// Load plants.
 	getPlants().load(data["plants"]);
 	// Load fields.
@@ -161,7 +161,7 @@ Json Area::toJson() const
 		{"actors", getActors().toJson()}, {"items", getItems().toJson()}, {"space", getSpace().toJson()},
 		{"plants", getPlants().toJson()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires},
 		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"rain", m_hasRain.toJson()},
-		{"designations", m_spaceDesignations}, {"temperature", m_hasTemperature}
+		{"designations", m_spaceDesignations}, {"temperature", m_hasTemperature}, {"fluidGroups", m_hasFluidGroups}
 	};
 	data["hasFarmFields"] = m_hasFarmFields.toJson();
 	data["onSight"] = m_hasOnSight.toJson();
@@ -207,10 +207,6 @@ void Area::updateClimate()
 			plants.setDayOfYear(plant, day);
 		m_hasFarmFields.setDayOfYear(day);
 	}
-}
-std::string Area::toS() const
-{
-	return m_hasFluidGroups.toS();
 }
 void Area::logActorsAndItems() const
 {

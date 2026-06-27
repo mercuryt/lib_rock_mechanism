@@ -92,7 +92,7 @@ OffsetCuboidSet Shape::makeAdjacentCuboidsWithFacing(const ShapeId id, const Fac
 			output.maybeRemove(offsetCuboid);
 	return output;
 }
-MapWithOffsetCuboidKeys<CollisionVolume> Shape::getCuboidsWithVolumeByZLevel(const ShapeId id, const Distance  z)
+MapWithOffsetCuboidKeys<CollisionVolume> Shape::getCuboidsWithVolumeByZLevel(const ShapeId id, const Distance z)
 {
 	MapWithOffsetCuboidKeys<CollisionVolume> output;
 	const OffsetCuboid plane{Offset3D(Offset::max(), Offset::max(), Offset::create(z.get())), Offset3D::create(0, 0, z.get())};
@@ -110,7 +110,7 @@ CuboidSet Shape::getCuboidsOccupiedAt(const ShapeId id, const Space& space, cons
 	{
 		const OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(location);
 		assert(offsetBoundry.contains(relativeOffsetCuboid));
-		const Cuboid cuboid  = Cuboid::create(relativeOffsetCuboid);
+		const Cuboid cuboid = Cuboid::create(relativeOffsetCuboid);
 		output.maybeAdd(cuboid);
 	}
 	return output;
@@ -348,7 +348,7 @@ ShapeId Shape::mutateMultiplyVolume(const ShapeId id, const Quantity quantity)
 {
 	// Make a copy.
 	MapWithOffsetCuboidKeys<CollisionVolume> copy = g_shapeData.m_positions[id];
-	for(auto& [offsetCuboid, volume]  : copy)
+	for(auto& [offsetCuboid, volume] : copy)
 		volume *= quantity.get();
 	return createCustom(std::move(copy));
 }

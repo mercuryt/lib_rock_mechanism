@@ -88,7 +88,7 @@ class PathInnerLoops
 			return findPathSetSymetric<AccessConditionT, DestinationConditionT, Memo>(accessCondition, destinationCondition, terrainFacade, memo, start, Shape::getIsRadiallySymetrical(shape));
 	}
 	template<AccessCondition AccessConditionT, DestinationCondition DestinationConditionT, typename Memo, bool isMultiTile>
-	static PathResult findPathSetMaxRange(AccessConditionT accessCondition, DestinationConditionT destinationCondition, const Area& area, const AreaHasPathsForMoveType& terrainFacade, Memo& memo, const Point3D start, const FactionId faction, const ShapeId shape, const Distance  maxRange)
+	static PathResult findPathSetMaxRange(AccessConditionT accessCondition, DestinationConditionT destinationCondition, const Area& area, const AreaHasPathsForMoveType& terrainFacade, Memo& memo, const Point3D start, const FactionId faction, const ShapeId shape, const Distance maxRange)
 	{
 		if(maxRange != Distance::max())
 		{
@@ -103,7 +103,7 @@ class PathInnerLoops
 			return findPathSetUnreserved<AccessConditionT, DestinationConditionT, Memo, isMultiTile>(accessCondition, destinationCondition, area, terrainFacade, memo, start, faction, shape);
 	}
 	template<bool isMultiTile, DestinationCondition DestinationConditionT, typename Memo>
-	static PathResult findPathSetDetour(DestinationConditionT destinationCondition, const Area& area, const AreaHasPathsForMoveType& terrainFacade, Memo& memo, const Point3D start, const Facing4 startFacing, const FactionId faction, const ShapeId shape, const MoveTypeId moveType, bool detour, const Distance  maxRange)
+	static PathResult findPathSetDetour(DestinationConditionT destinationCondition, const Area& area, const AreaHasPathsForMoveType& terrainFacade, Memo& memo, const Point3D start, const Facing4 startFacing, const FactionId faction, const ShapeId shape, const MoveTypeId moveType, bool detour, const Distance maxRange)
 	{
 		const Space& space = area.getSpace();
 		if constexpr(isMultiTile)

@@ -43,7 +43,7 @@ void SimulationHasAreas::save()
 		std::cout << "Wrote " << text.size() << " bytes to " << m_simulation.m_path/"area"/(std::to_string(areaId.get()) + ".json") << std::endl;
 	}
 }
-Area& SimulationHasAreas::createArea(const Distance  x, const Distance  y, const Distance  z, bool createDrama)
+Area& SimulationHasAreas::createArea(const Distance x, const Distance y, const Distance z, bool createDrama)
 {
 	AreaId id = ++m_nextId;
 	Area& output = loadArea(id, "unnamed area " + std::to_string(id.get()), x, y, z);
@@ -55,7 +55,7 @@ Area& SimulationHasAreas::createArea(int x, int y, int z, bool createDrama)
 {
 	return createArea(Distance::create(x), Distance::create(y), Distance::create(z), createDrama);
 }
-Area& SimulationHasAreas::loadArea(const AreaId id, std::string name, const Distance  x, const Distance  y, const Distance  z)
+Area& SimulationHasAreas::loadArea(const AreaId id, std::string name, const Distance x, const Distance y, const Distance z)
 {
 	Area& area = m_areas.emplace(id, id, name, m_simulation, x, y, z);
 	m_areasById.insert(id, &area);
@@ -108,7 +108,7 @@ Step SimulationHasAreas::getNextStepToSimulate() const
 	for(const auto& pair : m_areas)
 	{
 		const Area& area = *pair.second;
-		if(!area.m_hasPaths.empty() || !area.m_hasFluidGroups.getUnstable().empty() || !area.m_threadedTaskEngine.empty() || area.m_fires.containsDeltas())
+		if(!area.m_hasPaths.empty() || area.m_hasFluidGroups.hasUnstable() || !area.m_threadedTaskEngine.empty() || area.m_fires.containsDeltas())
 			return m_simulation.m_step;
 		Step step = area.m_eventSchedule.getNextEventStep();
 		if(output.empty() || step < output)

@@ -35,11 +35,10 @@ class AreaHasPaths
 	std::vector<std::pair<int, int>> m_outerAndInnerIndices;
 public:
 	void doStep(Area& area);
-	void registerMoveType(Area& area, const MoveTypeId id);
-	void maybeRegisterMoveType(Area& area, const MoveTypeId id);
 	void clearPathRequests();
 	void update(Area& area, const Cuboid cuboid);
+	void update(Area& area, const CuboidSet& cuboids);
 	void maybeSetImpassable(const Cuboid cuboid);
-	[[nodiscard]] AreaHasPathsForMoveType& get(const MoveTypeId id);
+	[[nodiscard]] AreaHasPathsForMoveType& get(Area& area, const MoveTypeId id);
 	[[nodiscard]] bool empty() const { return m_data.empty(); }
 };

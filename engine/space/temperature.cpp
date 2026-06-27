@@ -8,76 +8,98 @@
 #include "../config/physics.h"
 void Space::temperature_freeze(const CuboidSet& cuboids, const FluidTypeId fluidType)
 {
-	for(const Cuboid cuboid : cuboids)
-		for(const Point3D point : cuboid)
-			temperature_freeze(point, fluidType);
-}
-void Space::temperature_freeze(const Point3D point, const FluidTypeId fluidType)
-{
+	Items& items = m_area.getItems();
 	assert(FluidType::getFreezesInto(fluidType).exists());
-	static ItemTypeId chunk = ItemType::byName("chunk");
-	static ItemTypeId pile = ItemType::byName("pile");
-	Quantity chunkQuantity = item_getCount(point, chunk, FluidType::getFreezesInto(fluidType));
-	Quantity pileQuantity = item_getCount(point, chunk, FluidType::getFreezesInto(fluidType));
-	CollisionVolume chunkVolumeSingle = Shape::getCollisionVolumeAtLocation(ItemType::getShape(chunk));
-	CollisionVolume pileVolumeSingle = Shape::getCollisionVolumeAtLocation(ItemType::getShape(pile));
-	CollisionVolume chunkVolume = chunkVolumeSingle * chunkQuantity;
-	CollisionVolume pileVolume = pileVolumeSingle * pileQuantity;
-	CollisionVolume fluidVolume = fluid_volumeOfTypeContains(point, fluidType);
-	fluid_removeSyncronus(point, fluidVolume, fluidType);
-	// If full freeze solid, otherwise generate frozen chunks.
-	if(chunkVolume + pileVolume + fluidVolume >= Config::maxPointVolume)
+	MaterialTypeId materialType = FluidType::getFreezesInto(fluidType);
+	SmallSet<FluidGroupId> groups;
+	for(FluidData fluid : m_fluid.queryGetAllWithCondition(cuboids, [fluidType](FluidData fluid){ return fluid.type == fluidType; }))
+		groups.maybeInsert(fluid.group);
+	for(FluidGroupId id : groups)
 	{
-		solid_set(point, FluidType::getFreezesInto(fluidType), false);
-		CollisionVolume remainder = chunkVolume + fluidVolume - Config::maxPointVolume;
-		(void)remainder;
-		//TODO: add remainder to fluid group or above point.
-	}
-	else
-	{
-		Quantity createChunkQuantity = Quantity::create((fluidVolume / chunkVolumeSingle).get());
-		if(createChunkQuantity != 0)
+		FluidGroup& group = m_area.m_hasFluidGroups.byId(id);
+		CuboidSet toFreeze = group.m_occupied.intersection(cuboids);
+		int64_t fluidVolume = (group.m_volume * toFreeze.volume()) / group.m_occupied.volume();
+		m_fluid.removeWithCondition(toFreeze, [fluidType](FluidData fluid) { return fluid.type == fluidType; });
+		group.m_volume -= fluidVolume;
+		Distance zLevel = toFreeze.boundry().m_low.z();
+		// Iterate untill all fluidVolume is solidified.
+		while(fluidVolume > 0 && zLevel < m_sizeZ)
 		{
-			[[maybe_unused]] const ItemIndex item = item_addGeneric(point, chunk, FluidType::getFreezesInto(fluidType), createChunkQuantity);
-			fluidVolume -= chunkVolumeSingle.get() * createChunkQuantity.get();
+			CuboidSet zSlice = toFreeze.slicedAtZ(zLevel);
+			int64_t zSliceVolume = zSlice.volume();
+			int64_t zSliceCapacity = zSliceVolume * Config::maxPointVolume.get();
+			int64_t volumeOfItemsWithFluidType{0};
+			SmallSet<ItemIndex> itemsInZSlice = m_items.queryAllWithCondition(zSlice, [materialType, &items](ItemIndex item){
+				// TODO: It would be strange if a large object was destroyed by the freezing of a small fluid group.
+				return items.getMaterialType(item) == materialType;
+			});
+			for(ItemIndex item : itemsInZSlice)
+				volumeOfItemsWithFluidType += items.getVolume(item).get();
+			zSliceCapacity -= volumeOfItemsWithFluidType;
+			if(zSliceCapacity <= fluidVolume)
+			{
+				// There is enough fluidVolume to fill zSlice solid.
+				fluidVolume -= zSliceCapacity;
+				solid_setAll(zSlice, materialType, false);
+				++zLevel;
+			}
+			else
+			{
+				// There is not enough to fill zSlice, create chunks and piles instead.
+				static ItemTypeId chunk = ItemType::byName("chunk");
+				static ItemTypeId pile = ItemType::byName("pile");
+				int64_t chunkVolume = Shape::getCollisionVolumeAtLocation(ItemType::getShape(chunk)).get();
+				int64_t numberOfChunks = fluidVolume / chunkVolume;
+				fluidVolume -= numberOfChunks * chunkVolume;
+				int64_t volumeTurnedIntoPile = fluidVolume; // Pile full displacement is 1.
+				Quantity chunksPerPoint = {(QuantityWidth)std::max(1L, numberOfChunks / zSliceVolume)};
+				Quantity pilePerPoint = {(QuantityWidth)std::max(1L, volumeTurnedIntoPile / zSliceVolume)};
+				for(Cuboid cuboid : zSlice)
+					for(Point3D point : cuboid)
+					{
+						if(numberOfChunks != 0)
+						{
+							items.create({
+								.itemType=chunk,
+								.materialType=materialType,
+								.location=point,
+								.quantity=chunksPerPoint,
+							});
+							numberOfChunks -= chunksPerPoint.get();
+						}
+						if(volumeTurnedIntoPile == 0)
+							break;
+						items.create({
+							.itemType=pile,
+							.materialType=materialType,
+							.location=point,
+							.quantity=pilePerPoint,
+						});
+						volumeTurnedIntoPile -= pilePerPoint.get();
+					}
+				fluidVolume = 0;
+			}
 		}
-		Quantity createPileQuantity = Quantity::create((fluidVolume / pileVolumeSingle).get());
-		if(createPileQuantity != 0)
-			[[maybe_unused]] const ItemIndex item = item_addGeneric(point, pile, FluidType::getFreezesInto(fluidType), createPileQuantity);
-		assert(fluidVolume == createPileQuantity.get() * pileVolumeSingle.get());
+		m_area.m_hasTemperature.maybeRemoveFreezeableFluidGroupAboveGround(fluidType, id);
 	}
-}
-void Space::temperature_meltSolid(const Point3D point)
-{
-	assert(solid_isAny(point));
-	assert(MaterialType::getMeltsInto(solid_get(point)).exists());
-	FluidTypeId fluidType = MaterialType::getMeltsInto(solid_get(point));
-	solid_setNot(point);
-	fluid_add(point, Config::maxPointVolume, fluidType);
-	m_area.m_hasFluidGroups.clearMergedFluidGroups();
 }
 void Space::temperature_meltSolid(const CuboidSet& cuboids, const MaterialTypeId materialType)
 {
-	assert(solid_get(cuboids) == materialType);
-	solid_setNotAll(cuboids);
+	auto condition = [materialType](MaterialTypeId solidType) { return solidType == materialType; };
+	CuboidSet toMelt = m_solid.queryGetAllCuboidsWithCondition(cuboids, condition);
+	if(toMelt.empty())
+		return;
+	solid_setNotAll(toMelt);
 	FluidTypeId fluidType = MaterialType::getMeltsInto(materialType);
-	fluid_add(cuboids, Config::maxPointVolume, fluidType);
-	m_area.m_hasFluidGroups.clearMergedFluidGroups();
-}
-void Space::temperature_meltFeature(const Point3D point, const MaterialTypeId materialType, const PointFeatureTypeId featureType)
-{
-	assert(pointFeature_getMaterialType(point, featureType) == materialType);
-	FluidTypeId fluidType = MaterialType::getMeltsInto(materialType);
-	pointFeature_remove(point, featureType);
-	fluid_add(point, Config::Physics::volumeOfFluidToGenerateWhenAPointFeatureMelts, fluidType);
-	m_area.m_hasFluidGroups.clearMergedFluidGroups();
+	fluid_add(toMelt, Config::maxPointVolume.get() * toMelt.volume(), fluidType);
 }
 void Space::temperature_meltFeatures(const CuboidSet& cuboids, const MaterialTypeId materialType)
 {
 	FluidTypeId fluidType = MaterialType::getMeltsInto(materialType);
-	pointFeature_removeAllWithCondition(cuboids, [&](const PointFeature feature) { return feature.materialType == materialType; });
-	fluid_add(cuboids, Config::Physics::volumeOfFluidToGenerateWhenAPointFeatureMelts, fluidType);
-	m_area.m_hasFluidGroups.clearMergedFluidGroups();
+	auto condition = [&](PointFeature feature) { return feature.materialType == materialType; };
+	CuboidSet toMelt = m_features.queryGetAllCuboidsWithCondition(cuboids, condition);
+	pointFeature_removeAllWithCondition(cuboids, condition);
+	fluid_add(cuboids, Config::Physics::volumeOfFluidToGenerateWhenAPointFeatureMelts.get() * toMelt.volume(), fluidType);
 }
 void Space::temperature_meltItems(const CuboidSet& cuboids, const MaterialTypeId materialType)
 {
@@ -91,8 +113,8 @@ void Space::temperature_meltItems(const CuboidSet& cuboids, const MaterialTypeId
 		itemReferences.insert(items.getReference(item));
 	for(const ItemReference ref : itemReferences)
 	{
-		const ItemIndex item = ref.getIndex(items.m_referenceData);
-		const CuboidSet& occupied = items.getOccupied(item);
+		ItemIndex item = ref.getIndex(items.m_referenceData);
+		CuboidSet occupied = items.getOccupied(item);
 		const CollisionVolume volume = Shape::getTotalCollisionVolume(items.getShape(item)) / occupied.volume();
 		for(const Cuboid cuboid : occupied)
 			for(const Point3D point : cuboid)
@@ -100,8 +122,8 @@ void Space::temperature_meltItems(const CuboidSet& cuboids, const MaterialTypeId
 		items.destroy(item);
 	}
 	for(const auto& [point, volume] : volumeMelted)
-		fluid_add(point, volume, fluidType);
-	m_area.m_hasFluidGroups.clearMergedFluidGroups();
+		// TODO:(optimization) do this by cuboids rather then by points.
+		fluid_add(CuboidSet::create(point), volume.get(), fluidType);
 }
 const Temperature Space::temperature_getAmbient(const Point3D point) const
 {

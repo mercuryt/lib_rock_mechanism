@@ -175,7 +175,7 @@ public:
 	{
 		m_data.record(index, *this);
 	}
-	TrackedIndex(This&&  other) noexcept :
+	TrackedIndex(This&& other) noexcept :
 		m_index(other.m_index),
 		m_data(other.m_data)
 	{

@@ -358,7 +358,7 @@ void Plants::doWildGrowth(const PlantIndex index, int count)
 			const Point3D toGrowInto = candidates[simulation.m_random.getInRange(0, (int)candidates.size() - 1)];
 			const Offset3D offset = m_location[index].offsetTo(toGrowInto);
 			// Use the volume of the location position as the volume of the new growth position.
-			const std::pair<OffsetCuboid, CollisionVolume> pair  = {OffsetCuboid{offset, offset}, Shape::getCollisionVolumeAtLocation(m_shape[index])};
+			const std::pair<OffsetCuboid, CollisionVolume> pair = {OffsetCuboid{offset, offset}, Shape::getCollisionVolumeAtLocation(m_shape[index])};
 			setShape(index, Shape::mutateAdd(m_shape[index], pair));
 		}
 	}

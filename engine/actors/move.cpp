@@ -468,7 +468,7 @@ void Actors::move_pathRequestRecord(const ActorIndex index, std::unique_ptr<Path
 {
 	assert(m_pathRequest[index] == nullptr);
 	m_pathRequest[index] = pathRequest.get();
-	m_area.m_hasPaths.get(pathRequest->moveType).recordPathRequest(std::move(pathRequest));
+	m_area.m_hasPaths.get(m_area, pathRequest->moveType).recordPathRequest(std::move(pathRequest));
 }
 bool Actors::move_canMove(const ActorIndex index) const
 {
@@ -511,7 +511,7 @@ SmallSet<Point3D> Actors::move_makePathTo(const ActorIndex index, const Point3D 
 	});
 	if(params.detour)
 		params.occupied = getOccupied(index);
-	const PathResult result = m_area.m_hasPaths.get(moveType).pathTo(params);
+	const PathResult result = m_area.m_hasPaths.get(m_area, moveType).pathTo(params);
 	assert(!result.useCurrentLocation());
 	return result.m_path;
 }
@@ -527,7 +527,7 @@ bool Actors::move_canPathTo(const ActorIndex index, const Point3D destination)
 bool Actors::move_canPathFromTo(const ActorIndex index, const Point3D start, const Facing4 startFacing, const Point3D destination)
 {
 	MoveTypeId moveType = m_moveType[index];
-	AreaHasPathsForMoveType& hasPaths = m_area.m_hasPaths.get(moveType);
+	AreaHasPathsForMoveType& hasPaths = m_area.m_hasPaths.get(m_area, moveType);
 	PathParamaters params({
 		.area = m_area,
 		.start = start,

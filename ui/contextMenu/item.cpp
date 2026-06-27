@@ -214,7 +214,7 @@ void ContextMenu::drawItemControls(const Point3D& point)
 				auto& submenu = makeSubmenu(0);
 				for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4(uint(facing) + 1))
 				{
-					auto button = tgui::Button::create(m_window.facingToString(facing));
+					auto button = tgui::Button::create(m_window.facingtoS(facing));
 					button->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 					submenu.add(button);
 					button->onClick([this, point, item, facing, faction, &area]{

@@ -81,12 +81,12 @@ void GameOverlay::unfocusUI()
 }
 void GameOverlay::drawZoom()
 {
-	m_zoomUI->setText("zoom: " + UIUtil::floatToString(m_window.getZoom()));
+	m_zoomUI->setText("zoom: " + UIUtil::floattoS(m_window.getZoom()));
 }
 void GameOverlay::drawWeatherReport()
 {
 	Area& area = *m_window.getArea();
-	std::string text = UIUtil::temperatureToString(area.m_hasTemperature.getAmbientSurfaceTemperature());
+	std::string text = UIUtil::temperaturetoS(area.m_hasTemperature.getAmbientSurfaceTemperature());
 	if(area.m_hasRain.isRaining())
 		text += "rain : " + std::to_string(area.m_hasRain.getIntensityPercent().get()) + "%";
 }

@@ -256,7 +256,7 @@ void Actors::lineLead_appendToPath(const ActorIndex index, const Point3D point, 
 		});
 		if(params.detour)
 			params.occupied = getOccupied(index);
-		PathResult pathResult = m_area.m_hasPaths.get(moveType).pathTo(std::move(params));
+		PathResult pathResult = m_area.m_hasPaths.get(m_area, moveType).pathTo(std::move(params));
 		// TODO: Can this fail?
 		assert(!pathResult.m_path.empty());
 		assert(!pathResult.m_path.contains(point));

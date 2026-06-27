@@ -568,7 +568,7 @@ std::string Window::displayNameForCraftJob(CraftJob& craftJob)
 	}
 	return output;
 }
-std::string Window::facingToString(Facing4 facing)
+std::string Window::facingtoS(Facing4 facing)
 {
 	if(facing == Facing4::North)
 		return "up";

@@ -63,7 +63,7 @@ class CraftStepProject final : public Project
 	void onDelay() override { cancel(); }
 	void offDelay() override { std::unreachable(); }
 	void onAddToMaking(const ActorIndex actor);
-	[[nodiscard]] bool canReset() const  override{ return false; }
+	[[nodiscard]] bool canReset() const override{ return false; }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const override;
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const override;

@@ -115,7 +115,7 @@ TEST_CASE("dig")
 		CHECK(objective.getProject() == nullptr);
 		CHECK(space.pointFeature_contains(stairsLocation1, PointFeatureTypeId::Stairs));
 		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(stairsLocation1, actors.getShape(dwarf1), actors.getMoveType(dwarf1), aboveStairs));
-		const auto& hasPaths = area.m_hasPaths.get(actors.getMoveType(dwarf1));
+		const auto& hasPaths = area.m_hasPaths.get(area, actors.getMoveType(dwarf1));
 		CHECK(hasPaths.accessable(PathParamaters({
 			.area = area,
 			.start = aboveStairs,
@@ -129,8 +129,8 @@ TEST_CASE("dig")
 		CHECK(actors.move_hasPathRequest(dwarf1));
 		CHECK(!space.isReserved(stairsLocation1, faction));
 		MoveTypeId moveType = actors.getMoveType(dwarf1);
-		Cuboid startingEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetOneCuboid(actors.getLocation(dwarf1));
-		Cuboid stairsEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetOneCuboid(stairsLocation1.above());
+		Cuboid startingEnterable = area.m_hasPaths.get(area, moveType).m_enterable.queryGetOneCuboid(actors.getLocation(dwarf1));
+		Cuboid stairsEnterable = area.m_hasPaths.get(area, moveType).m_enterable.queryGetOneCuboid(stairsLocation1.above());
 		CHECK(space.move_cuboidCanBeEnteredFrom(startingEnterable, stairsEnterable, moveType));
 		CHECK(longRangePath::shapeCanEnterFrom<false, true>(stairsLocation1, aboveStairs, PathParamaters({
 			.area = area,

@@ -16,11 +16,11 @@ std::string UIUtil::describeItem(Area& area, const ItemIndex &item)
 		output += " " + items.getName(item);
 	return output;
 }
-std::string UIUtil::floatToString(const float& input)
+std::string UIUtil::floattoS(const float& input)
 {
 	return std::format("{:.2f}", input);
 }
-std::string UIUtil::temperatureToString(const Temperature& temperature)
+std::string UIUtil::temperaturetoS(const Temperature& temperature)
 {
 	return std::to_string(temperature.get()) + "°";
 }

@@ -31,7 +31,7 @@ Json HasConstructionDesignationsForFaction::toJson() const
 	return {{"projects", projects}};
 }
 // If pointFeatureType is null then construct a wall rather then a feature.
-void HasConstructionDesignationsForFaction::designate(Area& area, const Point3D point, const PointFeatureTypeId pointFeatureType, const MaterialTypeId materialType)
+void HasConstructionDesignationsForFaction::designate(Area& area, const Point3D point, PointFeatureTypeId pointFeatureType, const MaterialTypeId materialType)
 {
 	assert(!contains(point));
 	Space& space = area.getSpace();
@@ -105,7 +105,7 @@ void AreaHasConstructionDesignations::removeFaction(const FactionId faction)
 	assert(m_data.contains(faction));
 	m_data.erase(faction);
 }
-void AreaHasConstructionDesignations::designate(const FactionId faction, const Point3D point, const PointFeatureTypeId pointFeatureType, const MaterialTypeId materialType)
+void AreaHasConstructionDesignations::designate(const FactionId faction, const Point3D point, PointFeatureTypeId pointFeatureType, const MaterialTypeId materialType)
 {
 	if(!m_data.contains(faction))
 		addFaction(faction);

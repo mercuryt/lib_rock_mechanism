@@ -307,8 +307,6 @@ void Actors::load(const Json& data)
 	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
 	m_moveType.resize(size);
 	ActorIndex i = ActorIndex::create(0);
-	for(const MoveTypeId moveType : m_moveType)
-		m_area.m_hasPaths.maybeRegisterMoveType(m_area, moveType);
 	m_body.resize(size);
 	assert(data.contains("body") && data["body"].contains("data"));
 	i = ActorIndex::create(0);
@@ -608,7 +606,6 @@ ActorIndex Actors::create(ActorParamaters params)
 	resize(index + 1);
 	bool isStatic = false;
 	MoveTypeId moveType = AnimalSpecies::getMoveType(params.species);
-	m_area.m_hasPaths.maybeRegisterMoveType(m_area, moveType);
 	ShapeId shape = AnimalSpecies::shapeForPercentGrown(params.species, params.getPercentGrown(m_area.m_simulation));
 	Portables<Actors, ActorIndex, ActorReferenceIndex, true>::create(index, moveType, shape, params.faction, isStatic, Quantity::create(1));
 	Simulation& simulation = m_area.m_simulation;
@@ -888,7 +885,7 @@ void Actors::setBirthStep(const ActorIndex index, const Step step)
 	m_birthStep[index] = step;
 	m_canGrow[index]->updateGrowingStatus(m_area);
 }
-void Actors::takeFallDamage(const ActorIndex index, const Distance  distance, const MaterialTypeId materialType)
+void Actors::takeFallDamage(const ActorIndex index, const Distance distance, const MaterialTypeId materialType)
 {
 	const Force force = Force::create(distance.get() * getMass(index).get() * Config::modifierToTurnMassTimesFallDistanceIntoForce / Config::hitsToDivideActorFallDamageInto);
 	for(int i = 0; i < Config::hitsToDivideActorFallDamageInto; ++i)
@@ -931,13 +928,13 @@ void Actors::log(const ActorIndex index) const
 	if(objective_exists(index))
 		std::cout << ", current objective: " << objective_getCurrentName(index);
 	if(m_destination[index].exists())
-		std::cout << ", destination: " << m_destination[index].toString();
+		std::cout << ", destination: " << m_destination[index].toS();
 	if(!m_path[index].empty())
 		std::cout << ", path length: " << m_path[index].size();
 	if(m_pathRequest[index] != nullptr)
 		std::cout << ", path request exists";
 	if(m_project[index] != nullptr)
-		std::cout << ", project location: " << m_project[index]->getLocation().toString();
+		std::cout << ", project location: " << m_project[index]->getLocation().toS();
 	if(m_carrying[index].exists())
 	{
 		std::cout << ", carrying: {";

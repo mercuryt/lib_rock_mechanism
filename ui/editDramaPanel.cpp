@@ -45,7 +45,7 @@ void EditDramaView::draw(Area* area)
 	{
 		if(!typesForArea.contains(type))
 		{
-			std::string string = DramaArc::typeToString(type);
+			std::string string = DramaArc::typetoS(type);
 			newTypeSelector->addItem(string, string);
 		}
 	}

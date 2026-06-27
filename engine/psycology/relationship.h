@@ -77,7 +77,7 @@ public:
 	RelationshipWithItem& create(const ItemId item);
 	RelationshipWithPlant& create(const Point3D location, const PlantSpeciesId species, const AreaId area);
 	RelationshipBetweenActors& getOrCreate(const ActorId actor);
-	RelationshipWithItem&  getOrCreate(const ItemId item);
+	RelationshipWithItem& getOrCreate(const ItemId item);
 	RelationshipWithPlant& getOrCreate(const Point3D location, const PlantSpeciesId species, const AreaId area);
 	void destroy(const RelationshipBetweenActors& relationship);
 	void destroy(const RelationshipWithItem& relationship);

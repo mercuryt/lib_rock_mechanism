@@ -2,7 +2,7 @@
 #include <concepts>
 #include "json.h"
 template <typename T>
-concept HasToStringMethod = requires(T a) { a.toString(); };
+concept HastoSMethod = requires(T a) { a.toS(); };
 
 template <typename T>
 concept HasHashMethod = requires(T::Hash h) { h(std::declval<T>()); };

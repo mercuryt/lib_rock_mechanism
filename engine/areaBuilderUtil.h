@@ -81,19 +81,17 @@ namespace areaBuilderUtil
 		}
 		for(Distance x = Distance::create(0); x != highCoordinates.x() + 1; ++x)
 			for(Distance y = Distance::create(0); y != highCoordinates.y() + 1; ++y)
-				space.pointFeature_construct({x, y, highCoordinates.z() + 1}, PointFeatureTypeId::Floor, materialType);
+				space.pointFeature_construct(
+					Cuboid::create({x, y, highCoordinates.z() + 1}), PointFeatureTypeId::Floor, materialType
+				);
 	}
 	// TODO: low and high should be inverted.
 	inline void setFullFluidCuboid(Area& area, const Point3D low, const Point3D high, FluidTypeId fluidType)
 	{
 		Space& space = area.getSpace();
-		assert(space.fluid_getTotalVolume(low) == 0);
-		assert(space.fluid_canEnterEver(low));
-		assert(space.fluid_getTotalVolume(high) == 0);
-		assert(space.fluid_canEnterEver(high));
 		Cuboid cuboid(high, low);
 		assert(!space.fluid_any(cuboid));
-		space.fluid_add(cuboid, CollisionVolume::create(100), fluidType);
+		space.fluid_add(CuboidSet::create(cuboid), cuboid.volume() * Config::maxPointVolume.get(), fluidType);
 		space.prepareRtrees();
 	}
 	inline void validateAllPointFluids(Area& area)
@@ -101,20 +99,27 @@ namespace areaBuilderUtil
 		Space& space = area.getSpace();
 		Cuboid cuboid = space.boundry();
 		for(const Point3D point : cuboid)
-			for([[maybe_unused]] auto& [group, fluidType, volume] : space.fluid_getAll(point))
-				assert(group->m_fluidType == fluidType);
+			for([[maybe_unused]] auto& [groupId, fluidType, density] : space.fluid_getAll(point))
+			{
+				FluidGroup& group = area.m_hasFluidGroups.byId(groupId);
+				assert(group.m_fluidType == fluidType);
+			}
 	}
-	// Get one fluid group with the specified type. Return null if there is more then one.
 	inline FluidGroup* getFluidGroup(Area& area, FluidTypeId fluidType)
 	{
-		FluidGroup* output = nullptr;
-		for(FluidGroup& fluidGroup : area.m_hasFluidGroups.getAll())
-			if(fluidGroup.m_fluidType == fluidType)
-			{
-				if(output != nullptr)
-					return nullptr;
-				output = &fluidGroup;
-			}
-		return output;
+		Space& space = area.getSpace();
+		FluidGroupId id;
+		bool moreThenOneFound = false;
+		space.fluid_forEachAll([fluidType, &id, &moreThenOneFound](FluidData data){
+			if(data.type != fluidType)
+				return;
+			if(id.exists() && id != data.group)
+				moreThenOneFound = true;
+			else
+				id = data.group;
+		});
+		if(moreThenOneFound)
+			return nullptr;
+		return &area.m_hasFluidGroups.byId(id);
 	}
 }

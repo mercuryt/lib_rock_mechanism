@@ -154,6 +154,6 @@ public:
 	// String utilities.
 	std::string displayNameForItem(const ItemIndex& item);
 	static std::string displayNameForCraftJob(CraftJob& craftJob);
-	static std::string facingToString(Facing4 facing);
+	static std::string facingtoS(Facing4 facing);
 	friend class Draw;
 };

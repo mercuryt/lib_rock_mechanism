@@ -19,5 +19,5 @@ void Config::Psycology::load()
 	data["minimumMaliceDeltaPlusCourageToHoldFirmWithoutTest"].get_to(minimumMaliceDeltaPlusCourageToHoldFirmWithoutTest);
 	data["prideToLoseWhenAccidentallyKilling"].get_to(prideToLoseWhenAccidentallyKilling);
 	data["prideToLoseWhenAccidentallyInjuring"].get_to(prideToLoseWhenAccidentallyInjuring);
-	intervalToCheckIfSoldiersFlee  = Config::stepsPerSecond * data["intervalToCheckIfSoldiersFleeseconds"].get<int>();
+	intervalToCheckIfSoldiersFlee = Config::stepsPerSecond * data["intervalToCheckIfSoldiersFleeseconds"].get<int>();
 }

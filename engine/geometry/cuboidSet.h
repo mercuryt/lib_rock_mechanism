@@ -56,6 +56,7 @@ public:
 	}
 	void maybeRemove(const PointType point);
 	void maybeRemoveAll(const auto& cuboids) { for(const CuboidType cuboid : cuboids) maybeRemove(cuboid); }
+	void maybeRemove(const CuboidSetType& cuboids) { maybeRemoveAll(cuboids); }
 	void remove(const auto& shape)
 	{
 		assert(!shape.empty());
@@ -71,26 +72,30 @@ public:
 	void maybeAdd(const CuboidType cuboid);
 	void maybeRemove(const CuboidType cuboid);
 	void clear() { m_cuboids.clear(); }
-	void shift(const Offset3D offset, const Distance  distance);
-	CuboidSetType shifted(const Offset3D offset, const Distance  distance) const;
+	void shift(const Offset3D offset, const Distance distance);
+	CuboidSetType shifted(const Offset3D offset, const Distance distance) const;
 	void shiftWest(const Distance distance = {1});
 	void shiftSouth(const Distance distance = {1});
 	// For merging with other cuboid sets.
 	void addSet(const CuboidSetType& other);
 	void rotateAroundPoint(const PointType point, const Facing4 rotation);
-	void reserve(const int capacity) { m_cuboids.reserve(capacity); }
+	void reserve(int capacity) { m_cuboids.reserve(capacity); }
 	void swap(CuboidSetType& other);
 	void popBack();
-	void inflate(const Distance  distance);
-	[[nodiscard]] const CuboidType operator[](const int index) const { return m_cuboids[index]; }
-	[[nodiscard]] CuboidType operator[](const int index){ return m_cuboids[index]; }
+	void inflate(Distance distance = {1});
+	void inflateHorizontal(Distance distance = {1});
+	void inflateVertical(Distance distance = {1});
+	void sliceAtZ(PointType::DimensionType zLevel);
+	void prepare();
+	[[nodiscard]] const CuboidType operator[](int index) const { return m_cuboids[index]; }
+	[[nodiscard]] CuboidType operator[](int index){ return m_cuboids[index]; }
 	[[nodiscard]] PointType center() const;
 	[[nodiscard]] PointType::DimensionType lowestZ() const;
 	[[nodiscard]] PointType::DimensionType highestZ() const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool exists() const;
 	[[nodiscard]] int size() const;
-	[[nodiscard]] int volume() const;
+	[[nodiscard]] int64_t volume() const;
 	[[nodiscard]] bool contains(const Point3D point) const;
 	[[nodiscard]] bool contains(const Offset3D point) const;
 	[[nodiscard]] bool contains(const CuboidType cuboid) const;
@@ -142,6 +147,7 @@ public:
 	public:
 	[[nodiscard]] CuboidSetType adjacentRecursive(const CuboidType shape) const;
 	[[nodiscard]] CuboidSetType adjacentRecursive(const PointType shape) const;
+	[[nodiscard]] bool isContiguous() const;
 	[[nodiscard]] int countIf(auto&& condition) const
 	{
 		int output = 0;
@@ -149,7 +155,7 @@ public:
 			output += cuboid.countIf(condition);
 		return output;
 	}
-	GDB_CALLABLE std::string toString() const;
+	[[nodiscard]] GDB_CALLABLE std::string toS() const;
 	[[nodiscard]] static CuboidSetType create(const SmallSet<PointType>& space);
 	[[nodiscard]] static CuboidSetType create(const CuboidSetType& set);
 	[[nodiscard]] static CuboidSetType create(const CuboidType cuboid);

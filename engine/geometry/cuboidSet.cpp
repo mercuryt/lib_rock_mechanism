@@ -84,4 +84,3 @@ void from_json(const Json& data, OffsetCuboidSet& cuboidSet)
 		cuboidSet.maybeAdd(cuboid);
 	}
 }
-

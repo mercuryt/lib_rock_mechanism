@@ -58,7 +58,7 @@ class RTreeBooleanLowZOnly
 		void setParent(const Index index) { m_parent = index; }
 		void updateLeaf(const ArrayIndex& offset, const Cuboid cuboid);
 		void updateBranchBoundry(const ArrayIndex& offset, const Cuboid cuboid);
-		GDB_CALLABLE std::string toString();
+		GDB_CALLABLE std::string toS();
 	};
 	StrongVector<Node, Index> m_nodes;
 	SmallSet<Index> m_emptySlots;

@@ -176,13 +176,13 @@ namespace util
 		auto duration = now.time_since_epoch();
 		return std::chrono::duration_cast<std::chrono::microseconds>(duration);
 	}
-	[[nodiscard]] inline std::string eigenToString(auto& eigenArrayOrMatrix)
+	[[nodiscard]] inline std::string eigentoS(auto& eigenArrayOrMatrix)
 	{
 		std::stringstream ss;
 		ss << eigenArrayOrMatrix;
 		return ss.str();
 	}
-	inline Facing4 rotateFacingByDifference(const Facing4 facing, const  Facing4 previousFacing, const Facing4 newFacing)
+	inline Facing4 rotateFacingByDifference(const Facing4 facing, const Facing4 previousFacing, const Facing4 newFacing)
 	{
 		int difference = (int)newFacing - (int)previousFacing;
 		if(difference < 0)

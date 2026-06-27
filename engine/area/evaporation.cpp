@@ -10,15 +10,15 @@ void AreaHasEvaporation::execute(Area& area)
 	float rate = rateModifierForTemperature(area);
 	for(auto& [fluidType, fluidGroups] : area.m_hasTemperature.m_freezableFluidTypeOnSurface)
 	{
-		for(FluidGroup* fluidGroup : fluidGroups)
-		{
-			float fluidTypeEvaporationRate = FluidType::getEvaporationRate(fluidGroup->m_fluidType);
-			if(fluidTypeEvaporationRate == 0.f)
-				continue;
-			Quantity pointsOnSurface = fluidGroup->countPointsOnSurface(area);
-			CollisionVolume toRemove = std::min(CollisionVolume::create(pointsOnSurface.get() * rate), CollisionVolume::create(1));
-			fluidGroup->removeFluid(area, toRemove);
-		}
+		float fluidTypeEvaporationRate = FluidType::getEvaporationRate(fluidType);
+		if(fluidTypeEvaporationRate != 0.f)
+			for(FluidGroupId fluidGroupId : fluidGroups)
+			{
+				FluidGroup& fluidGroup = area.m_hasFluidGroups.byId(fluidGroupId);
+				int64_t pointsOnSurface = fluidGroup.countPointsOnSurface(area);
+				int64_t toRemove = std::min(int64_t(pointsOnSurface * rate), 1L);
+				fluidGroup.removeFluid(area, toRemove);
+			}
 	}
 	schedule(area);
 }

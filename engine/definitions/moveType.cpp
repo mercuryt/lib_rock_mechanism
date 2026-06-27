@@ -43,7 +43,7 @@ MoveTypeId MoveType::getOrCreateForFloat(FluidTypeId fluidType, Distance depth)
 	}
 	// No existing move type found, create new one.
 	create({
-		.name = "float in " + FluidType::getName(fluidType) + " at depth " + depth.toString(),
+		.name = "float in " + FluidType::getName(fluidType) + " at depth " + depth.toS(),
 		.surface = false,
 		.stairs = false,
 		.climb = 0,

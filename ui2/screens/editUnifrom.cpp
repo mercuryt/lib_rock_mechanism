@@ -17,7 +17,7 @@ void screens::editUniform(Window& window, Uniform* uniform)
 		ImGui::TableNextColumn();
 		ImGui::TextUnformatted(MaterialTypeCategory::getName(element.m_materialCategoryType).c_str());
 		ImGui::TableNextColumn();
-		ImGui::TextUnformatted(element.m_quantity.toString().c_str());
+		ImGui::TextUnformatted(element.m_quantity.toS().c_str());
 		ImGui::TableNextColumn();
 		if(ImGui::Button("destroy"))
 			window.m_simulation->m_hasUniforms.getForFaction(window.m_faction).destroyUniform(*uniform);

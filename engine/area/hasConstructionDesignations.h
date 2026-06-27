@@ -16,7 +16,7 @@ public:
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	// If pointFeatureType is null then construct a wall rather then a feature.
-	void designate(Area& area, const Point3D point, const PointFeatureTypeId pointFeatureType, const MaterialTypeId materialType);
+	void designate(Area& area, const Point3D point, PointFeatureTypeId pointFeatureType, const MaterialTypeId materialType);
 	void undesignate(const Point3D point);
 	void remove(Area& area, const Point3D point);
 	void removeIfExists(Area& area, const Point3D point);
@@ -46,7 +46,7 @@ public:
 	void addFaction(const FactionId faction);
 	void removeFaction(const FactionId faction);
 	// If pointFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(const FactionId faction, const Point3D point, const PointFeatureTypeId pointFeatureType, const MaterialTypeId materialType);
+	void designate(const FactionId faction, const Point3D point, PointFeatureTypeId pointFeatureType, const MaterialTypeId materialType);
 	void undesignate(const FactionId faction, const Point3D point);
 	void remove(const FactionId faction, const Point3D point);
 	void clearAll(const Point3D point);

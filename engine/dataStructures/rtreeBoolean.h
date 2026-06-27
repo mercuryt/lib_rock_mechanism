@@ -53,7 +53,7 @@ class RTreeBoolean
 		void updateLeaf(const RTreeArrayIndex offset, const Cuboid cuboid);
 		void updateBranchBoundry(const RTreeArrayIndex offset, const Cuboid cuboid);
 		void log() const;
-		GDB_CALLABLE std::string toString();
+		GDB_CALLABLE std::string toS() const;
 		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Node, m_cuboids, m_childIndices, m_parent, m_leafEnd, m_childBegin);
 	};
 	StrongVector<Node, RTreeNodeIndex> m_nodes;
@@ -131,7 +131,7 @@ public:
 			}
 	}
 	[[nodiscard]] bool canPrepare() const;
-	[[nodiscard]] bool empty() const  { return nodeCount() == 1 && leafCount() == 0; }
+	[[nodiscard]] bool empty() const { return nodeCount() == 1 && leafCount() == 0; }
 	[[nodiscard]] CuboidSet toCuboidSet() const;
 private:
 	template<typename ShapeT>
@@ -179,6 +179,8 @@ public:
 	GDB_CALLABLE int nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
 	GDB_CALLABLE int leafCount() const;
 	GDB_CALLABLE const Node& getNode(int i) const;
+	GDB_CALLABLE std::string toS() const;
+	GDB_CALLABLE std::string operator()() const;
 	GDB_CALLABLE const Cuboid getNodeCuboid(int i, int o) const;
 	GDB_CALLABLE const RTreeNodeIndex getNodeChild(int i, int o) const;
 	GDB_CALLABLE bool queryPoint(int x, int y, int z) const;

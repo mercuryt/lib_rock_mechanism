@@ -171,7 +171,7 @@ void Items::setTemperature(const ItemIndex index, const Temperature temperature,
 			const CuboidSet occupied = m_occupied[index];
 			const CollisionVolume volume = Shape::getTotalCollisionVolume(m_shape[index]) / occupied.volume();
 			destroy(index);
-			space.fluid_add(occupied, volume, MaterialType::getMeltsInto(materialType));
+			space.fluid_add(occupied, volume.get(), MaterialType::getMeltsInto(materialType));
 		}
 	};
 	const MaterialTypeId materialType = m_solid[index];
@@ -418,8 +418,8 @@ std::string Items::description(const ItemIndex index)
 	if(!m_name[index].empty())
 		return m_name[index];
 	if(isGeneric(index))
-		return ItemType::getName(m_itemType[index]) + "(quantity: " + m_quantity[index].toString() + ")";
-	return ItemType::getName(m_itemType[index]) + "(quality: " + m_quality[index].toString() +  ", wear: " + m_percentWear[index].toString() + "%)";
+		return ItemType::getName(m_itemType[index]) + "(quantity: " + m_quantity[index].toS() + ")";
+	return ItemType::getName(m_itemType[index]) + "(quality: " + m_quality[index].toS() + ", wear: " + m_percentWear[index].toS() + "%)";
 }
 void Items::log(const ItemIndex index) const
 {

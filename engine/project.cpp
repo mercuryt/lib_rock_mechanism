@@ -111,7 +111,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area* are
 		});
 		if(params.detour)
 			params.occupied = actors.getOccupied(actorIndex);
-		Point3D found = m_project.m_area.m_hasPaths.get(actors.getMoveType(actorIndex)).
+		Point3D found = m_project.m_area.m_hasPaths.get(m_project.m_area, actors.getMoveType(actorIndex)).
 			accessableCondition<anyAdjacent, anyOccupiedPoint>(
 				longRangeCondition,
 				shortRangeCondition,
@@ -275,7 +275,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 		if(!actors.isAdjacentToLocation(candidateIndex, m_project.m_location))
 		{
 			// Verify the worker can path to the job site.
-			AreaHasPathsForMoveType& areaHasPathsForMoveType = m_project.m_area.m_hasPaths.get(actors.getMoveType(candidateIndex));
+			AreaHasPathsForMoveType& areaHasPathsForMoveType = m_project.m_area.m_hasPaths.get(m_project.m_area, actors.getMoveType(candidateIndex));
 			constexpr bool anyOccupiedPoint = false;
 			constexpr bool adjacent = true;
 			PathParamaters params({
@@ -392,15 +392,11 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				else
 					m_project.m_fluidContainersToPickup.insert(ref);
 			};
-			auto recordFluidOnGround = [&](const FluidTypeId fluidType, const Point3D point)
+			auto recordFluidOnGround = [&](FluidTypeId fluidType, CollisionVolume depth, const CuboidSet& fluidCuboids)
 			{
 				auto& fluidData = m_project.m_requiredFluids[fluidType];
-				if(fluidData.foundPoints.contains(point))
-					return;
-				fluidData.foundPoints.insert(point);
-				CollisionVolume volumeFound = space.fluid_volumeOfTypeContains(point, fluidType);
-				CollisionVolume toRecord = std::min(volumeFound, fluidData.volumeRequired - fluidData.volumeFound);
-				fluidData.volumeFound += toRecord;
+				fluidData.foundPoints.maybeAdd(fluidCuboids);
+				fluidData.volumeFound += depth * fluidCuboids.volume();
 			};
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
 			// capture by reference is used here because the pathing is being done immideatly instead of batched.
@@ -454,17 +450,12 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 						auto& requiredData = m_project.m_requiredFluids[fluidData.type];
 						if(requiredData.volumeFound < requiredData.volumeRequired)
 						{
-							// TODO: change group to use cuboid set.
-							for(const Cuboid fluidGroupCuboid : fluidData.group->getPoints())
-							{
-								for(const Point3D point : fluidGroupCuboid)
-									if(cuboid.contains(point))
-									{
-										recordFluidOnGround(fluidData.type, point);
-										if(m_project.reservationsComplete())
-											return point;
-									}
-							}
+							FluidGroup& group = m_project.m_area.m_hasFluidGroups.byId(fluidData.group);
+							CuboidSet occupied = group.m_occupied;
+							occupied = occupied.intersection(cuboid);
+							recordFluidOnGround(fluidData.type, CollisionVolume::create(group.getVolume(occupied)), occupied);
+							if(m_project.reservationsComplete())
+								return occupied[0].m_high;
 						}
 					}
 				}
@@ -508,7 +499,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				return false;
 			};
 			// TODO: Path is not used, find path is run for side effects of predicate.
-			AreaHasPathsForMoveType& hasPaths = m_project.m_area.m_hasPaths.get(actors.getMoveType(candidateIndex));
+			AreaHasPathsForMoveType& hasPaths = m_project.m_area.m_hasPaths.get(m_project.m_area, actors.getMoveType(candidateIndex));
 			constexpr bool anyOccupiedPoint = true;
 			constexpr bool detour = false;
 			constexpr bool adjacent = true;
@@ -1375,7 +1366,7 @@ CuboidSet Project::getOccupiedByToPickup() const
 	for(const ItemReference ref : m_fluidContainersToPickup)
 		output.maybeAdd(items.getOccupied(ref.getIndex(items.m_referenceData)));
 	Actors& actors = m_area.getActors();
-	for(const ActorReference ref  : m_actorsToPickup)
+	for(const ActorReference ref : m_actorsToPickup)
 		output.maybeAdd(actors.getOccupied(ref.getIndex(actors.m_referenceData)));
 	return output;
 }

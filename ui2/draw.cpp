@@ -102,7 +102,7 @@ void draw::world(Window& window)
 			fluidSprite.drawRepeatedAndTinted(window, cuboid, displayData::fluidColors[fluidData.type]);
 		});
 		space.fluid_queryTotalsForEachWithCuboids(thisLevel, [&](const Cuboid& cuboid, const CollisionVolume& volume){
-			textOnCuboid(window, cuboid, volume.toString(), displayData::fluidVolumeTextColor);
+			textOnCuboid(window, cuboid, volume.toS(), displayData::fluidVolumeTextColor);
 		});
 	}
 	SmallMap<PointFeatureTypeId, SmallMap<PointFeature, CuboidSet>> featuresOnThisZLevel;

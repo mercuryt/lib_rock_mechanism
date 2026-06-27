@@ -203,7 +203,7 @@ std::string CraftJob::describe() const
 // HasCraftingLocationsAndJobs
 HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId f) :
 	m_area(deserializationMemo.area(data["area"])),
-  	m_faction(f)
+ 	m_faction(f)
 {
 	for(const Json& pair : data["locationsByCategory"])
 	{

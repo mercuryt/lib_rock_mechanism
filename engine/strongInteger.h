@@ -1,6 +1,7 @@
 #pragma once
 #include "json.h"
 #include "concepts.h"
+#include "gdb.h"
 #include <compare>
 #include <limits>
 #include <concepts>
@@ -75,7 +76,7 @@ struct StrongInteger
 	[[nodiscard]] constexpr Derived absoluteValue() const { assert(exists()); return Derived::create(std::abs(data)); }
 	[[nodiscard]] constexpr bool exists() const { return data != NULL_VALUE; }
 	[[nodiscard]] constexpr bool empty() const { return data == NULL_VALUE; }
-	[[nodiscard]] constexpr bool modulusIsZero(const This other) const { assert(exists()); return data % other.data == 0;  }
+	[[nodiscard]] constexpr bool modulusIsZero(const This other) const { assert(exists()); return data % other.data == 0; }
 	[[nodiscard]] constexpr Derived operator++(int) { assert(exists()); assert(data != NULL_VALUE); T d = data; ++data; return Derived::create(d); }
 	[[nodiscard]] constexpr Derived operator--(int) { assert(exists()); assert(data != MIN_VALUE); T d = data; --data; return Derived::create(d); }
 	[[nodiscard]] constexpr bool operator==(const This other) const { return other.data == data; }
@@ -87,7 +88,8 @@ struct StrongInteger
 	[[nodiscard]] constexpr std::strong_ordering operator<=>(const This o) const { assert(exists()); assert(o.exists()); return data <=> o.data; }
 	template<Numeric Other>
 	[[nodiscard]] constexpr std::strong_ordering operator<=>(const Other other) const { return data <=> (T)other; }
-	[[nodiscard, gnu::used]] constexpr std::string toString() const { return std::to_string(data); }
+	GDB_CALLABLE constexpr std::string toS() const { return std::to_string(data); }
+	GDB_CALLABLE constexpr std::string operator()() const { return toS(); }
 	[[nodiscard]] constexpr Derived operator+(const This other) const { return (*this) + other.data; }
 	template<Numeric Other>
 	[[nodiscard]] constexpr Derived operator+(const Other other) const

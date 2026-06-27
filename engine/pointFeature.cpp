@@ -12,7 +12,7 @@ const PointFeatureType& PointFeatureType::byName(const std::string& name)
 			return type;
 	std::unreachable();
 }
-const PointFeatureType& PointFeatureType::byId(const PointFeatureTypeId& id)
+const PointFeatureType& PointFeatureType::byId( PointFeatureTypeId id)
 {
 	assert(id != PointFeatureTypeId::Null);
 	return pointFeatureTypeData[(int)id];
@@ -29,7 +29,7 @@ PointFeatureTypeId PointFeatureType::getId(const PointFeatureType& type)
 {
 	return PointFeatureTypeId(&type - pointFeatureTypeData.begin());
 }
-std::string PointFeature::toString() const
+std::string PointFeature::toS() const
 {
 	return "{materialType: " + MaterialType::getName(materialType) + ", : pointFeatureType:" + PointFeatureType::byId(pointFeatureType).name + ", hewn: " + std::to_string(isHewn()) + ", closed: " + std::to_string(isClosed()) + ", locked: " + std::to_string(isLocked()) + "}";
 }
@@ -48,5 +48,9 @@ bool PointFeature::blocksVerticalTravelEver() const
 bool PointFeature::blocksEntrance() const
 {
 	return PointFeatureType::byId(pointFeatureType).blocksEntrance || (pointFeatureType == PointFeatureTypeId::Door && isLocked());
+}
+bool PointFeature::blocksTemperature() const
+{
+	return isClosed() && (pointFeatureType == PointFeatureTypeId::Floor || pointFeatureType == PointFeatureTypeId::Hatch || pointFeatureType == PointFeatureTypeId::Door || pointFeatureType == PointFeatureTypeId::Flap);
 }
 

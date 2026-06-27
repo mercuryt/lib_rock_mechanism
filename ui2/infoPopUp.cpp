@@ -42,7 +42,7 @@ void drawInfoPopUp::actor(Window& window)
 	ImGui::TableNextRow();
 	ImGuiText("age");
 	ImGui::TableNextColumn();
-	ImGuiText(actors.getAgeInYears(actor).toString());
+	ImGuiText(actors.getAgeInYears(actor).toS());
 	ImGui::TableNextRow();
 	ImGuiText("action");
 	ImGuiText(actors.getActionDescription(actor));
@@ -61,18 +61,18 @@ void drawInfoPopUp::actor(Window& window)
 	{
 			Percent tiredPercent = actors.sleep_getPercentTired(actor);
 			tiredPercent += 100;
-			ImGuiText((tiredPercent.toString() + " % tired"));
+			ImGuiText((tiredPercent.toS() + " % tired"));
 	}
 	if(actors.eat_isHungry(actor))
 	{
 		Percent hungerPercent = actors.eat_getPercentStarved(actor);
 		hungerPercent += 100;
-		ImGuiText((hungerPercent.toString() + " % hunger"));
+		ImGuiText((hungerPercent.toS() + " % hunger"));
 	}
 	if(actors.drink_isThirsty(actor))
 	{
 		Percent thirstPercent = actors.drink_getPercentDead(actor);
-		ImGuiText((thirstPercent.toString() + " % thirst"));
+		ImGuiText((thirstPercent.toS() + " % thirst"));
 	}
 	if(ImGui::Button("details"))
 	{
@@ -102,18 +102,18 @@ void drawInfoPopUp::item(Window& window)
 	{
 		ImGuiText("quantity");
 		ImGui::TableNextColumn();
- 		ImGuiText(items.getQuantity(item).toString());
+ 		ImGuiText(items.getQuantity(item).toS());
 	}
 	else
 	{
 		ImGuiText("quality");
 		ImGui::TableNextColumn();
- 		ImGuiText(items.getQuality(item).toString());
+ 		ImGuiText(items.getQuality(item).toS());
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
 		ImGuiText("wear");
 		ImGui::TableNextColumn();
- 		ImGuiText(items.getWear(item).toString());
+ 		ImGuiText(items.getWear(item).toS());
 	}
 	ImGui::EndTable();
 	if(items.cargo_exists(item))
@@ -150,7 +150,7 @@ void drawInfoPopUp::point(Window& window)
 	Actors& actors = window.m_area->getActors();
 	Point3D point = window.m_gameOverlay.m_detailPoint;
 	Space& space = window.m_area->getSpace();
-	std::string coordinates = point.x().toString() + "," + point.y().toString() + "," + point.z().toString();
+	std::string coordinates = point.x().toS() + "," + point.y().toS() + "," + point.z().toS();
 	drawInfoPopUp::begin(coordinates);
 	if(space.solid_isAny(point))
 		ImGuiText(("solid " + MaterialType::getName(space.solid_get(point))));
@@ -194,7 +194,7 @@ void drawInfoPopUp::point(Window& window)
 		for(const FluidData& fluidData : space.fluid_getAll(point))
 		{
 			ImGuiText(FluidType::getName(fluidData.type));
-			ImGuiText(fluidData.volume.toString());
+			ImGuiText(fluidData.volume.toS());
 		}
 		ImGui::EndTable();
 		ImGui::BeginTable("fluid sources", 2);
@@ -202,7 +202,7 @@ void drawInfoPopUp::point(Window& window)
 		{
 			const FluidSource& source = window.getArea()->m_fluidSources.at(point);
 			ImGuiText((FluidType::getName(source.fluidType) + " source"));
-			ImGuiText(source.level.toString());
+			ImGuiText(source.level.toS());
 		}
 		ImGui::EndTable();
 		if(window.m_faction.exists() && space.farm_contains(point, window.m_faction))
@@ -231,7 +231,7 @@ void drawInfoPopUp::plant(Window& window)
 		ImGuiText((std::to_string(thirstPercent.get()) + " % thirst"));
 	}
 	if(plants.readyToHarvest(plant))
-		ImGuiText((plants.getQuantityToHarvest(plant).toString() + " harvestable fruit"));
+		ImGuiText((plants.getQuantityToHarvest(plant).toS() + " harvestable fruit"));
 	ImGuiText(std::string(plants.isGrowing(plant) ? "C" : "Not c") + "urrently growing");
 	end(window);
 }

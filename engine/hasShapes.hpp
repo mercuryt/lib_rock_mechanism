@@ -86,7 +86,7 @@ void HasShapes<Derived, Index>::addShapeToCompoundShape(const Index index, const
 	MapWithOffsetCuboidKeys<CollisionVolume> offsetsAndVolumes = Shape::positionsWithFacing(id, facing);
 	// The default facing is North, because we are rotating offsets we need to rotate them to the south.
 	Offset3D offsetToRiderFromMount = getLocation(index).offsetTo(location).rotated2D(facing, Facing4::South);
-	for(auto& [offsetCuboid, volume]  : offsetsAndVolumes)
+	for(auto& [offsetCuboid, volume] : offsetsAndVolumes)
 		offsetCuboid = offsetCuboid.relativeToOffset(offsetToRiderFromMount);
 	m_compoundShape[index] = Shape::mutateAddMultiple(m_compoundShape[index], offsetsAndVolumes);
 }
@@ -95,7 +95,7 @@ void HasShapes<Derived, Index>::removeShapeFromCompoundShape(const Index index, 
 {
 	auto offsetsAndVolumes = Shape::positionsWithFacing(id, facing);
 	Offset3D offsetToRiderFromMount = getLocation(index).offsetTo(location).rotated2D(facing, Facing4::South);
-	for(auto& [offsetCuboid, volume]  : offsetsAndVolumes)
+	for(auto& [offsetCuboid, volume] : offsetsAndVolumes)
 		offsetCuboid = offsetCuboid.relativeToOffset(offsetToRiderFromMount);
 	m_compoundShape[index] = Shape::mutateRemoveMultiple(m_compoundShape[index], offsetsAndVolumes);
 }

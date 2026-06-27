@@ -95,7 +95,7 @@ struct SmallSet
 	void resize(int size);
 	[[nodiscard]] bool operator==(const This& other);
 	template<typename Predicate>
-	[[nodiscard]] int countIf(Predicate&& predicate) const  { return std::ranges::count_if(m_data, predicate); }
+	[[nodiscard]] int countIf(Predicate&& predicate) const { return std::ranges::count_if(m_data, predicate); }
 	[[nodiscard]] const T& operator[](const int index) const;
 	[[nodiscard]] T& operator[](const int index);
 	[[nodiscard]] bool contains(const T& value) const;
@@ -127,7 +127,7 @@ struct SmallSet
 	template<typename Predicate>
 	[[nodiscard]] This::const_iterator findIf(Predicate&& predicate) const { return std::ranges::find_if(m_data, predicate); }
 	template<typename Predicate>
-	[[nodiscard]] bool anyOf(Predicate&& predicate) const  { return findIf(predicate) != end(); }
+	[[nodiscard]] bool anyOf(Predicate&& predicate) const { return findIf(predicate) != end(); }
 	class iterator
 	{
 	protected:
@@ -176,7 +176,7 @@ struct SmallSet
 		[[nodiscard]] const_iterator operator-=(const int index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator other) const { return m_iter <=> other.m_iter; }
 	};
-	[[nodiscard]] std::string toString() const;
+	[[nodiscard]] std::string toS() const;
 	static SmallSet<T> create(const auto& source) { SmallSet<T> output; for(const T& value : source) output.insert(value); return output; }
 	static SmallSet<T> createNonunique(const auto& source) { SmallSet<T> output; for(const T& value : source) output.insertNonunique(value); return output; }
 };

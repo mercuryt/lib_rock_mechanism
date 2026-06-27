@@ -33,6 +33,6 @@ Temperature FluidType::getFreezingPoint(const FluidTypeId id)
 {
 	assert(id.exists());
 	const MaterialTypeId solid = getFreezesInto(id);
-	return MaterialType::getMeltingPoint(solid) - 1;
+	return solid.exists()? MaterialType::getMeltingPoint(solid) - 1 : Temperature::null();
 }
 float FluidType::getEvaporationRate(const FluidTypeId id) { assert(id.exists()); return fluidTypeData.m_evaporationRate[id]; };

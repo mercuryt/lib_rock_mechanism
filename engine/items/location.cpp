@@ -93,7 +93,7 @@ SetLocationAndFacingResult Items::location_tryToSetNongenericStatic(const ItemIn
 	Space& space = m_area.getSpace();
 	const Point3D previousLocation = getLocation(index);
 	const Offset3D offset = previousLocation.offsetTo(location);
-	const  Facing4 previousFacing = getFacing(index);
+	const Facing4 previousFacing = getFacing(index);
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
 	// Apply the new location to the offsets.
@@ -123,7 +123,7 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetGeneric
 	}
 	const Point3D previousLocation = getLocation(index);
 	const Offset3D offset = previousLocation.offsetTo(location);
-	const  Facing4 previousFacing = getFacing(index);
+	const Facing4 previousFacing = getFacing(index);
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
 	// Apply the new location to the offsets.
@@ -146,7 +146,7 @@ SetLocationAndFacingResult Items::location_tryToSetDynamic(const ItemIndex index
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	const Point3D previousLocation = getLocation(index);
 	const Offset3D offset = previousLocation.offsetTo(location);
-	const  Facing4 previousFacing = getFacing(index);
+	const Facing4 previousFacing = getFacing(index);
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
 	// Apply the new location to the offsets.

@@ -91,7 +91,7 @@ void AreaHasPortalsBetweenOutSideAndInside::doStep(Area& area)
 	for(const Cuboid cuboid : m_toUpdate)
 	{
 		auto condition = [&](const Cuboid other) { return other == cuboid; };
-		CuboidSet recordedArea = RTreeHelpers::getAdjacentWithConditionRecursive(m_data, cuboid, condition);
+		CuboidSet recordedArea = RTreeHelpers::getAdjacentWithConditionRecursive<Cuboid>(m_data, cuboid, condition);
 		m_data.removeWithCondition(recordedArea, condition);
 		CuboidSet affectedArea = getAffectedArea(area, cuboid);
 		m_data.insert(affectedArea, cuboid);

@@ -179,7 +179,7 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightTo(const Cuboid c
 	for(ActorReference actor : candidates)
 		maybeCreate(actor);
 }
-bool VisionRequests::maybeUpdateRange(const ActorReference actor, const Distance  range)
+bool VisionRequests::maybeUpdateRange(const ActorReference actor, const Distance range)
 {
 	auto iter = m_data.findIf([&](const VisionRequest& request) { return request.actor == actor; });
 	if(iter == m_data.end())

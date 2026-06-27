@@ -55,7 +55,7 @@ public:
 	[[nodiscard]] BoolArray indicesOfTouchingCuboids(const CuboidSet& cuboids) const;
 	[[nodiscard]] int indexOfCuboid(const Cuboid cuboid) const;
 	[[nodiscard]] bool anyOverlap() const;
-	GDB_CALLABLE std::string toString() const;
+	GDB_CALLABLE std::string toS() const;
 	GDB_CALLABLE Cuboid at(int i) const;
 	GDB_CALLABLE bool contains(const Cuboid cuboid) const;
 	static CuboidArray<capacity> create(const auto& source)

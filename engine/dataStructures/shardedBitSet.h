@@ -12,7 +12,7 @@ class ShardedBitSet
 {
 	Eigen::Array<DistanceWidth, 3> m_convertToIndex;
 	std::vector<bool> m_data;
-	ShardedBitSet(const Distance  x, const Distance  y, const Distance  z)
+	ShardedBitSet(const Distance x, const Distance y, const Distance z)
 	{
 		m_data.resize((x * y * z).get());
 		const int shard = x / shardWidth;
@@ -24,7 +24,7 @@ class ShardedBitSet
 		auto copy = point.data;
 		assert(copy[0] >= shard * shardWidth);
 		copy[0] -= shard * shardWidth;
-		copy[1] +=  m_ySize * shard;
+		copy[1] += m_ySize * shard;
 		return (copy * m_convertToIndex).sum();
 	}
 public:

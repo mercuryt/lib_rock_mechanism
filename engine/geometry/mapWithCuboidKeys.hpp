@@ -115,14 +115,14 @@ Quantity MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::volume() const
 	return output;
 }
 template<typename T, typename CuboidType, typename CuboidSetType>
-std::string MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::toString() const
+std::string MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::toS() const
 {
 	std::string output;
 	for(const auto& [cuboid, value] : data)
 	{
-		output += cuboid.toString() + " : ";
-		if constexpr(HasToStringMethod<T>)
-			output += value.toString() + ", ";
+		output += cuboid.toS() + " : ";
+		if constexpr(HastoSMethod<T>)
+			output += value.toS() + ", ";
 		else if constexpr(std::is_pointer<T>())
 			output += std::to_string((uintptr_t)value) + ", ";
 		else if constexpr(Numeric<T>)

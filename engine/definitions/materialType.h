@@ -75,8 +75,8 @@ class MaterialType final
 	StrongVector<int, MaterialTypeId> m_valuePerUnitFullDisplacement;
 	// Construction.
 	StrongVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId> m_construction_consumed;
-	StrongVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId>  m_construction_unconsumed;
-	StrongVector<std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>, MaterialTypeId>  m_construction_byproducts;
+	StrongVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId> m_construction_unconsumed;
+	StrongVector<std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>, MaterialTypeId> m_construction_byproducts;
 	StrongVector<SkillTypeId, MaterialTypeId> m_construction_skill;
 	StrongVector<Step, MaterialTypeId> m_construction_duration;
 	// How does this material dig?

@@ -164,7 +164,7 @@ Point3D DrinkObjective::containsSomethingDrinkable(Area& area, const Cuboid cubo
 {
 	const Space& space = area.getSpace();
 	const FluidTypeId fluidType = area.getActors().drink_getFluidType(actor);
-	const auto condition  = [&](const FluidData& fluidData) { return fluidData.type == fluidType; };
+	const auto condition = [&](const FluidData& fluidData) { return fluidData.type == fluidType; };
 	Point3D output = space.fluid_queryGetPointWithCondition(cuboid, condition);
 	if(output.empty())
 		output = getPointToDrinkItemAt(area, cuboid, actor);

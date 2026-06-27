@@ -109,21 +109,21 @@ void RTreeBooleanLowZOnly::Node::updateBranchBoundry(const ArrayIndex& offset, c
 	assert(!m_cuboids[offset.get()].empty());
 	m_cuboids.insert(offset.get(), cuboid);
 }
-std::string RTreeBooleanLowZOnly::Node::toString()
+std::string RTreeBooleanLowZOnly::Node::toS()
 {
-	std::string output = "parent: " + m_parent.toString() + "; ";
+	std::string output = "parent: " + m_parent.toS() + "; ";
 	if(m_leafEnd != 0)
 	{
 		output += "leaves: {";
 		for(ArrayIndex i = ArrayIndex::create(0); i < m_leafEnd; ++i)
-			output += "(" + m_cuboids[i.get()].toString() + "), ";
+			output += "(" + m_cuboids[i.get()].toS() + "), ";
 		output += "}; ";
 	}
 	if(m_childBegin != nodeSize)
 	{
 		output += "children: {";
 		for(ArrayIndex i = m_childBegin; i < nodeSize; ++i)
-			output += "(" + m_cuboids[i.get()].toString() + ":" + m_childIndices[i.get()].toString() + "), ";
+			output += "(" + m_cuboids[i.get()].toS() + ":" + m_childIndices[i.get()].toS() + "), ";
 		output += "}; ";
 	}
 	return output;

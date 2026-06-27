@@ -20,6 +20,7 @@ using Offsets = Eigen::Array<OffsetWidth, 3, 1>;
 struct Offset3D;
 struct Cuboid;
 struct OffsetCuboid;
+struct CuboidSet;
 class AdjacentIndex;
 
 struct Point3D
@@ -80,7 +81,8 @@ struct Point3D
 	[[nodiscard]] DistanceFractional distanceToFractional(const Point3D other) const;
 	[[nodiscard]] DistanceFractional distanceToFractional(const Cuboid other) const;
 	[[nodiscard]] DistanceSquared distanceToSquared(const Point3D other) const;
-	[[nodiscard]] std::string toString() const;
+	[[nodiscard]] GDB_CALLABLE std::string toS() const;
+	[[nodiscard]] GDB_CALLABLE std::string operator()() const;
 	static const int hilbertOrder = 1;
 	[[nodiscard]] int hilbertNumber() const;
 	[[nodiscard]] Offset3D toOffset() const;
@@ -106,6 +108,7 @@ struct Point3D
 	[[nodiscard]] Cuboid getAllAdjacentIncludingOutOfBounds() const;
 	[[nodiscard]] Cuboid inflated(Distance distance) const;
 	[[nodiscard]] Cuboid boundry() const;
+	[[nodiscard]] CuboidSet toSet() const;
 	//TODO: move to helper.
 	[[nodiscard]] bool isAdjacentToAny(const auto& points) const
 	{
@@ -206,7 +209,7 @@ struct Offset3D
 	[[nodiscard]] std::strong_ordering operator<=>(const Offset3D other) const;
 	[[nodiscard]] bool empty() const { return data[0] == Offset::null().get(); }
 	[[nodiscard]] bool exists() const { return !empty(); }
-	[[nodiscard]] std::string toString() const;
+	[[nodiscard]] std::string toS() const;
 	[[nodiscard]] static Offset3D create(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z);
 	GDB_CALLABLE static Offset3D createDbg(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z);
 	[[nodiscard]] Offset3D below() const;

@@ -34,7 +34,7 @@ void AreaHasDecks::unregisterDecks(Area& area, const DeckId id)
 	clearPoints(area, id);
 	m_data.erase(id);
 }
-void AreaHasDecks::shift(Area& area, const DeckId id, const Offset3D offset, const Distance  distance, const Point3D origin, const Facing4 oldFacing, const Facing4 newFacing)
+void AreaHasDecks::shift(Area& area, const DeckId id, const Offset3D offset, const Distance distance, const Point3D origin, const Facing4 oldFacing, const Facing4 newFacing)
 {
 	clearPoints(area, id);
 	if(oldFacing != newFacing)
@@ -110,7 +110,7 @@ DeckRotationData DeckRotationData::recordAndClearDependentPositions(Area& area, 
 	}
 	return output;
 }
-void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D previousPivot, const Point3D newPivot, const  Facing4 previousFacing, const Facing4 newFacing)
+void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D previousPivot, const Point3D newPivot, const Facing4 previousFacing, const Facing4 newFacing)
 {
 	Space& space = area.getSpace();
 	[[maybe_unused]] OffsetCuboid boundry = space.offsetBoundry();
@@ -182,7 +182,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D pre
 	{
 		const OffsetCuboid newCuboid = cuboid.translate(previousPivot, newPivot, previousFacing, newFacing);
 		assert(boundry.contains(newCuboid));
-		space.fluid_add(cuboid, pair.second, pair.first);
+		space.fluid_add(CuboidSet::create(Cuboid::create(newCuboid)), pair.second, pair.first);
 	}
 	// If an actor cannot reserve the rotated positions they must reset their objective.
 	for(const ActorIndex actor : actorsWhichCannotReserveRotatedPosition)
@@ -192,7 +192,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D pre
 	for(Project* project : projectsWhichCannotReserveRotatedPosition)
 		project->resetOrCancel();
 }
-SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Area& area, const Point3D previousPivot, const Point3D newPivot, const  Facing4 previousFacing, const Facing4 newFacing)
+SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Area& area, const Point3D previousPivot, const Point3D newPivot, const Facing4 previousFacing, const Facing4 newFacing)
 {
 	Space& space = area.getSpace();
 	[[maybe_unused]] OffsetCuboid boundry = space.offsetBoundry();
@@ -284,7 +284,7 @@ SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Ar
 		const OffsetCuboid offset = cuboid.translate(previousPivot, newPivot, previousFacing, newFacing);
 		assert(boundry.contains(offset));
 		const Cuboid newCuboid = Cuboid::create(offset);
-		space.fluid_add(newCuboid, pair.second, pair.first);
+		space.fluid_add(CuboidSet::create(newCuboid), pair.second, pair.first);
 	}
 	// If an actor cannot reserve the rotated positions they must reset their objective.
 	for(const ActorIndex actor : actorsWhichCannotReserveRotatedPosition)

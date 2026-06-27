@@ -79,15 +79,15 @@ public:
 	[[nodiscard]] bool containsAsMember(const Cuboid cuboid) const { return m_cuboids.containsAsMember(cuboid); }
 	[[nodiscard]] bool empty() const { return m_keys.empty(); }
 	[[nodiscard]] int size() const { return m_keys.size(); }
-	[[nodiscard]] const auto& keys() const { return  m_keys; }
+	[[nodiscard]] const auto& keys() const { return m_keys; }
 	[[nodiscard]] Cuboid operator[](const Key& key) const { auto found = std::ranges::find(m_keys, key); assert(found != m_keys.end()); int index = std::distance(m_keys.begin(), found); return m_cuboids[index];}
 	[[nodiscard]] Cuboid byIndex(const int index) const { return m_cuboids[index]; }
 	[[nodiscard]] Cuboid boundry() const { return m_cuboids.boundry(); }
-	[[nodiscard]] std::string toString() const
+	[[nodiscard]] std::string toS() const
 	{
 		std::string output;
 		for(int i = 0; i < m_keys.size(); ++i)
-			output += m_keys[i].toString() + ": " + m_cuboids[i].toString() + ", ";
+			output += m_keys[i].toS() + ": " + m_cuboids[i].toS() + ", ";
 		return output;
 	}
 	class ConstIterator

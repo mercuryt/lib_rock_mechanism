@@ -9,7 +9,7 @@ class HasThreadedTask final
 	ThreadedTaskEngine& m_engine;
 	TaskType* m_threadedTask;
 public:
-	HasThreadedTask(ThreadedTaskEngine& tte) : m_engine(tte), m_threadedTask(nullptr)  { }
+	HasThreadedTask(ThreadedTaskEngine& tte) : m_engine(tte), m_threadedTask(nullptr) { }
 	template<typename ...Args>
 	void create(Args&& ...args)
 	{

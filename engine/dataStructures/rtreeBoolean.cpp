@@ -141,21 +141,21 @@ void RTreeBoolean::Node::updateBranchBoundry(const RTreeArrayIndex offset, const
 	assert(!m_cuboids[offset.get()].empty());
 	m_cuboids.insert(offset.get(), cuboid);
 }
-std::string RTreeBoolean::Node::toString()
+std::string RTreeBoolean::Node::toS() const
 {
-	std::string output = "parent: " + m_parent.toString() + "; ";
+	std::string output = "parent: " + m_parent.toS() + "; ";
 	if(m_leafEnd != 0)
 	{
 		output += "leaves: {";
 		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < m_leafEnd; ++i)
-			output += "(" + m_cuboids[i.get()].toString() + "), ";
+			output += "(" + m_cuboids[i.get()].toS() + "), ";
 		output += "}; ";
 	}
 	if(m_childBegin != nodeSize)
 	{
 		output += "children: {";
 		for(RTreeArrayIndex i = m_childBegin; i < nodeSize; ++i)
-			output += "(" + m_cuboids[i.get()].toString() + ":" + m_childIndices[i].toString() + "), ";
+			output += "(" + m_cuboids[i.get()].toS() + ":" + m_childIndices[i].toS() + "), ";
 		output += "}; ";
 	}
 	return output;
@@ -700,6 +700,14 @@ int RTreeBoolean::leafCount() const
 	return output;
 }
 const RTreeBoolean::Node& RTreeBoolean::getNode(int i) const { return m_nodes[RTreeNodeIndex::create(i)]; }
+std::string RTreeBoolean::toS() const
+{
+	std::string output;
+	for(const Node& node : m_nodes)
+		output += node.toS();
+	return output;
+}
+std::string RTreeBoolean::operator()() const { return toS(); }
 const Cuboid RTreeBoolean::getNodeCuboid(int i, int o) const { return m_nodes[RTreeNodeIndex::create(i)].getCuboids()[o]; }
 const RTreeNodeIndex RTreeBoolean::getNodeChild(int i, int o) const { return m_nodes[RTreeNodeIndex::create(i)].getChildIndices()[RTreeArrayIndex::create(o)]; }
 bool RTreeBoolean::queryPoint(int x, int y, int z) const { return query(Point3D::create(x,y,z)); }
