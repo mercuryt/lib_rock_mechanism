@@ -1,7 +1,7 @@
 {
   "name": "lead",
   "density": 11.34,
-  "hardness": 1,
+  "hardness": 10,
   "transparent": false,
   "meltingPoint": 600,
   "meltsInto": "moltenLead",

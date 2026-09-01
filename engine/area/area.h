@@ -22,6 +22,7 @@
 #include "../deck.h"
 #include "../onSight.h"
 #include "../temperature/areaHasTemperatures.h"
+#include "../temperature/areaHasPhaseChanges.h"
 #include "installItem.h"
 #include "woodcutting.h"
 #include "stockpile.h"
@@ -77,6 +78,7 @@ public:
 	EventSchedule m_eventSchedule;
 	ThreadedTaskEngine m_threadedTaskEngine;
 	AreaHasTemperature m_hasTemperature;
+	AreaHasPhaseChanges m_hasPhaseChanges;
 	AreaHasPaths m_hasPaths;
 	AreaHasFires m_fires;
 	// To be updated when an actor becomes a soldier, stops being a soldier, or moves while being a soldier.
@@ -108,6 +110,7 @@ public:
 	AreaHasDecks m_decks;
 	std::string m_name;
 	Simulation& m_simulation;
+	Point3D m_location;
 	AreaId m_id;
 	bool m_destroy = false;
 	//WorldLocation* m_worldLocation;

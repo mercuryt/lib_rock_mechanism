@@ -73,7 +73,6 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 		m_items(*this),
 	#endif
 	m_eventSchedule(simulation, this),
-	m_fires(data["fires"]),
 	m_hasOnSight(data["onSight"], deserializationMemo, *this),
 	m_hasFarmFields(*this),
 	m_hasDigDesignations(*this),
@@ -97,7 +96,11 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_simulation.m_hasAreas->recordId(*this);
 	setup();
 	getSpace().load(data["space"], deserializationMemo);
+	// Load liquid.
 	data["fluidGroups"].get_to(m_hasFluidGroups);
+	// Load fire.
+	m_fires.m_fires.beforeJsonLoad();
+	data["fires"].get_to(m_fires);
 	// Load plants.
 	getPlants().load(data["plants"]);
 	// Load fields.
@@ -127,8 +130,9 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_hasStockPiles.loadWorkers(data["hasStockPiles"], deserializationMemo);
 	m_hasCraftingLocationsAndJobs.loadWorkers(data["hasCraftingLocationsAndJobs"], deserializationMemo);
 	data["temperature"].get_to(m_hasTemperature);
+	data["phaseChange"].get_to(m_hasPhaseChanges);
 
-	//hasWoodCuttingDesignations.loadWorkers(data["hasWoodCuttingDesignations"], deserializationMemo);
+	//m_hasWoodCuttingDesignations.loadWorkers(data["hasWoodCuttingDesignations"], deserializationMemo);
 	//m_targetedHauling.loadWorkers(data["targetedHauling"], deserializationMemo);
 
 	// Load fluid sources.
@@ -161,7 +165,8 @@ Json Area::toJson() const
 		{"actors", getActors().toJson()}, {"items", getItems().toJson()}, {"space", getSpace().toJson()},
 		{"plants", getPlants().toJson()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires},
 		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"rain", m_hasRain.toJson()},
-		{"designations", m_spaceDesignations}, {"temperature", m_hasTemperature}, {"fluidGroups", m_hasFluidGroups}
+		{"designations", m_spaceDesignations}, {"temperature", m_hasTemperature},
+		{"phaseChange", m_hasPhaseChanges},  {"fluidGroups", m_hasFluidGroups}
 	};
 	data["hasFarmFields"] = m_hasFarmFields.toJson();
 	data["onSight"] = m_hasOnSight.toJson();
@@ -184,6 +189,7 @@ void Area::doStep()
 	space.prepareRtrees();
 	space.doSupportStep();
 	m_hasTemperature.doStep(*this);
+	m_hasPhaseChanges.doStep(*this);
 	if(m_hasRain.isRaining() && m_simulation.m_step.modulusIsZero(Config::rainWriteStepFreqency))
 		m_hasRain.doStep();
 	m_fluidSources.doStep();

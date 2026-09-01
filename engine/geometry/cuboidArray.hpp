@@ -430,6 +430,16 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfTouchingCuboids
 	return output;
 }
 template<int capacity>
+CuboidArray<capacity>::DistanceArray CuboidArray<capacity>::squaredDistancesTo(Point3D point) const
+{
+	const PointArray replicated = point.data.replicate(1, capacity);
+	auto distanceHigh = (m_high - replicated).abs();
+	auto distanceLow = (m_low - replicated).abs();
+	auto distanceByAxis = distanceHigh.cwiseMin(distanceLow);
+	auto squared = distanceByAxis.pow(2);
+	return squared.colwise().sum();
+}
+template<int capacity>
 int CuboidArray<capacity>::indexOfCuboid(const Cuboid cuboid) const
 {
 	const PointArray replicatedHigh = cuboid.m_high.data.replicate(1, capacity);

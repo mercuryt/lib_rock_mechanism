@@ -1,47 +1,21 @@
 #pragma once
 #include "cuboidSet.h"
+class Random;
 
 namespace cuboidSetHelper
 {
-	inline std::vector<CuboidSet> splitIntoTouchingGroups(const CuboidSet& input)
+	std::vector<CuboidSet> splitIntoTouchingGroups(const CuboidSet& input);
+	std::vector<int> makeFlowField(const CuboidSet& input, std::vector<int> start, std::vector<int> end);
+	struct RandomClusterParamaters
 	{
-		std::vector<CuboidSet> output;
-		std::vector<Cuboid> boundry;
-		for(Cuboid inputCuboid : input)
-		{
-			bool added = false;
-			int addedTo{-1};
-			int outputCount = output.size();
-			for(int i{0}; i < outputCount; ++i)
-			{
-				if(boundry[i].isTouching(inputCuboid) && output[i].isTouching(inputCuboid))
-				{
-					if(!added)
-					{
-						addedTo = i;
-						added = true;
-						output[i].add(inputCuboid);
-						boundry[i].maybeExpand(inputCuboid);
-					}
-					else
-					{
-						// merge with previously added to set.
-						output[addedTo].add(output[i]);
-						boundry[addedTo].maybeExpand(boundry[i]);
-						// Clear output[i] as signal to erase.
-						output[i].clear();
-						boundry[i].clear();
-					}
-				}
-			}
-			if(!added)
-			{
-				// inputCuboid does not touch any existing group.
-				output.emplace_back(inputCuboid.toSet());
-				boundry.push_back(inputCuboid);
-			}
-			std::erase_if(output, [](const CuboidSet& cuboids) { return cuboids.empty(); });
-		}
-		return output;
-	}
+		CuboidSet source;
+		Cuboid area;
+		int count;
+		float maxRatioOfLongToShortDimension;
+		Distance maxDimension;
+		Distance minDimension;
+	};
+	CuboidSet randomCluster(Random& random, RandomClusterParamaters paramaters);
+	CuboidSet query(const CuboidSet& input, auto&& conditionCuboid, auto&& conditionPoint);
+	std::pair<CuboidSet, CuboidSet> queryReturnTrueAndFalse(const CuboidSet& input, auto&& conditionCuboid, auto&& conditionPoint);
 };

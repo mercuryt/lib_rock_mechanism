@@ -59,7 +59,10 @@ void PointsExposedToSky::maybeSetCuboid(Area& area, const Cuboid cuboid)
 	space.fluid_queryForEachWithCuboids(exposed, [&](const Cuboid fluidCuboid, const FluidData fluidData){
 		const Temperature freezingPoint = FluidType::getFreezingPoint(fluidData.type);
 		if(freezingPoint.exists())
-			area.m_hasTemperature.onFluidEnters(area, CuboidSet::create(fluidCuboid), fluidData.type, fluidData.group);
+		{
+			FluidGroup& group = area.m_hasFluidGroups.byId(fluidData.group);
+			area.m_hasTemperature.onFluidEnters(area, CuboidSet::create(fluidCuboid), group);
+		}
 	});
 	// Check for overhangs to mark as portals.
 	CuboidSet adjacentToExposed = exposed.getAdjacent();

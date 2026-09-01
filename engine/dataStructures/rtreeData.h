@@ -69,6 +69,7 @@ class RTreeData
 		void load(const Json& data);
 		void updateChildIndex(const RTreeNodeIndex oldIndex, const RTreeNodeIndex newIndex);
 		void insertLeaf(const Cuboid cuboid, const T& value);
+		void maybeInsertLeaf(const Cuboid cuboid, const T& value);
 		void insertLeaf(const Point3D point, const T& value) { insertLeaf(Cuboid{point, point}, value); }
 		void insertBranch(const Cuboid cuboid, const RTreeNodeIndex index);
 		void eraseBranch(const RTreeArrayIndex offset);
@@ -158,6 +159,7 @@ public:
 	GDB_CALLABLE bool anyLeafOverlapsAnother() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] CuboidSet getLeafCuboids() const;
+	[[nodiscard]] Distance distanceWithCondition(Point3D point, Distance maxRange, auto&& condition) const;
 	[[nodiscard]] SmallSet<T> getAllWithCondition(auto&& condition) const
 	{
 		SmallSet<T> output;
@@ -229,7 +231,7 @@ public:
 		// An action may cause a leaf to be shrunk or destroyed. Collect all nodes where this happens so we can correct their boundries.
 		SmallSet<RTreeNodeIndex> toUpdateBoundryMaybe;
 		// When a leaf is shrunk or destroyed it may generate fragments. Collect these to readd at end.
-		MapWithCuboidKeys<T> fragmentsToReAdd;
+		SmallSet<std::pair<Cuboid, T>> fragmentsToReAdd;
 		while(!openList.empty())
 		{
 			auto index = openList.back();
@@ -257,14 +259,17 @@ public:
 					T initialValue = T::create(nodeDataAndChildIndices[arrayIndex].data);
 					assert(initialValue != T::create(nullPrimitive));
 					T value = initialValue;
-					if constexpr(std::is_invocable_v<decltype(condition), T>)
+					if constexpr(std::is_invocable_v<decltype(condition), T&>)
 					{
 						if(!condition(value))
 							continue;
 					}
 					else if(!condition(leafCuboid, value))
 						continue;
-					action(value);
+					if constexpr(std::is_invocable_v<decltype(action), T&>)
+						action(value);
+					else
+						action(leafCuboid, value);
 					// Note space where action has been applied so we can create into empty space later.
 					if constexpr(queryConfig.create)
 						emptySpaceInShape.maybeRemove(leafCuboid.intersection(shape));
@@ -296,8 +301,8 @@ public:
 						// Shape does not contain leaf. Record fragments and note index for boundry update.
 						if(index != 0)
 							toUpdateBoundryMaybe.maybeInsert(index);
-						for(const Cuboid cuboid : leafCuboid.getChildrenWhenSplitBy(shape))
-							fragmentsToReAdd.insert(cuboid, initialValue);
+						for(Cuboid cuboid : leafCuboid.getChildrenWhenSplitBy(shape))
+							fragmentsToReAdd.maybeEmplace(cuboid, initialValue);
 						if(value == T::create(nullPrimitive))
 						{
 							// Action changed value to null.
@@ -334,7 +339,6 @@ public:
 		}
 		// Repair any boundries altered by destroying or shrinking leaves.
 		updateBoundriesMaybe(toUpdateBoundryMaybe);
-		validate();
 		// ReAdd fragments created by destroying or shrinking leaves.
 		for(const auto& [cuboid, value] : fragmentsToReAdd)
 			// Use maybeInsert rather then insert here becasue the fragment might already exist.
@@ -343,6 +347,7 @@ public:
 		{
 			// Create new leaves in the space within shape where no leaf currently exists.
 			T value = T::create(nullPrimitive);
+			// TODO: create mode is not compatable with actions that read the cuboid as paramater.
 			action(value);
 			assert(value != T::create(nullPrimitive));
 			insert(emptySpaceInShape, value);
@@ -353,6 +358,7 @@ public:
 			assert(false);
 			std::unreachable();
 		}
+		validate();
 	}
 	// Change a value.
 	void update(const auto& shape, const T& oldValue, const T& newValue)
@@ -612,7 +618,7 @@ public:
 					const RTreeArrayIndex arrayIndex{leafBitSet.getNextAndClear()};
 					T candidate = T::create(nodeDataAndChildIndices[arrayIndex].data);
 					Cuboid cuboid = nodeCuboids[arrayIndex.get()];
-					if constexpr(std::is_invocable_v<decltype(condition), T>)
+					if constexpr(std::is_invocable_v<decltype(condition), T&>)
 					{
 						if(condition(candidate))
 							return {candidate, cuboid};
@@ -737,6 +743,34 @@ public:
 				for(RTreeArrayIndex arrayIndex{0}; arrayIndex != leafEnd; ++arrayIndex)
 					action(cuboids[arrayIndex.get()], T::create(data[arrayIndex].data));
 			}
+	}
+	void forEachCuboid(auto&& action) const
+	{
+		const int nodeEnd = m_nodes.size();
+		for(RTreeNodeIndex nodeIndex{0}; nodeIndex != nodeEnd; ++nodeIndex)
+			// If empty slots were sorted this could be done in one pass.
+			if(!m_emptySlots.contains(nodeIndex))
+			{
+				const Node& node = m_nodes[nodeIndex];
+				const auto& cuboids = node.getCuboids();
+				const int leafEnd = node.getLeafCount();
+				for(RTreeArrayIndex arrayIndex{0}; arrayIndex != leafEnd; ++arrayIndex)
+					action(cuboids[arrayIndex.get()]);
+			}
+	}
+	[[nodiscard]] CuboidSet allCuboids() const
+	{
+		CuboidSet output;
+		auto action = [&output](Cuboid cuboid) { output.add(cuboid); };
+		forEachCuboid(action);
+		return output;
+	}
+	[[nodiscard]] CuboidSet allCuboidsWithCondition(auto&& condition) const
+	{
+		CuboidSet output;
+		auto action = [&condition, &output](Cuboid cuboid, const T& value) { if(condition(cuboid, value)) output.add(cuboid); };
+		forEachWithCuboids(action);
+		return output;
 	}
 	[[nodiscard]] const SmallSet<T> queryGetAll(const auto& shape) const
 	{
@@ -938,7 +972,7 @@ public:
 	{
 		std::vector<MapWithCuboidKeys<T>> output;
 		output.resize(shapes.size());
-		auto action = [&](const T& value, const Cuboid cuboid, const int shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].insert({cuboid, value}); };
+		auto action = [&](const T& value, Cuboid cuboid, int shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].insert({cuboid, value}); };
 		batchQueryForEachWithCondition(shapes, action, condition);
 		return output;
 	}
@@ -977,6 +1011,10 @@ public:
 	[[nodiscard]] int queryCount(const auto& shape) const
 	{
 		return queryGetAll(shape).size();
+	}
+	[[nodiscard]] int queryIntersectionVolume(const auto& shape) const
+	{
+		return queryGetIntersection(shape).volume();
 	}
 	[[nodiscard]] int queryCountWithCondition(const auto& shape, const auto& condition) const
 	{

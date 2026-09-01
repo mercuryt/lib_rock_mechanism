@@ -361,7 +361,7 @@ TEST_CASE("basicNeedsNonsentient")
 		CHECK(actors.grow_isGrowing(actor));
 		Point3D temperatureSourceLocation = Point3D::create(1, 1, 3);
 		Point3D safeLocation = Point3D::create(9, 9, 2);
-		[[maybe_unused]] auto temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, temperatureSourceLocation, TemperatureDelta::create(200));
+		[[maybe_unused]] auto temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, temperatureSourceLocation.toCuboid(), TemperatureDelta::create(200));
 		simulation.doStep();
 		CHECK(!actors.temperature_isSafeAtCurrentLocation(actor));
 		CHECK(space.temperature_get(actors.getLocation(actor)) > AnimalSpecies::getMaximumSafeTemperature(actors.getSpecies(actor)));
@@ -512,7 +512,7 @@ TEST_CASE("death-temperature")
 		Point3D b4 = Point3D::create(2, 1, 2);
 		Point3D b5 = Point3D::create(5, 5, 5);
 		CHECK(actors.temperature_isSafeAtCurrentLocation(actor));
-		[[maybe_unused]] auto temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, temperatureSourceLocation, TemperatureDelta::create(6000));
+		[[maybe_unused]] auto temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, temperatureSourceLocation.toCuboid(), TemperatureDelta::create(6000));
 		// One step to propigate temperature and create death event.
 		simulation.doStep();
 		CHECK(space.temperature_get(b1) == space.temperature_get(temperatureSourceLocation));

@@ -2,6 +2,7 @@
 #include "../area/area.h"
 #include "../space/space.h"
 #include "../config/config.h"
+#include "../config/physics.h"
 #include "../definitions/animalSpecies.h"
 #include "../definitions/bodyType.h"
 #include "../definitions/itemType.h"
@@ -893,7 +894,9 @@ void Actors::takeFallDamage(const ActorIndex index, const Distance distance, con
 		auto& body = *m_body[index];
 		BodyPart& hitPart = body.pickABodyPartByVolume(m_area.m_simulation);
 		int area = Config::convertBodyPartVolumeToArea(BodyPartType::getVolume(hitPart.bodyPartType));
+		//TODO: magic numbers.
 		area = m_area.m_simulation.m_random.getInRange(int(area * 0.25), area);
+		area = std::max(area, 1);
 		Hit hit(area, force, materialType, WoundType::Bludgeon);
 		takeHit(index, hit, hitPart);
 	}

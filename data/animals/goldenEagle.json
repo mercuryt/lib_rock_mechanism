@@ -15,6 +15,8 @@
   "daysTillDieInUnsafeTemperature": 1,
   "minimumSafeTemperature": 261,
   "maximumSafeTemperature": 316,
+  "maximumHumidity": 65,
+  "minimumHumidity": 10,
   "daysSleepFrequency": 1,
   "hoursTillSleepOveride": 10,
   "hoursSleepDuration": 8,

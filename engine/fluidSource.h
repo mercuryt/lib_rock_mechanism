@@ -1,6 +1,6 @@
 #pragma once
 #include "numericTypes/types.h"
-#include "geometry/point3D.h"
+#include "geometry/cuboidSet.h"
 #include "config/config.h"
 #include <vector>
 class FluidType;
@@ -8,10 +8,10 @@ class Area;
 struct DeserializationMemo;
 struct FluidSource final
 {
-	Point3D point;
+	CuboidSet zone;
 	FluidTypeId fluidType;
 	CollisionVolume level;
-	FluidSource(Point3D b, FluidTypeId ft, CollisionVolume l) : point(b), fluidType(ft), level(l) { }
+	FluidSource(const CuboidSet& b, FluidTypeId ft, CollisionVolume l) : zone(b), fluidType(ft), level(l) { }
 	FluidSource(const Json& data, DeserializationMemo& deserializationMemo);
 };
 class AreaHasFluidSources final
@@ -23,8 +23,8 @@ public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void doStep();
-	void create(Point3D point, FluidTypeId fluidType, CollisionVolume level);
-	void destroy(Point3D);
-	[[nodiscard]] bool contains(Point3D point) const;
-	[[nodiscard]] const FluidSource& at(Point3D point) const;
+	void create(const CuboidSet& zone, FluidTypeId fluidType, CollisionVolume level);
+	void destroy(const CuboidSet& zone);
+	[[nodiscard]] bool contains(const CuboidSet& zone) const;
+	[[nodiscard]] const FluidSource& at(const CuboidSet& zone) const;
 };

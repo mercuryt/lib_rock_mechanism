@@ -7,7 +7,7 @@ class CuboidSet;
 class Cuboid;
 class Window;
 struct Sprite;
-enum class PointFeatureTypeId;
+enum class PointFeatureTypeId : uint8_t;
 namespace draw
 {
 	void world(Window& window);

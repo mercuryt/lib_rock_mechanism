@@ -25,24 +25,36 @@ void Space::pointFeature_remove(const Point3D point, PointFeatureTypeId pointFea
 	assert(!solid_isAny(point));
 	const bool transmitedTemperaturePreviously = temperature_transmits(point);
 	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
+	MaterialTypeId materialType = m_features.queryGetOneWithCondition(point, condition).materialType;
 	m_features.maybeRemoveWithConditionOne(point, condition);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
 	m_area.m_hasPaths.update(m_area, getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(!transmitedTemperaturePreviously && temperature_transmits(point))
 		m_area.m_hasTemperature.onTemperatureCanNowTransmit(m_area, CuboidSet::create(point));
+	m_area.m_hasTemperature.onUnsetFeature(m_area, point.toSet(), materialType);
 	m_exposedToSky.maybeSetCuboid(m_area, {point, point});
+}
+CuboidSet Space::pointFeature_getCuboidsWithMaterialType(const CuboidSet& shape, MaterialTypeId materialType) const
+{
+	return m_features.queryGetAllCuboidsWithCondition(shape, [materialType](PointFeature feature){ return feature.materialType == materialType; });
 }
 void Space::pointFeature_removeAll(const Point3D point)
 {
 	assert(!solid_isAny(point));
 	const bool transmitedTemperaturePreviously = temperature_transmits(point);
+	SmallSet<MaterialTypeId> materialTypes;
+	m_features.queryForEach(point, [&materialTypes](PointFeature feature){
+		materialTypes.maybeInsert(feature.materialType);
+	});
 	m_features.maybeRemove(point);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
 	m_area.m_hasPaths.update(m_area, getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(!transmitedTemperaturePreviously && temperature_transmits(point))
 		m_area.m_hasTemperature.onTemperatureCanNowTransmit(m_area, CuboidSet::create(point));
+	for(MaterialTypeId materialType : materialTypes)
+		m_area.m_hasTemperature.onUnsetFeature(m_area, point.toSet(), materialType);
 	m_exposedToSky.maybeSetCuboid(m_area, {point, point});
 }
 void Space::pointFeature_add(Cuboid cuboid, PointFeature feature)
@@ -62,6 +74,7 @@ void Space::pointFeature_add(Cuboid cuboid, PointFeature feature)
 		m_exposedToSky.maybeUnsetBeneathTopLayer(m_area, cuboid);
 	m_area.m_opacityFacade.update(m_area, cuboid);
 	m_area.m_hasPaths.update(m_area, cuboid.inflated({1}));
+	m_area.m_hasTemperature.onSetFeature(m_area, cuboid.toSet(), feature.materialType);
 	if(feature.blocksTemperature())
 		m_area.m_hasTemperature.onTemperatureCanNoLongerTransmit(m_area, CuboidSet::create(cuboid));
 }
@@ -98,6 +111,7 @@ void Space::pointFeature_construct(Cuboid cuboid, PointFeatureTypeId pointFeatur
 		if(transmitedTemperaturePreviously && !temperature_transmits(point))
 			m_area.m_hasTemperature.onTemperatureCanNoLongerTransmit(m_area, CuboidSet::create(point));
 	}
+	m_area.m_hasTemperature.onSetFeature(m_area, cuboid.toSet(), materialType);
 }
 void Space::pointFeature_hew(const Point3D point, PointFeatureTypeId pointFeatureType)
 {
@@ -119,6 +133,7 @@ void Space::pointFeature_hew(const Point3D point, PointFeatureTypeId pointFeatur
 	// The point has been set to transparent by solid_setNot but may need to be set to opaque again depending on the feature and material types.
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
 	m_area.m_hasPaths.update(m_area, getAdjacentWithEdgeAndCornerAdjacent(point));
+	m_area.m_hasTemperature.onSetFeature(m_area, point.toSet(), materialType);
 }
 MapWithCuboidKeys<PointFeature> Space::pointFeature_getAllWithCuboidsAndRemove(const CuboidSet& cuboids)
 {

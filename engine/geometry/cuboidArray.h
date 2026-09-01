@@ -17,6 +17,7 @@ public:
 	using PointArray = Eigen::Array<DistanceWidth, 3, capacity>;
 	using Offset3DArray = Eigen::Array<OffsetWidth, 3, capacity>;
 	using OffsetArray = Eigen::Array<OffsetWidth, 1, capacity>;
+	using DistanceArray = Eigen::Array<DistanceWidth, 1, capacity>;
 private:
 	PointArray m_high;
 	PointArray m_low;
@@ -53,6 +54,7 @@ public:
 	[[nodiscard]] BoolArray indicesOfMergeableCuboids(const Cuboid cuboid) const;
 	[[nodiscard]] BoolArray indicesOfTouchingCuboids(const Cuboid cuboid) const;
 	[[nodiscard]] BoolArray indicesOfTouchingCuboids(const CuboidSet& cuboids) const;
+	[[nodiscard]] DistanceArray squaredDistancesTo(Point3D point) const;
 	[[nodiscard]] int indexOfCuboid(const Cuboid cuboid) const;
 	[[nodiscard]] bool anyOverlap() const;
 	GDB_CALLABLE std::string toS() const;

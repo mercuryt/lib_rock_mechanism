@@ -158,33 +158,6 @@ void Items::moveIndex(const ItemIndex oldIndex, const ItemIndex newIndex)
 		space.item_updateIndex(boundry, oldIndex, newIndex);
 	}
 }
-void Items::setTemperature(const ItemIndex index, const Temperature temperature, const Point3D point)
-{
-	Space& space = m_area.getSpace();
-	const auto setTemperatureMaterialType = [&](const MaterialTypeId materialType)
-	{
-		if(MaterialType::canBurn(materialType) && MaterialType::getIgnitionTemperature(materialType) <= temperature)
-			space.fire_maybeIgnite(point, materialType);
-		else if(MaterialType::canMelt(materialType) && MaterialType::getMeltingPoint(materialType) <= temperature)
-		{
-			// TODO: Would it be better to destroy the item and create rubble and then liquify the rubble in this point?
-			const CuboidSet occupied = m_occupied[index];
-			const CollisionVolume volume = Shape::getTotalCollisionVolume(m_shape[index]) / occupied.volume();
-			destroy(index);
-			space.fluid_add(occupied, volume.get(), MaterialType::getMeltsInto(materialType));
-		}
-	};
-	const MaterialTypeId materialType = m_solid[index];
-	if(materialType.exists())
-		setTemperatureMaterialType(materialType);
-	else
-	{
-		assert(m_constructedShape[index] != nullptr);
-		auto materialTypes = m_constructedShape[index]->getMaterialTypesAt(m_location[index], m_facing[index], point);
-		for(const MaterialTypeId featureMaterialType : materialTypes)
-			setTemperatureMaterialType(featureMaterialType);
-	}
-}
 void Items::addQuantity(const ItemIndex index, const Quantity delta)
 {
 	assert(isStatic(index));
@@ -332,9 +305,6 @@ void Items::moveQuantity(const ItemIndex index, const Quantity quantity, const P
 }
 void Items::destroy(const ItemIndex index)
 {
-	// Remove from Area::AreaHasTemperatures meltable item tracker.
-	if(isOnSurface(index))
-		setOnSurface(index, false);
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
 	if(hasLocation(index))
 		location_clear(index);

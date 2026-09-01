@@ -205,3 +205,11 @@ public:
 };
 void to_json(Json& data, const FluidGroupId& index);
 void from_json(const Json& data, FluidGroupId& index);
+
+using SettlementIdWidth = int32_t;
+class SettlementId : public StrongInteger<SettlementId, SettlementIdWidth, INT32_MAX, 0>
+{
+public:
+	struct Hash { [[nodiscard]] size_t operator()(const SettlementId index) const { return index.get(); } };
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SettlementId, data);
+};

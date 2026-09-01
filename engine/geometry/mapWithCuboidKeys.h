@@ -52,42 +52,54 @@ struct MapWithOffsetCuboidKeys final : public MapWithCuboidKeysBase<T, OffsetCub
 	[[nodiscard]] MapWithOffsetCuboidKeys<T> applyOffset(const Offset3D offset) const;
 	[[nodiscard]] MapWithCuboidKeys<T> relativeTo(const Point3D location) const;
 };
-
+// Custom json serialization is used here because OffsetCuboid is loaded from config/shapes.json.
 template<typename T>
 void to_json(Json& data, const MapWithCuboidKeys<T>& map)
 {
 	for(const auto& [cuboid, value] : map)
-		data.push_back({cuboid, value});
+		data.push_back({{cuboid.m_high, cuboid.m_low}, value});
 }
 template<typename T>
 void from_json(const Json& data, MapWithCuboidKeys<T>& map)
 {
 	for(const Json& pair : data)
 	{
-		Cuboid cuboid = (pair[0].size() == 2) ?
-			Cuboid::fromPointPair(pair[0][0].get<Point3D>(), pair[0][1].get<Point3D>()) :
-			Cuboid(pair[0].get<Point3D>(), pair[0].get<Point3D>());
-		assert(cuboid.m_high >= cuboid.m_low);
-		const T volume = pair[1].get<T>();
-		map.insert(cuboid, volume);
+		Offset3D high;
+		Offset3D low;
+		if(pair[0].size() == 2)
+		{
+			high = pair[0][0].get<Point3D>();
+			low = pair[0][1].get<Point3D>();
+		}
+		else
+			high = low = pair[0].get<Point3D>();
+		Cuboid cuboid = Cuboid::create(high, low);
+		T value = pair[1].get<T>();
+		map.insert(cuboid, value);
 	}
 }
 template<typename T>
 void to_json(Json& data, const MapWithOffsetCuboidKeys<T>& map)
 {
 	for(const auto& [cuboid, value] : map)
-		data.push_back({cuboid, value});
+		data.push_back({{cuboid.m_high, cuboid.m_low}, value});
 }
 template<typename T>
 void from_json(const Json& data, MapWithOffsetCuboidKeys<T>& map)
 {
 	for(const Json& pair : data)
 	{
-		OffsetCuboid cuboid = (pair[0].size() == 2) ?
-			OffsetCuboid::create(pair[0][0].get<Point3D>(), pair[0][1].get<Point3D>()) :
-			OffsetCuboid(pair[0].get<Offset3D>(), pair[0].get<Offset3D>());
-		assert(cuboid.m_high >= cuboid.m_low);
-		const T volume = pair[1].get<T>();
-		map.insert(cuboid, volume);
+		Offset3D high;
+		Offset3D low;
+		if(pair[0].size() == 2)
+		{
+			high = pair[0][0].get<Offset3D>();
+			low = pair[0][1].get<Offset3D>();
+		}
+		else
+			high = low = pair[0].get<Offset3D>();
+		OffsetCuboid cuboid = OffsetCuboid::create(high, low);
+		T value = pair[1].get<T>();
+		map.insert(cuboid, value);
 	}
 }

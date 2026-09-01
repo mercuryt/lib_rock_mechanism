@@ -86,7 +86,7 @@ Body::Body(const Json& data, DeserializationMemo& deserializationMemo, const Act
 	m_totalVolume(data["totalVolume"].get<FullDisplacement>()),
 	m_impairMovePercent(data.contains("impairMovePercent") ? data["impairMovePercent"].get<Percent>() : Percent::create(0)),
 	m_impairManipulationPercent(data.contains("impairManipulationPercent") ? data["impairManipulationPercent"].get<Percent>() : Percent::create(0)),
-	m_volumeOfBlood(data["volumeOfBlood"].get<FullDisplacement>()),
+	m_volumeOfBlood(data["volumeOfBlood"].get<CollisionVolume>()),
 	m_pain(data["pain"].get<PsycologyWeight>()),
 	m_isBleeding(data["isBleeding"].get<bool>())
 {
@@ -210,9 +210,9 @@ Wound& Body::addWound(Area& area, BodyPart& bodyPart, Hit& hit)
 }
 void Body::healWound(Area& area, Wound& wound)
 {
-	wound.bodyPart.wounds.remove(wound);
 	// TODO: reduce pain gradually in stages.
 	m_pain -= wound.hit.pain();
+	wound.bodyPart.wounds.remove(wound);
 	recalculateBleedAndImpairment(area);
 }
 void Body::doctorWound(Area& area, Wound& wound, Percent healSpeedPercentageChange)
@@ -285,7 +285,7 @@ void Body::recalculateBleedAndImpairment(Area& area)
 			// Already bleeding, reschedule bleed event and wounds close event.
 			assert(m_woundsCloseEvent.exists());
 			Step adjustedFrequency = m_bleedEvent.exists() ?
-				Step::create(util::scaleByInversePercent(baseFrequency.get(), m_bleedEvent.percentComplete())) :
+				baseFrequency * (1.f - m_bleedEvent.fractionComplete()) :
 				baseFrequency;
 			Step toScheduleStep = area.m_simulation.m_step + adjustedFrequency;
 			if(!m_bleedEvent.exists() || toScheduleStep != m_bleedEvent.getStep())
@@ -293,7 +293,7 @@ void Body::recalculateBleedAndImpairment(Area& area)
 				m_bleedEvent.maybeUnschedule();
 				m_bleedEvent.schedule(area.m_simulation, adjustedFrequency, *this);
 			}
-			Step adjustedWoundsCloseDelay = Step::create(util::scaleByInversePercent(baseWoundsCloseDelay.get(), m_woundsCloseEvent.percentComplete()));
+			Step adjustedWoundsCloseDelay = baseWoundsCloseDelay * (1.f - m_woundsCloseEvent.fractionComplete());
 			toScheduleStep = area.m_simulation.m_step + adjustedWoundsCloseDelay;
 			if(!m_woundsCloseEvent.exists() || toScheduleStep != m_woundsCloseEvent.getStep())
 			{
@@ -338,26 +338,23 @@ Wound& Body::getWoundWhichIsBleedingTheMost()
 Step Body::getStepsTillBleedToDeath() const
 {
 	assert(m_bleedEvent.exists());
-	Step output = m_bleedEvent.remainingSteps();
-	if(m_volumeOfBlood > 1)
-	{
-		auto volume = m_volumeOfBlood - 1;
-		while(true)
-		{
-			output += m_bleedEvent.duration();
-			if(volume == 0 || (float)volume.get() / (float)healthyBloodVolume().get() <= Config::bleedToDeathRatio)
-				return output;
-			--volume;
-		}
-	}
-	else
-		return output;
+	CollisionVolume maximumVolumeOfBloodToBleedToDeath = healthyBloodVolume() * Config::bleedToDeathRatio;
+	CollisionVolume volumeToLose = m_volumeOfBlood - maximumVolumeOfBloodToBleedToDeath;
+	Step output = m_bleedEvent.duration() * volumeToLose.get();
+	output -= m_bleedEvent.elapsedSteps();
+	return output;
 }
 bool Body::piercesSkin(Hit hit, const BodyPart& bodyPart) const
 {
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
-	int pierceScore = (int)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceSkinModifier;
-	int defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
+	int hitHardness = MaterialType::getHardness(hit.materialType);
+	assert(hitHardness > 0);
+	int bodyHardness = MaterialType::getHardness(bodyPart.materialType);
+	assert(bodyHardness > 0);
+	assert(hit.force.exists());
+	assert(hit.area > 0);
+	int pierceScore = (int)((float)hit.force.get() / (float)hit.area) * hitHardness * Config::pierceSkinModifier;
+	int defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * bodyHardness;
 	return pierceScore > defenseScore;
 }
 bool Body::piercesFat(Hit hit, const BodyPart& bodyPart) const
@@ -381,9 +378,12 @@ bool Body::piercesBone(Hit hit, const BodyPart& bodyPart) const
 	int defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
-FullDisplacement Body::healthyBloodVolume() const
+CollisionVolume Body::healthyBloodVolume() const
 {
-	return m_totalVolume * Config::ratioOfTotalBodyVolumeWhichIsBlood;
+	// TODO(priority): DisplacementVolume is used differently by Body then by Item.
+	// For Item it reperesents 1/4000 of a CollisionVolume, for Body it represents 1 CollisionVolume.
+	// Solution: Change the type used by Body.
+	return {CollisionVolumeWidth(m_totalVolume.get() * Config::ratioOfTotalBodyVolumeWhichIsBlood)};
 }
 std::vector<Attack> Body::getMeleeAttacks() const
 {

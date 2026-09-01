@@ -16,15 +16,21 @@ void AreaHasFluidGroups::doStep()
 		// Prepare.
 		group.m_occupied.prepare();
 		// Flow.
+		//group.maybeDrainFromEdge(m_area);
+		if(group.m_volume == 0)
+			// Group fully drained from edge.
+			continue;
 		group.maybeDisplaceFromMoreDenseFluid(m_area);
 		group.maybeExpand(m_area);
 		group.maybeConsolidate();
-		if(group.m_newlyAdded.empty() && group.m_noLongerOccupied.empty())
+		if(group.m_newlyAdded.empty() && group.m_noLongerOccupied.empty() && !group.m_drainingFromEdge)
 			group.m_stable = true;
 		else
 		{
-			space.fluid_flowInto(group.m_newlyAdded, group.m_fluidType, group);
-			space.fluid_flowOutFrom(group.m_noLongerOccupied, group.m_fluidType);
+			if(!group.m_newlyAdded.empty())
+				space.fluid_flowInto(group.m_newlyAdded, group);
+			if(!group.m_noLongerOccupied.empty())
+				space.fluid_flowOutFrom(group.m_noLongerOccupied, group);
 			group.maybeSetLowerDensityAdjacentUnstable(m_area);
 		}
 		// Find new groups to split.
@@ -36,6 +42,7 @@ void AreaHasFluidGroups::doStep()
 				groupsForFluidType.emplace_back(std::move(cuboidSet), volume);
 		}
 	}
+	clearEmpty();
 	// Create newly split off groups.
 	for(auto [fluidType, groups] : newGroups)
 		for(auto [occupied, volume] : groups)
@@ -68,6 +75,17 @@ void AreaHasFluidGroups::destroyGroup(FluidGroupId id)
 void AreaHasFluidGroups::clearMerged()
 {
 	std::erase_if(m_groups, [](const FluidGroup& group){ return group.m_merged; });
+}
+void AreaHasFluidGroups::clearEmpty()
+{
+	// The only reason a group should be empty here is because it has fully drained from the edge.
+	for(FluidGroup& group : m_groups)
+	{
+		assert(group.m_volume >= 0);
+		if(group.m_volume == 0)
+			assert(group.m_drainingFromEdge);
+	}
+	std::erase_if(m_groups, [](const FluidGroup& group){ return group.m_volume == 0; });
 }
 FluidGroup& AreaHasFluidGroups::byId(FluidGroupId id)
 {

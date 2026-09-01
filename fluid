@@ -1,0 +1,7 @@
+to remove from newly added if constantFlow is true:
+1. is node on route.
+2. every adjacent point which has higher highZ also has higher bedZ.
+
+if set is touching the area edge then reduce volume and skip expansion.
+if set is touching the area edge and a contains a source then set constanFlow to true.
+

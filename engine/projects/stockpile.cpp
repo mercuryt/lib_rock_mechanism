@@ -57,6 +57,7 @@ void StockPileProject::onComplete()
 	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
 	Point3D location = m_location;
 	Quantity quantity = m_quantity;
+	StockPile& stockpile = m_stockpile;
 	hasStockPiles.destroyProject(*this);
 	// TODO: ensure shape can fit here, provide correct facing.
 	ItemTypeId itemType = items.getItemType(cargo);
@@ -66,7 +67,7 @@ void StockPileProject::onComplete()
 	{
 		items.location_clearStatic(cargo);
 		cargo = items.location_set(cargo, location, Facing4::North);
-		hasStockPiles.maybeRemoveFromItemsWithDestinationByStockPile(m_stockpile, cargo);
+		hasStockPiles.maybeRemoveFromItemsWithDestinationByStockPile(stockpile, cargo);
 	}
 	// TODO: Does this need to change for generic?
 	area.m_hasStocks.getForFaction(faction).maybeRecord(area, cargo);

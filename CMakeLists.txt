@@ -32,10 +32,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -flto=auto -ltcma
 if(NOT CMAKE_BUILD_TYPE EQUAL "Release")
 	#add_compile_options(-fsanitize=address)
 	#add_link_options(-fsanitize=address)
-	#add_compile_options(-fsanitize=undefined)
-	#add_link_options(-fsanitize=undefined)
+	add_compile_options(-fsanitize=undefined)
+	add_link_options(-fsanitize=undefined)
 	# Build and index of the debug info for gdb.
-	add_link_options(-Wl,--thread-count=8,--gdb-index)
+	add_link_options(-Wl,--thread-count=6,--gdb-index)
 endif()
 
 add_subdirectory(engine)

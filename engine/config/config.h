@@ -43,7 +43,7 @@ namespace Config
 	inline float bleedToDeathRatio;
 	inline float bleedToUnconciousessRatio;
 	inline float pointsPerMeter;
-	inline int bludgeonBleedVoumeRateModifier;
+	inline int bludgeonBleedVolumeRateModifier;
 	inline int bludgeonPercentPermanantImparmentModifier;
 	inline int bludgeonPercentTemporaryImparmentModifier;
 	inline int bludgeonStepsTillHealedModifier;
@@ -58,7 +58,7 @@ namespace Config
 	inline float constructSkillModifier;
 	inline float constructStrengthModifier;
 	inline Priority craftObjectivePriority;
-	inline int cutBleedVoumeRateModifier;
+	inline int cutBleedVolumeRateModifier;
 	inline int cutPercentPermanantImparmentModifier;
 	inline int cutPercentTemporaryImparmentModifier;
 	inline int cutStepsTillHealedModifier;
@@ -181,7 +181,7 @@ namespace Config
 	inline std::array<int, 3> minimumHungerLevelThresholds;
 	inline Percent percentOfPlantMassWhichIsFoliage;
 	inline Percent percentPermanantImparmentMinimum;
-	inline int pierceBleedVoumeRateModifier;
+	inline int pierceBleedVolumeRateModifier;
 	inline float pierceBoneModifier;
 	inline float pierceFatModifier;
 	inline float pierceModifier;
@@ -265,6 +265,6 @@ namespace Config
 	inline float woodCuttingStrengthModifier;
 	inline Step yokeDelaySteps;
 
-	inline int convertBodyPartVolumeToArea(FullDisplacement volume){ return sqrt(volume.get()); }
+	inline int convertBodyPartVolumeToArea(FullDisplacement volume){ return std::sqrt(volume.get()); }
 	void load();
 }

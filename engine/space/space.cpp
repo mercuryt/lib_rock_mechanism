@@ -12,7 +12,7 @@
 #include "../portables.h"
 #include <string>
 
-Space::Space(Area& area, const Distance x, const Distance y, const Distance z) :
+Space::Space(Area& area, Distance x, Distance y, Distance z) :
 	m_area(area),
 	m_pointToIndexConversionMultipliers(1, x.get(), x.get() * y.get()),
 	m_dimensions(x.get(), y.get(), z.get()),
@@ -72,23 +72,28 @@ OffsetCuboid Space::offsetBoundry() const
 }
 Point3D Space::getCenterAtGroundLevel() const
 {
-	Point3D center(m_sizeX / 2, m_sizeY / 2, m_sizeZ - 1);
-	if(center.z() == 0)
-		return center;
-	Point3D below = center.below();
+	Distance zLevel = getGroundLevel(m_sizeX / 2, m_sizeY / 2);
+	return {m_sizeX / 2, m_sizeY / 2, zLevel};
+}
+Distance Space::getGroundLevel(Distance x, Distance y) const
+{
+	Point3D point(x, y, m_sizeZ - 1);
+	if(point.z() == 0)
+		return {0};
+	Point3D below = point.below();
 	while(!solid_isAny(below) && below.z() != 0)
 	{
 		below = below.below();
-		center = below;
+		point = below;
 	}
-	return center;
+	return point.z();
 }
-Cuboid Space::getAdjacentWithEdgeAndCornerAdjacent(const Point3D point) const
+Cuboid Space::getAdjacentWithEdgeAndCornerAdjacent(Point3D point) const
 {
 	Cuboid output = {Point3D(point.data + 1), point.subtractWithMinimum(Distance::create(1))};
 	return output.intersection(boundry());
 }
-SmallSet<Point3D> Space::getDirectlyAdjacent(const Point3D point) const
+SmallSet<Point3D> Space::getDirectlyAdjacent(Point3D point) const
 {
 	assert(boundry().contains(point));
 	SmallSet<Point3D> output;
@@ -106,18 +111,18 @@ SmallSet<Point3D> Space::getDirectlyAdjacent(const Point3D point) const
 		output.insert(point.above());
 	return output;
 }
-SmallSet<Point3D> Space::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const Point3D point) const
+SmallSet<Point3D> Space::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(Point3D point) const
 {
 	SmallSet<Point3D> output;
 	output.reserve(24);
 	Cuboid cuboid = {Point3D(point.data + 1), point.subtractWithMinimum(Distance::create(1))};
 	cuboid = cuboid.intersection(boundry());
-	for(const Point3D adjacent : cuboid)
+	for(Point3D adjacent : cuboid)
 		if(adjacent.x() != point.x() || adjacent.y() != point.x())
 			output.insert(adjacent);
 	return output;
 }
-SmallSet<Point3D> Space::getDirectlyAdjacentOnSameZLevelOnly(const Point3D point) const
+SmallSet<Point3D> Space::getDirectlyAdjacentOnSameZLevelOnly(Point3D point) const
 {
 	SmallSet<Point3D> output;
 	output.reserve(4);
@@ -147,7 +152,7 @@ SmallSet<Point3D> Space::getDirectlyAdjacentOnSameZLevelOnly(const Point3D point
 	}
 	return output;
 }
-Cuboid Space::getAdjacentWithEdgeOnSameZLevelOnly(const Point3D point) const
+Cuboid Space::getAdjacentWithEdgeOnSameZLevelOnly(Point3D point) const
 {
 	Point3D high(point.data + 1);
 	high.z() = point.z();
@@ -156,9 +161,9 @@ Cuboid Space::getAdjacentWithEdgeOnSameZLevelOnly(const Point3D point) const
 	Cuboid output = {high, low};
 	return output.intersection(boundry());
 }
-SmallSet<Point3D> Space::getNthAdjacent(const Point3D point, const Distance n)
+SmallSet<Point3D> Space::getNthAdjacent(Point3D point, Distance n)
 {
-	const Cuboid spaceBoundry = boundry();
+	Cuboid spaceBoundry = boundry();
 	const auto& offsets = getNthAdjacentOffsets(n.get());
 	SmallSet<Point3D> output;
 	const Offset3D pointOffset = point.toOffset();
@@ -170,25 +175,25 @@ SmallSet<Point3D> Space::getNthAdjacent(const Point3D point, const Distance n)
 	}
 	return output;
 }
-bool Space::isAdjacentToActor(const Point3D point, const ActorIndex actor) const
+bool Space::isAdjacentToActor(Point3D point, ActorIndex actor) const
 {
-	const Cuboid adjacent = point.getAllAdjacentIncludingOutOfBounds();
+	Cuboid adjacent = point.getAllAdjacentIncludingOutOfBounds();
 	return m_area.getActors().getOccupied(actor).intersects(adjacent);
 }
-bool Space::isAdjacentToItem(const Point3D point, const ItemIndex item) const
+bool Space::isAdjacentToItem(Point3D point, ItemIndex item) const
 {
-	const Cuboid adjacent = point.getAllAdjacentIncludingOutOfBounds();
-	const auto condition = [&](const ItemIndex i){ return i == item; };
+	Cuboid adjacent = point.getAllAdjacentIncludingOutOfBounds();
+	const auto condition = [&](ItemIndex i){ return i == item; };
 	return m_items.queryAnyWithCondition(adjacent, condition);
 }
-bool Space::canSeeIntoFromAlways(const Point3D to, const Point3D from) const
+bool Space::canSeeIntoFromAlways(Point3D to, Point3D from) const
 {
 	if(solid_isAny(to) && !MaterialType::getTransparent(m_solid.queryGetOne(to)))
 		return false;
 	if(pointFeature_contains(to, PointFeatureTypeId::Door))
 		return false;
 	// looking up.
-	const Cuboid toCuboid{to, to};
+	Cuboid toCuboid{to, to};
 	if(to.z() > from.z())
 	{
 		const PointFeature& floor = pointFeature_at(toCuboid, PointFeatureTypeId::Floor);
@@ -199,7 +204,7 @@ bool Space::canSeeIntoFromAlways(const Point3D to, const Point3D from) const
 			return false;
 	}
 	// looking down.
-	const Cuboid fromCuboid{from, from};
+	Cuboid fromCuboid{from, from};
 	if(to.z() < from.z())
 	{
 		const PointFeature& floor = pointFeature_at(fromCuboid, PointFeatureTypeId::Floor);
@@ -211,7 +216,7 @@ bool Space::canSeeIntoFromAlways(const Point3D to, const Point3D from) const
 	}
 	return true;
 }
-void Space::moveContentsTo(const Point3D from, const Point3D to)
+void Space::moveContentsTo(Point3D from, Point3D to)
 {
 	if(solid_isAny(from))
 	{
@@ -242,9 +247,6 @@ void Space::prepareRtrees()
 		if(m_reservables.canPrepare())
 			#pragma omp task
 				m_reservables.prepare();
-		if(m_fires.canPrepare())
-			#pragma omp task
-				m_fires.prepare();
 		if(m_solid.canPrepare())
 			#pragma omp task
 				m_solid.prepare();
@@ -289,7 +291,7 @@ void Space::prepareRtrees()
 				m_area.m_spaceDesignations.prepare();
 	}
 }
-bool Space::canSeeThrough(const Cuboid cuboid) const
+bool Space::canSeeThrough(Cuboid cuboid) const
 {
 	const MaterialTypeId material = solid_get(cuboid);
 	if(material.exists() && !MaterialType::getTransparent(material))
@@ -299,8 +301,8 @@ bool Space::canSeeThrough(const Cuboid cuboid) const
 		return false;
 	return true;
 }
-bool Space::canSeeThrough(const Point3D point) const { return canSeeThrough(Cuboid{point, point}); }
-bool Space::canSeeThroughFloor(const Cuboid cuboid) const
+bool Space::canSeeThrough(Point3D point) const { return canSeeThrough(Cuboid{point, point}); }
+bool Space::canSeeThroughFloor(Cuboid cuboid) const
 {
 	const PointFeature& floor = pointFeature_at(cuboid, PointFeatureTypeId::Floor);
 	if(floor.exists() && !MaterialType::getTransparent(floor.materialType))
@@ -310,7 +312,7 @@ bool Space::canSeeThroughFloor(const Cuboid cuboid) const
 		return false;
 	return true;
 }
-bool Space::canSeeThroughFrom(const Point3D point, const Point3D otherPoint) const
+bool Space::canSeeThroughFrom(Point3D point, Point3D otherPoint) const
 {
 	if(!canSeeThrough({point, point}))
 		return false;
@@ -333,27 +335,27 @@ bool Space::canSeeThroughFrom(const Point3D point, const Point3D otherPoint) con
 	}
 	return true;
 }
-bool Space::isSupport(const Point3D point) const
+bool Space::isSupport(Point3D point) const
 {
 	return solid_isAny(point) || pointFeature_isSupport(point);
 }
-bool Space::isExposedToSky(const Point3D point) const
+bool Space::isExposedToSky(Point3D point) const
 {
 	return m_exposedToSky.check(point);
 }
-bool Space::isEdge(const Point3D point) const
+bool Space::isEdge(Point3D point) const
 {
 	return (point.data == 0).any() && (point.data == m_dimensions).any();
 }
-bool Space::isEdge(const Cuboid cuboid) const
+bool Space::isEdge(Cuboid cuboid) const
 {
 	return isEdge(cuboid.m_high) || isEdge(cuboid.m_low);
 }
-bool Space::hasLineOfSightTo(const Point3D point, const Point3D other) const
+bool Space::hasLineOfSightTo(Point3D point, Point3D other) const
 {
 	return m_area.m_opacityFacade.hasLineOfSight(point, other);
 }
-Cuboid Space::getZLevel(const Distance z)
+Cuboid Space::getZLevel(Distance z)
 {
 	return Cuboid({m_sizeX - 1, m_sizeY - 1, z}, {Distance::create(0), Distance::create(0), z});
 }
@@ -372,9 +374,9 @@ Distance Space::getVerticalClearance(Cuboid cuboid) const
 	}
 	return max;
 }
-CuboidSet Space::collectAdjacentsInRange(const Point3D point, const Distance range)
+CuboidSet Space::collectAdjacentsInRange(Point3D point, Distance range)
 {
-	auto condition = [&](const Point3D b){ return b.taxiDistanceTo(point) <= range; };
+	auto condition = [&](Point3D b){ return b.taxiDistanceTo(point) <= range; };
 	return collectAdjacentsWithCondition(point, condition);
 }
-bool PointFeatureRTree::canOverlap(const PointFeature& a, const PointFeature& b) const { return a.pointFeatureType != b.pointFeatureType; }
+bool PointFeatureRTree::canOverlap(PointFeature a, PointFeature b) const { return a.pointFeatureType != b.pointFeatureType; }

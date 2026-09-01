@@ -8,6 +8,7 @@ struct BitSet
 {
 	static_assert(std::is_unsigned<IntType>::value, "IntType must be an unsigned type");
 	using This = BitSet<IntType, capacity>;
+	using Primitive = IntType;
 	constexpr static IntType one = 1;
 	constexpr static IntType zero = 0;
 	static_assert(sizeof(IntType) >= (capacity / 8));
@@ -15,6 +16,7 @@ struct BitSet
 	BitSet();
 	BitSet(const IntType& value);
 	BitSet(const This& other) = default;
+	[[nodiscard]] IntType get() const { return data; }
 	[[nodiscard]] bool operator[](const IntType& index) const;
 	[[nodiscard]] bool test(const IntType& index) const;
 	[[nodiscard]] bool empty() const;
@@ -39,6 +41,8 @@ struct BitSet
 	[[nodiscard]] BitSet<IntType, capacity> afterInclusive(const IntType& index) const; // Make a copy, mask everything after, return.
 	[[nodiscard]] static BitSet<IntType, capacity> create(const IntType& d);
 	[[nodiscard]] static BitSet<IntType, capacity> create(const Eigen::Array<bool, 1, 64>& boolArray);
+	[[nodiscard]] static BitSet<IntType, capacity> null() { return {0}; };
+	[[nodiscard]] constexpr static IntType nullPrimitive() { return 0; }
 	GDB_CALLABLE bool testDbg(const IntType& index) const;
 	GDB_CALLABLE std::string toS() const;
 	GDB_CALLABLE int popCount() const;

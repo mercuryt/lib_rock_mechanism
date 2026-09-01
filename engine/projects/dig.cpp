@@ -75,6 +75,9 @@ int DigProject::getWorkerDigScore(Area& area, ActorIndex actor)
 void DigProject::onComplete()
 {
 	auto& space = m_area.getSpace();
+	auto workers = std::move(m_workers);
+	Actors& actors = m_area.getActors();
+	Point3D location = m_location;
 	if(!space.solid_isAny(m_location))
 	{
 		assert(m_pointFeatureType == PointFeatureTypeId::Null);
@@ -88,9 +91,7 @@ void DigProject::onComplete()
 			space.pointFeature_hew(m_location, m_pointFeatureType);
 	}
 	// Remove designations for other factions as well as owning faction.
-	auto workers = std::move(m_workers);
-	Actors& actors = m_area.getActors();
-	m_area.m_hasDigDesignations.clearAll(m_location);
+	m_area.m_hasDigDesignations.clearAll(location);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }

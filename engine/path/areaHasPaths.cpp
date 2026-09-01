@@ -152,42 +152,46 @@ void AreaHasPaths::doStep(Area& area)
 	Actors& actors = area.getActors();
 	// instead of clearing each request as it is processed we clear all of them now.
 	actors.move_clearAllPathRequests();
+	// Iterate writeStep to where m_data ended at the start of step, even if it has been appended to by a callback.
+	int end = m_data.size();
+	// ReadStep.
 	// Read step inner iteration is done here rather then AreaHasPathsForMoveType having a readStep method so omp can paralelize the two for loops together.
 	// Because the 2d iteration space is jagged we need to collect index pairs for omp to get a total count.
+	// Path requests may not be created during read step, instead direct pathing calls must be used. This call may implicitly extend m_data.
 	m_outerAndInnerIndices.clear();
 	for(int i = 0; i < (int)m_data.size(); ++i)
-		for(int j = 0; j != (int)m_data[i].m_pathRequests.size(); ++j)
+		for(int j = 0; j != (int)m_data[i]->m_pathRequests.size(); ++j)
 			m_outerAndInnerIndices.emplace_back(i, j);
 	#pragma omp parallel for
 	for(int i = 0; i != (int)m_outerAndInnerIndices.size(); ++i)
 	{
 		int outer = m_outerAndInnerIndices[i].first;
 		int inner = m_outerAndInnerIndices[i].second;
-		m_data[outer].readStepForRequest(area, *m_data[outer].m_pathRequests[inner]);
+		m_data[outer]->readStepForRequest(area, *m_data[outer]->m_pathRequests[inner]);
 	}
 	// WriteStep.
-	for(AreaHasPathsForMoveType& hasPathsForMoveType : m_data)
-		hasPathsForMoveType.writeStep(area);
+	for(int i{0}; i < end; ++i)
+		m_data[i]->writeStep(area);
 }
 AreaHasPathsForMoveType& AreaHasPaths::get(Area& area, const MoveTypeId moveType)
 {
 	auto found = std::ranges::find(m_data, moveType, &AreaHasPathsForMoveType::m_moveType);
 	if(found == m_data.end())
 	{
-		m_data.emplace_back(area, moveType);
-		return m_data.back();
+		m_data.push_back(std::make_unique<AreaHasPathsForMoveType>(area, moveType));
+		return *m_data.back();
 	}
-	return *found;
+	return **found;
 }
 void AreaHasPaths::clearPathRequests()
 {
-	for(AreaHasPathsForMoveType& hasPaths : m_data)
-		hasPaths.m_pathRequests.clear();
+	for(std::unique_ptr<AreaHasPathsForMoveType>& hasPaths : m_data)
+		hasPaths->m_pathRequests.clear();
 }
 void AreaHasPaths::update(Area& area, const Cuboid cuboid)
 {
-	for(AreaHasPathsForMoveType& forMoveType : m_data)
-		forMoveType.update(area, cuboid);
+	for(std::unique_ptr<AreaHasPathsForMoveType>& hasPaths : m_data)
+		hasPaths->update(area, cuboid);
 }
 void AreaHasPaths::update(Area& area, const CuboidSet& cuboids)
 {
@@ -197,6 +201,6 @@ void AreaHasPaths::update(Area& area, const CuboidSet& cuboids)
 }
 void AreaHasPaths::maybeSetImpassable(const Cuboid cuboid)
 {
-	for(AreaHasPathsForMoveType& forMoveType : m_data)
-		forMoveType.m_enterable.maybeRemove(cuboid);
+	for(std::unique_ptr<AreaHasPathsForMoveType>& hasPaths : m_data)
+		hasPaths->m_enterable.maybeRemove(cuboid);
 }

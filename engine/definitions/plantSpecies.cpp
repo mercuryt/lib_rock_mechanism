@@ -80,3 +80,18 @@ ItemTypeId PlantSpecies::getFruitItemType(const PlantSpeciesId species) { return
 Step PlantSpecies::getStepsDurationHarvest(const PlantSpeciesId species) { return g_plantSpeciesData.m_stepsDurationHarvest[species]; }
 Quantity PlantSpecies::getItemQuantityToHarvest(const PlantSpeciesId species) { return g_plantSpeciesData.m_itemQuantityToHarvest[species]; }
 int PlantSpecies::getDayOfYearToStartHarvest(const PlantSpeciesId species) { return g_plantSpeciesData.m_dayOfYearToStartHarvest[species]; }
+SmallSet<PlantSpeciesId> PlantSpecies::getSpeciesForClimate(Temperature maxTemp, Temperature minTemp, Percent maxHumidity, Percent minHumidity)
+{
+	SmallSet<PlantSpeciesId> output;
+	for(PlantSpeciesId id{0}; id < g_plantSpeciesData.m_name.size(); ++id)
+	{
+		if(
+			g_plantSpeciesData.m_maximumGrowingTemperature[id] <= maxTemp &&
+			g_plantSpeciesData.m_minimumGrowingTemperature[id] >= minTemp &&
+			g_plantSpeciesData.m_maxHumidity[id] <= maxHumidity &&
+			g_plantSpeciesData.m_minHumidity[id] >= minHumidity
+		)
+			output.insert(id);
+	}
+	return output;
+}

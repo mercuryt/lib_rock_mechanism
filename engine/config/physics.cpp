@@ -1,4 +1,5 @@
 #include "physics.h"
+#include "config.h"
 #include <fstream>
 void Config::Physics::load()
 {
@@ -10,4 +11,9 @@ void Config::Physics::load()
 	data["radiantHeatDisipatesAtDistanceExponent"].get_to(radiantHeatDisipatesAtDistanceExponent);
 	data["minimumHeatDeltaToTrackAffectedArea"].get_to(minimumHeatDeltaToTrackAffectedArea);
 	data["ambiantTemperatureDeltaDecay"].get_to(ambiantTemperatureDeltaDecay);
+	phaseChangeFrequency = data["phaseChangeFrequencyMinutes"].get<Step>() * Config::stepsPerMinute;
+	data["unitsOfFluidToMeltPerPointVolume"].get_to(unitsOfFluidToMeltPerPointVolume);
+	data["unitsOfFluidToFreezePerPointVolume"].get_to(unitsOfFluidToFreezePerPointVolume);
+	data["volumeOfRubbleToGenerateWhenSolidBurns"].get_to(volumeOfRubbleToGenerateWhenSolidBurns);
+	data["volumeOfRubbleToGenerateWhenFeatureBurns"].get_to(volumeOfRubbleToGenerateWhenFeatureBurns);
 }

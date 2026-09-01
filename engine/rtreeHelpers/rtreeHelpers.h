@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../numericTypes/types.h"
-#include "../geometry/cuboidSet.h"
+#include "../geometry/cuboidSetHelper.h"
 #include <cmath>
+
 /*
 	Algorithims for working with rtrees.
 */
@@ -128,4 +128,14 @@ namespace RTreeHelpers
 		assert(volume >= 0);
 		return volume != 0;
 	}
-};
+	Distance getContiguousDistanceInDirection(const auto& rtree, const auto& shape, Facing6 direction)
+	{
+		assert(rtree.queryAny(shape));
+		auto copy = shape;
+		copy.maximizeDirection(direction);
+		CuboidSet found = rtree.queryGetIntersection(copy);
+		std::vector<CuboidSet> grouped = cuboidSetHelper::splitIntoTouchingGroups(found);
+		CuboidSet group = *std::ranges::find_if(grouped, [copy](const CuboidSet& candidate) { return candidate.intersects(copy); });
+		return group.boundry().dimensionForFacing(direction) - copy.dimensionForFacing(direction);
+	}
+}

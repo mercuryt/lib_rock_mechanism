@@ -1,7 +1,7 @@
 {
   "name": "limestone",
   "density": 2,
-  "hardness": 3,
+  "hardness": 30,
   "transparent": false,
   "meltingPoint": 1098,
   "meltsInto": "lava",

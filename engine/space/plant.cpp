@@ -34,6 +34,13 @@ void Space::plant_setTemperature(const Point3D point, const Temperature temperat
 	if(index.exists())
 		plants.setTemperature(index, temperature);
 }
+SmallSet<PlantIndex> Space::plant_getAllTrees() const
+{
+	SmallSet<PlantIndex> output;
+	Plants& plants = m_area.getPlants();
+	m_plants.forEach([&plants, &output](PlantIndex plant){ if(PlantSpecies::getIsTree(plants.getSpecies(plant))) output.maybeInsert(plant); });
+	return output;
+}
 bool Space::plant_canGrowHereCurrently(const Point3D point, const PlantSpeciesId plantSpecies) const
 {
 	Temperature temperature = temperature_get(point);

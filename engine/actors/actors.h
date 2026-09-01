@@ -48,7 +48,7 @@ struct ActorParamaters
 	DateTime birthDate = {0,0,0};
 	Step birthStep = Step::null();
 	Percent percentGrown = Percent::null();
-	Point3D location;
+	Point3D location = {};
 	ActorIndex mountedOn = ActorIndex::null();
 	Facing4 facing = Facing4::Null;
 	FactionId faction = FactionId::null();

@@ -52,6 +52,7 @@ ItemIndex Items::location_setStatic(const ItemIndex index, const Point3D locatio
 	}
 	deckRotationData.reinstanceAtRotatedPosition(m_area, previousLocation, location, previousFacing, facing);
 	onSetLocation(index, previousLocation, previousFacing);
+	m_area.m_hasTemperature.onItemEnters(m_area, index);
 	return index;
 }
 ItemIndex Items::location_setDynamic(const ItemIndex index, const Point3D location, Facing4 facing)
@@ -84,6 +85,7 @@ ItemIndex Items::location_setDynamic(const ItemIndex index, const Point3D locati
 	}
 	deckRotationData.reinstanceAtRotatedPosition(m_area, previousLocation, location, previousFacing, facing);
 	onSetLocation(index, previousLocation, previousFacing);
+	m_area.m_hasTemperature.onItemEnters(m_area, index);
 	return index;
 }
 SetLocationAndFacingResult Items::location_tryToSetNongenericStatic(const ItemIndex index, const Point3D location, const Facing4 facing)
@@ -220,11 +222,10 @@ void Items::location_clearStatic(const ItemIndex index)
 		shapePtr->recordAndClearStatic(m_area, m_occupied[index], location);
 	else
 		space.item_eraseStatic(m_occupiedWithVolume[index], index);
+	m_area.m_hasTemperature.onItemExits(m_area, index);
 	m_location[index].clear();
 	m_occupied[index].clear();
 	m_occupiedWithVolume[index].clear();
-	if(space.isExposedToSky(location))
-		setOnSurface(index, false);
 }
 void Items::location_clearDynamic(const ItemIndex index)
 {
@@ -237,11 +238,10 @@ void Items::location_clearDynamic(const ItemIndex index)
 		shapePtr->recordAndClearDynamic(m_area, m_occupied[index], location);
 	else
 		space.item_eraseDynamic(m_occupiedWithVolume[index], index);
+	m_area.m_hasTemperature.onItemExits(m_area, index);
 	m_location[index].clear();
 	m_occupied[index].clear();
 	m_occupiedWithVolume[index].clear();
-	if(space.isExposedToSky(location))
-		setOnSurface(index, false);
 }
 bool Items::location_canEnterEverWithFacing(const ItemIndex index, const Point3D location, const Facing4 facing) const
 {

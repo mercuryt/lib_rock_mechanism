@@ -8,23 +8,18 @@
 #include "../geometry/point3D.h"
 #include "../geometry/cuboidSetHelper.h"
 
-void Space::fluid_flowInto(const CuboidSet& cuboids, FluidTypeId fluidType, FluidGroup& group)
+void Space::fluid_flowInto(const CuboidSet& cuboids, FluidGroup& group)
 {
-	m_fluid.insert(cuboids, FluidData(group.m_id, fluidType));
-	// Update temperature.
-	if(!group.m_aboveGround && m_exposedToSky.check(cuboids))
-	{
-		group.m_aboveGround = true;
-		if(FluidType::getFreezesInto(fluidType).exists())
-			m_area.m_hasTemperature.onFluidEnters(m_area, cuboids, fluidType, group.m_id);
-	}
+	m_fluid.insert(cuboids, FluidData(group.m_id, group.m_fluidType));
+	m_area.m_hasTemperature.onFluidEnters(m_area, cuboids, group);
 	m_area.m_hasPaths.update(m_area, cuboids.inflated({1}));
 	floating_maybeFloatUp(cuboids);
 	fluid_maybeRecordFluidOnDeck(cuboids);
 }
-void Space::fluid_flowOutFrom(const CuboidSet& cuboids, FluidTypeId type)
+void Space::fluid_flowOutFrom(const CuboidSet& cuboids, FluidGroup& group)
 {
-	m_fluid.removeWithCondition(cuboids, [type](FluidData fluid) { return fluid.type == type; });
+	m_fluid.removeWithCondition(cuboids, [type = group.m_fluidType](FluidData fluid) { return type == fluid.type; });
+	m_area.m_hasTemperature.onFluidExits(m_area, cuboids, group.m_fluidType, group.m_id);
 	m_area.m_hasPaths.update(m_area, cuboids.inflated({1}));
 	floating_maybeSink(cuboids);
 	fluid_maybeEraseFluidOnDeck(cuboids);
@@ -56,7 +51,7 @@ void Space::fluid_add(const CuboidSet& shape, int64_t volume, FluidTypeId fluidT
 {
 	m_area.m_hasFluidGroups.createGroup(shape, volume, fluidType);
 	FluidGroup& group = m_area.m_hasFluidGroups.m_groups.back();
-	fluid_flowInto(shape, fluidType, group);
+	fluid_flowInto(shape, group);
 }
 void Space::fluid_remove(const CuboidSet& shape, int64_t volume, FluidTypeId fluidType)
 {
@@ -77,11 +72,20 @@ void Space::fluid_remove(const CuboidSet& shape, int64_t volume, FluidTypeId flu
 	}
 	for(FluidGroupId id : toDestroy)
 	{
-		FluidGroup& group = m_area.m_hasFluidGroups.byId(id);
-		fluid_flowOutFrom(group.m_occupied, group.m_fluidType);
+		FluidGroup& group{m_area.m_hasFluidGroups.byId(id)};
+		fluid_flowOutFrom(group.m_occupied, group);
 		m_area.m_hasPaths.update(m_area, group.m_occupied);
 		m_area.m_hasFluidGroups.destroyGroup(id);
 	}
+}
+CollisionVolume Space::fluid_containsVolumeOfEqualOrGreaterDensity(Point3D point, FluidTypeId fluidType) const
+{
+	CollisionVolume output{0};
+	Density density{FluidType::getDensity(fluidType)};
+	for(FluidData data : m_fluid.queryGetAll(point))
+		if(data.density >= density)
+			output += m_area.m_hasFluidGroups.byId(data.group).getVolume(point.toSet());
+	return output;
 }
 SmallSet<FluidGroup*> Space::fluid_getGroups(const CuboidSet& shape)
 {
@@ -103,10 +107,6 @@ SmallSet<FluidGroup*> Space::fluid_getGroupsWithType(const CuboidSet& shape, Flu
 		output.insert(&m_area.m_hasFluidGroups.byId(id));
 	return output;
 }
-CuboidSet Space::fluid_queryGetCuboids(const Cuboid shape) const
-{
-	return m_fluid.queryGetAllCuboids(shape);
-}
 FluidGroup* Space::fluid_getGroup(const Point3D point, const FluidTypeId fluidType) const
 {
 	FluidData data = m_fluid.queryGetOneWithCondition(point, [fluidType](FluidData fluid) { return fluid.type == fluidType; });
@@ -119,9 +119,10 @@ CollisionVolume Space::fluid_volumeOfTypeContains(const Point3D point, const Flu
 	FluidGroup* group = fluid_getGroup(point, fluidType);
 	if(group == nullptr)
 		return {0};
-	bool isTrailingPoint = group->m_flowingUp ?
+	bool isTrailingPoint{group->m_flowingUp ?
 		point.z() == group->m_lowZ :
-		point.z() == group->m_highZ;
+		point.z() == group->m_highZ
+	};
 	if(isTrailingPoint)
 		return CollisionVolume::create(group->trailingLevelFluidVolumePerPoint());
 	else
@@ -129,39 +130,47 @@ CollisionVolume Space::fluid_volumeOfTypeContains(const Point3D point, const Flu
 }
 void Space::fluid_onSetSolid(const CuboidSet& cuboids)
 {
-	SmallSet<FluidGroupId> displaced;
+	SmallSet<FluidGroupId> groups;
+	SmallSet<FluidGroupId> toDestroy;
+	SmallMap<FluidTypeId, std::vector<std::pair<CuboidSet, int64_t>>> newGroups;
 	for(FluidGroup* group : fluid_getGroups(cuboids))
+		groups.insert(group->m_id);
+	for(FluidGroupId id : groups)
 	{
-		if(cuboids.contains(group->m_occupied))
-			displaced.insert(group->m_id);
+		FluidGroup& group = m_area.m_hasFluidGroups.byId(id);
+		group.m_stable = false;
+		if(cuboids.contains(group.m_occupied))
+		{
+			bool displaced = group.maybeDisplaceFromSolid(m_area, cuboids);
+			// If the group could not be displaced it must be destroyed.
+			if(!displaced)
+				toDestroy.insert(group.m_id);
+		}
 		else
 		{
-			CuboidSet removed = group->m_occupied.intersection(cuboids);
-			group->m_occupied.remove(removed);
-			group->m_stable = false;
-			group->m_noLongerOccupied.add(removed);
+			// Find new groups to split.
+			group.m_noLongerOccupied.add(cuboids.intersection(group.m_occupied));
+			group.m_occupied.removeAll(group.m_noLongerOccupied);
+			std::vector<std::pair<CuboidSet, int64_t>> newGroupsFromThisGroup = group.maybeSplit();
+			group.m_noLongerOccupied.clear();
+			if(!newGroupsFromThisGroup.empty())
+			{
+				std::vector<std::pair<CuboidSet, int64_t>>& groupsForFluidType = newGroups.getOrCreate(group.m_fluidType);
+				for(auto& [cuboidSet, volume] : newGroupsFromThisGroup)
+					groupsForFluidType.emplace_back(std::move(cuboidSet), volume);
+			}
 		}
 	}
-	CuboidSet candidates = cuboids.inflated({1});
-	candidates.removeAll(cuboids);
-	solid_removeAllFrom(candidates);
-	if(!candidates.empty())
-	{
-		Point3D destinination = candidates[0].m_low;
-		for(FluidGroupId id : displaced)
+	// Create newly split off groups.
+	for(auto [fluidType, newGroupsForFluidType] : newGroups)
+		for(auto [occupied, volume] : newGroupsForFluidType)
 		{
-			FluidGroup& group = m_area.m_hasFluidGroups.byId(id);
-			group.m_stable = false;
-			group.m_occupied.clear();
-			group.m_occupied.add(destinination);
+			m_area.m_hasFluidGroups.createGroup(occupied, volume, fluidType);
+			fluid_setGroupId(occupied, fluidType, m_area.m_hasFluidGroups.m_nextId - 1);
 		}
-	}
-	else
-	{
-		// Nowhere to put displaced, destroy it.
-		for(FluidGroupId id : displaced)
-			m_area.m_hasFluidGroups.destroyGroup(id);
-	}
+	for(FluidGroupId id : toDestroy)
+		m_area.m_hasFluidGroups.destroyGroup(id);
+	// Any groups which were displaced have already been removed from m_fluid, this is just for groups which were destroyed.
 	m_fluid.maybeRemove(cuboids);
 }
 void Space::fluid_onSetNotSolid(const CuboidSet& cuboids)
@@ -249,6 +258,10 @@ void Space::fluid_maybeEraseFluidOnDeck(const CuboidSet& points)
 		const ItemIndex item = isOnDeckOf.getItem();
 		m_area.getItems().onDeck_erasePointsContainingFluid(item, points);
 	}
+}
+void Space::fluid_addSource(const CuboidSet& shape, FluidTypeId type, CollisionVolume level)
+{
+	m_area.m_fluidSources.create(shape, type, level);
 }
 bool Space::fluid_shapeIsMostlySurroundedByFluidOfTypeAtDistanceAboveLocationWithFacing(const ShapeId shape, const FluidTypeId fluidType, const Distance distance, const Point3D location, const Facing4 facing) const
 {

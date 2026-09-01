@@ -7,6 +7,7 @@
 #include <cassert>
 
 struct Cuboid;
+struct CuboidSet;
 struct Point3D;
 
 class Random
@@ -48,7 +49,8 @@ public:
 	bool percentChance(const Percent percent);
 	bool chance(double chance);
 	bool chance(float chance);
-	Point3D getInCuboid(const Cuboid cuboid);
+	Point3D getInCuboid(Cuboid cuboid);
+	Point3D getInCuboidSet(const CuboidSet& cuboids);
 	template<typename T>
 	T getInEnum()
 	{

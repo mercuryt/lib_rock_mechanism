@@ -157,6 +157,7 @@ void EquipmentSet::modifyImpact(Area& area, Hit& hit, const BodyPartTypeId bodyP
 
 		}
 	}
+	hit.force = std::max(hit.force, {1});
 	m_equipments.eraseIf([&](const ItemReference equipment){ return area.getItems().getWear(equipment.getIndex(items.m_referenceData)) == 100; });
 }
 std::vector<Attack> EquipmentSet::getMeleeAttacks(Area& area)

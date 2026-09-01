@@ -145,18 +145,18 @@ TEST_CASE("fluidsSmaller")
 		Point3D destination2 = Point3D::create(5, 6, 1);
 		Point3D origin1 = Point3D::create(5, 5, 2);
 		Point3D origin2 = Point3D::create(5, 5, 3);
-		space.solid_setNot(destination1);
-		space.solid_setNot(destination2);
-		space.solid_setNot(destination1.above());
-		space.solid_setNot(destination2.above());
+		space.solid_setNotCuboid(Cuboid{destination1.above(), destination1});
+		space.solid_setNotCuboid(Cuboid{destination2.above(), destination2});
 		space.solid_setNot(origin1);
-		space.fluid_add(origin1.toSet(), maxPointVolume, water);
-		space.fluid_add(origin2.toSet(), maxPointVolume, water);
-		CHECK(area.m_hasFluidGroups.m_groups.size() == 2);
+		space.fluid_add(Cuboid{origin2, origin1}.toSet(), maxPointVolume * 2, water);
 		simulation.doStep();
 		CHECK(area.m_hasFluidGroups.m_groups.size() == 1);
 		FluidGroup* fluidGroup = &area.m_hasFluidGroups.m_groups[0];
-		CHECK(fluidGroup->m_occupied.volume() == 5);
+		CHECK(fluidGroup->m_occupied.volume() == 3);
+		// origin1 has not yet consolidated.
+		CHECK(fluidGroup->m_occupied.contains(origin1));
+		CHECK(fluidGroup->m_occupied.contains(destination1));
+		CHECK(fluidGroup->m_occupied.contains(destination2));
 		simulation.doStep();
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 0);
 		CHECK(space.fluid_volumeOfTypeContains(destination1.above(), water) == 0);
@@ -915,13 +915,14 @@ TEST_CASE("fluidsMultiScale")
 		int maxX = scaleL + 2;
 		int maxY = scaleW + 2;
 		int maxZ = scaleW + 1;
+		int zBuffer = std::max(1, int(scaleW * 1.1));
 		int quarterMaxX = maxX / 4;
-		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
+		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ + zBuffer);
 		area.m_hasRain.disable();
 		Space& space = area.getSpace();
 		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
+		areaBuilderUtil::setSolidWalls(area, maxZ + zBuffer - 1, marble);
 		// Water
 		Point3D water1 = Point3D::create(1, 1, 1);
 		Point3D water2 = Point3D::create(quarterMaxX, maxY - 2, maxZ - 1);
@@ -986,27 +987,27 @@ TEST_CASE("fluidsMultiScale")
 	};
 	SUBCASE("trench test 4 fluids scale 4-4")
 	{
-		trenchTest4Fluids(4, 4, Step::create(15));
+		trenchTest4Fluids(4, 4, Step::create(8));
 	}
 	SUBCASE("trench test 4 fluids scale 4-8")
 	{
-		trenchTest4Fluids(4, 8, Step::create(17));
+		trenchTest4Fluids(4, 8, Step::create(8));
 	}
 	SUBCASE("trench test 4 fluids scale 8-8")
 	{
-		trenchTest4Fluids(8, 8, Step::create(20));
+		trenchTest4Fluids(8, 8, Step::create(14));
 	}
 	SUBCASE("trench test 4 fluids scale 16-4")
 	{
-		trenchTest4Fluids(16, 4, Step::create(28));
+		trenchTest4Fluids(16, 4, Step::create(18));
 	}
 	SUBCASE("trench test 4 fluids scale 16-16")
 	{
-		trenchTest4Fluids(16, 16, Step::create(28));
+		trenchTest4Fluids(16, 16, Step::create(42));
 	}
 	SUBCASE("trench test 4 fluids scale 40-40")
 	{
-		trenchTest4Fluids(40, 40, Step::create(48));
+		trenchTest4Fluids(40, 40, Step::create(94));
 	}
 	auto trenchTest2FluidsMerge = [&](int scaleL, int scaleW, Step steps)
 	{

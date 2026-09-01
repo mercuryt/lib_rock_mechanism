@@ -6,32 +6,36 @@
 #include "space/space.h"
 #include "numericTypes/types.h"
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(FluidSource, point, fluidType, level);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(FluidSource, zone, fluidType, level);
 FluidSource::FluidSource(const Json& data, DeserializationMemo&) :
-	point(data["point"].get<Point3D>()), fluidType(data["fluidType"].get<FluidTypeId>()), level(data["level"].get<CollisionVolume>()) { }
+	zone(data["zone"].get<CuboidSet>()), fluidType(data["fluidType"].get<FluidTypeId>()), level(data["level"].get<CollisionVolume>()) { }
 
 void AreaHasFluidSources::doStep()
 {
 	Space& space = m_area.getSpace();
 	for(FluidSource& source : m_data)
 	{
-		CollisionVolume delta = source.level - space.fluid_getTotalVolume(source.point);
+		Cuboid boundry = source.zone.boundry();
+		CollisionVolume delta = source.level - space.fluid_getTotalVolume(source.zone.intersectionPoint(boundry.getFaceAbove()));
 		if(delta > 0)
-			space.fluid_add(CuboidSet::create(source.point), delta.get(), source.fluidType);
+			space.fluid_add(source.zone, delta.get(), source.fluidType);
 		else if(delta < 0)
-			space.fluid_remove(CuboidSet::create(source.point), -delta.get(), source.fluidType);
+			space.fluid_remove(source.zone, -delta.get(), source.fluidType);
 	}
 	m_area.m_hasFluidGroups.clearMerged();
 }
-void AreaHasFluidSources::create(Point3D point, FluidTypeId fluidType, CollisionVolume level)
+void AreaHasFluidSources::create(const CuboidSet& zone, FluidTypeId fluidType, CollisionVolume level)
 {
-	assert(!contains(point));
-	m_data.emplace_back(point, fluidType, level);
+	assert(!contains(zone));
+	m_data.emplace_back(zone, fluidType, level);
 }
-void AreaHasFluidSources::destroy(Point3D point)
+void AreaHasFluidSources::destroy(const CuboidSet& zone)
 {
-	assert(std::ranges::find(m_data, point, &FluidSource::point) != m_data.end());
-	m_data.erase(std::ranges::remove(m_data, point, &FluidSource::point).begin(), m_data.end());
+	assert(contains(zone));
+	auto found = std::ranges::find_if(m_data, [&zone](const FluidSource& source){ return source.zone.intersects(zone);});
+	assert(found != m_data.end());
+	(*found) = m_data.back();
+	m_data.pop_back();
 }
 void AreaHasFluidSources::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
@@ -45,12 +49,18 @@ Json AreaHasFluidSources::toJson() const
 		data.push_back(source);
 	return data;
 }
-bool AreaHasFluidSources::contains(Point3D point) const
+bool AreaHasFluidSources::contains(const CuboidSet& zone) const
 {
-	return std::ranges::find(m_data, point, &FluidSource::point) != m_data.end();
+	for(const FluidSource& source : m_data)
+		if(source.zone.intersects(zone))
+			return true;
+	return false;
 }
-const FluidSource& AreaHasFluidSources::at(Point3D point) const
+const FluidSource& AreaHasFluidSources::at(const CuboidSet& zone) const
 {
-	assert(contains(point));
-	return *std::ranges::find(m_data, point, &FluidSource::point);
+	assert(contains(zone));
+	for(const FluidSource& source : m_data)
+		if(source.zone.intersects(zone))
+			return source;
+	std::unreachable();
 }

@@ -1,7 +1,7 @@
 #include "offsetCuboid.h"
 #include "../dataStructures/smallSet.h"
 #include "../space/adjacentOffsets.h"
-OffsetCuboid::OffsetCuboid(const Offset3D high, const Offset3D low) :
+OffsetCuboid::OffsetCuboid(Offset3D high, Offset3D low) :
 	m_high(high),
 	m_low(low)
 {
@@ -14,29 +14,29 @@ int OffsetCuboid::volume() const
 		((m_high.y().get() + 1) - m_low.y().get()) *
 		((m_high.z().get() + 1) - m_low.z().get());
 }
-bool OffsetCuboid::contains(const Offset3D offset) const
+bool OffsetCuboid::contains(Offset3D offset) const
 {
 	return (m_high.data >= offset.data).all() && (m_low.data <= offset.data).all();
 }
-bool OffsetCuboid::contains(const OffsetCuboid other) const
+bool OffsetCuboid::contains(OffsetCuboid other) const
 {
 	return
 		(m_high.data >= other.m_high.data).all() && (m_low.data <= other.m_high.data).all() &&
 		(m_high.data >= other.m_low.data).all() && (m_low.data <= other.m_low.data).all();
 }
-bool OffsetCuboid::intersects(const Offset3D offset) const
+bool OffsetCuboid::intersects(Offset3D offset) const
 {
 	return !(m_high.data < offset.data || m_low.data > offset.data).any();
 }
-bool OffsetCuboid::intersects(const OffsetCuboid other) const
+bool OffsetCuboid::intersects(OffsetCuboid other) const
 {
 	return !(m_high.data < other.m_low.data || m_low.data > other.m_high.data).any();
 }
-OffsetCuboid OffsetCuboid::intersection(const OffsetCuboid other) const
+OffsetCuboid OffsetCuboid::intersection(OffsetCuboid other) const
 {
 	return { {m_high.data.min(other.m_high.data)}, {m_low.data.max(other.m_low.data)} };
 }
-bool OffsetCuboid::canMerge(const OffsetCuboid other) const
+bool OffsetCuboid::canMerge(OffsetCuboid other) const
 {
 	if(!isTouching(other))
 		return false;
@@ -47,15 +47,15 @@ bool OffsetCuboid::canMerge(const OffsetCuboid other) const
 	assert(count != 3);
 	return count == 2;
 }
-bool OffsetCuboid::isTouching(const OffsetCuboid other) const
+bool OffsetCuboid::isTouching(OffsetCuboid other) const
 {
 	return !((m_high.data + 1) < other.m_low.data || m_low.data > (other.m_high.data + 1)).any();
 }
-bool OffsetCuboid::isTouching(const Offset3D offset) const
+bool OffsetCuboid::isTouching(Offset3D offset) const
 {
 	return !((m_high.data + 1) < offset.data || m_low.data > (offset.data + 1)).any();
 }
-bool OffsetCuboid::isTouchingFace(const OffsetCuboid cuboid) const
+bool OffsetCuboid::isTouchingFace(OffsetCuboid cuboid) const
 {
 	assert(isTouching(cuboid));
 	assert(!contains(cuboid));
@@ -75,20 +75,20 @@ bool OffsetCuboid::isTouchingFace(const OffsetCuboid cuboid) const
 
 	return false;
 }
-bool OffsetCuboid::isTouchingFaceFromInside(const OffsetCuboid cuboid) const
+bool OffsetCuboid::isTouchingFaceFromInside(OffsetCuboid cuboid) const
 {
 	assert(cuboid.contains(*this));
 	const Eigen::Array<bool, 3, 1> maxEqualsMax = cuboid.m_high.data == m_high.data;
 	const Eigen::Array<bool, 3, 1> minEqualsMin = cuboid.m_low.data == m_low.data;
 	return (maxEqualsMax || minEqualsMin).any();
 }
-OffsetCuboid OffsetCuboid::translate(const Point3D previousPivot, const Point3D nextPivot, const Facing4 previousFacing, const Facing4 nextFacing) const
+OffsetCuboid OffsetCuboid::translate(Point3D previousPivot, Point3D nextPivot, Facing4 previousFacing, Facing4 nextFacing) const
 {
 	const auto rotatedHigh = m_high.translate(previousPivot, nextPivot, previousFacing, nextFacing);
 	const auto rotatedLow = m_low.translate(previousPivot, nextPivot, previousFacing, nextFacing);
 	return create(rotatedHigh, rotatedLow);
 }
-SmallSet<OffsetCuboid> OffsetCuboid::getChildrenWhenSplitByCuboid(const OffsetCuboid cuboid) const
+SmallSet<OffsetCuboid> OffsetCuboid::getChildrenWhenSplitByCuboid(OffsetCuboid cuboid) const
 {
 	Offset3D splitHigh = cuboid.m_high;
 	Offset3D splitLow = cuboid.m_low;
@@ -116,13 +116,13 @@ SmallSet<OffsetCuboid> OffsetCuboid::getChildrenWhenSplitByCuboid(const OffsetCu
 		output.emplace(Offset3D(splitLow.x() - 1, splitHigh.y(), splitHigh.z()), Offset3D(m_low.x(), splitLow.y(), splitLow.z()));
 	return output;
 }
-OffsetCuboid OffsetCuboid::relativeToPoint(const Point3D point) const { return {point + m_high, point + m_low}; }
-OffsetCuboid OffsetCuboid::relativeToOffset(const Offset3D offset) const { return {offset + m_high, offset + m_low}; }
+OffsetCuboid OffsetCuboid::relativeToPoint(Point3D point) const { return {point + m_high, point + m_low}; }
+OffsetCuboid OffsetCuboid::relativeToOffset(Offset3D offset) const { return {offset + m_high, offset + m_low}; }
 OffsetCuboid OffsetCuboid::above() const
 {
 	return {m_high.above(), Offset3D(m_low.x(), m_low.y(), m_high.z() + 1) };
 }
-OffsetCuboid OffsetCuboid::getFace(const Facing6 facing) const
+OffsetCuboid OffsetCuboid::getFace(Facing6 facing) const
 {
 	switch(facing)
 	{
@@ -153,13 +153,13 @@ bool OffsetCuboid::hasAnyNegativeCoordinates() const
 {
 	return (m_low.data >=0).all();
 }
-OffsetCuboid OffsetCuboid::sum(const OffsetCuboid other) const
+OffsetCuboid OffsetCuboid::sum(OffsetCuboid other) const
 {
 	OffsetCuboid output = *this;
 	output.maybeExpand(other);
 	return output;
 }
-OffsetCuboid OffsetCuboid::difference(const Offset3D other) const
+OffsetCuboid OffsetCuboid::difference(Offset3D other) const
 {
 	return create(m_high - other, m_low - other);
 }
@@ -167,18 +167,31 @@ Offset3D OffsetCuboid::getCenter() const
 {
 	return {(m_low.data + m_high.data) / 2};
 }
-void OffsetCuboid::maybeExpand(const OffsetCuboid other)
+void OffsetCuboid::maybeExpand(OffsetCuboid other)
 {
 	m_high.clampHigh(other.m_high);
 	m_low.clampLow(other.m_low);
 	assert((m_high.data >= m_low.data).all());
 }
-void OffsetCuboid::inflate(const Distance distance)
+void OffsetCuboid::inflate(Distance distance)
 {
 	m_high.data += distance.get();
 	m_low.data -= distance.get();
 }
-void OffsetCuboid::inflateHorizontal(const Distance distance)
+void OffsetCuboid::inflateDirection(Facing6 facing, Distance distance)
+{
+	switch(facing)
+	{
+		case Facing6::Above: m_high.setZ(m_high.z() + distance.get()); break;
+		case Facing6::Below: m_high.setZ(m_high.z() - distance.get()); break;
+		case Facing6::North: m_high.setY(m_high.y() + distance.get()); break;
+		case Facing6::South: m_high.setY(m_high.y() - distance.get()); break;
+		case Facing6::East: m_high.setX(m_high.x() + distance.get()); break;
+		case Facing6::West: m_high.setX(m_high.x() - distance.get()); break;
+		default: std::unreachable();
+	}
+}
+void OffsetCuboid::inflateHorizontal(Distance distance)
 {
 	Offset highZ = m_high.z();
 	Offset lowZ = m_low.z();
@@ -186,18 +199,37 @@ void OffsetCuboid::inflateHorizontal(const Distance distance)
 	m_high.setZ(highZ);
 	m_low.setZ(lowZ);
 }
-void OffsetCuboid::inflateVertical(const Distance distance)
+void OffsetCuboid::inflateVertical(Distance distance)
 {
 	m_high.setZ(m_high.z() + distance.get());
 	m_low.setZ(m_low.z() - distance.get());
 }
-void OffsetCuboid::shift(const Facing6 direction, const Distance distance)
+void OffsetCuboid::deflate(Distance d)
+{
+	Offset distance{d.get()};
+	if(sizeX() > distance * 2)
+	{
+		m_high.setX(m_high.x() - distance);
+		m_low.setX(m_low.x() + distance);
+	}
+	if(sizeY() > distance * 2)
+	{
+		m_high.setY(m_high.y() - distance);
+		m_low.setY(m_low.y() + distance);
+	}
+	if(sizeZ() > distance * 2)
+	{
+		m_high.setZ(m_high.z() - distance);
+		m_low.setZ(m_low.z() + distance);
+	}
+}
+void OffsetCuboid::shift(Facing6 direction, Distance distance)
 {
 	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
 	Offset3D offset = adjacentOffsets::direct[(int)direction];
 	shift(offset, distance);
 }
-void OffsetCuboid::shift(const Offset3D offset, const Distance distance)
+void OffsetCuboid::shift(Offset3D offset, Distance distance)
 {
 	assert(distance != 0);
 	auto offsetModified = offset;
@@ -205,28 +237,28 @@ void OffsetCuboid::shift(const Offset3D offset, const Distance distance)
 	m_high += offsetModified;
 	m_low += offsetModified;
 }
-void OffsetCuboid::rotateAroundPoint(const Offset3D offset, const Facing4 facing)
+void OffsetCuboid::rotateAroundPoint(Offset3D offset, Facing4 facing)
 {
 	assert(false);
-	const Point3D point = Point3D::create(offset);
-	const Offset3D lowOffset = m_low.translate(point, point, Facing4::North, facing);
-	const Offset3D highOffset = m_high.translate(point, point, Facing4::North, facing);
+	Point3D point = Point3D::create(offset);
+	Offset3D lowOffset = m_low.translate(point, point, Facing4::North, facing);
+	Offset3D highOffset = m_high.translate(point, point, Facing4::North, facing);
 	*this = create(lowOffset, highOffset);
 }
-void OffsetCuboid::rotate2D(const Facing4 facing)
+void OffsetCuboid::rotate2D(Facing4 facing)
 {
 	m_high.rotate2D(facing);
 	m_low.rotate2D(facing);
 	*this = create(m_high, m_low);
 }
-void OffsetCuboid::rotate2D(const Facing4 oldFacing, const Facing4 newFacing)
+void OffsetCuboid::rotate2D(Facing4 oldFacing, Facing4 newFacing)
 {
 	int rotation = (int)newFacing - (int)oldFacing;
 	if(rotation < 0)
 		rotation += 4;
 	rotate2D((Facing4)rotation);
 }
-Offset3D OffsetCuboid::clamp(const Offset3D point) const
+Offset3D OffsetCuboid::clamp(Offset3D point) const
 {
 	return {
 		std::clamp(point.x(), m_low.x(), m_high.x()),
@@ -234,12 +266,12 @@ Offset3D OffsetCuboid::clamp(const Offset3D point) const
 		std::clamp(point.z(), m_low.z(), m_high.z())
 	};
 }
-Offset3D OffsetCuboid::nearestPointTo(const OffsetCuboid other) const
+Offset3D OffsetCuboid::nearestPointTo(OffsetCuboid other) const
 {
 	// Any point in other would work, there is no significance to using m_high in particular.
 	return clamp(other.m_high);
 }
-Offset OffsetCuboid::distanceTo(const OffsetCuboid other) const
+Offset OffsetCuboid::distanceTo(OffsetCuboid other) const
 {
 	return nearestPointTo(other).distanceTo(*this);
 }
@@ -251,7 +283,7 @@ void OffsetCuboid::clear()
 Offset OffsetCuboid::sizeX() const { return m_high.x() - m_low.x() + 1; }
 Offset OffsetCuboid::sizeY() const { return m_high.y() - m_low.y() + 1; }
 Offset OffsetCuboid::sizeZ() const { return m_high.z() - m_low.z() + 1; }
-OffsetCuboid::ConstIterator::ConstIterator(const OffsetCuboid cuboid, const Offset3D position) :
+OffsetCuboid::ConstIterator::ConstIterator(OffsetCuboid cuboid, Offset3D position) :
 	m_cuboid(const_cast<OffsetCuboid*>(&cuboid)),
 	m_current(position)
 { }
@@ -289,6 +321,6 @@ OffsetCuboid::ConstIterator OffsetCuboid::ConstIterator::operator++(int)
 Json OffsetCuboid::toJson() const { return {m_high, m_low}; }
 void OffsetCuboid::load(const Json& data) { data[0].get_to(m_high); data[1].get_to(m_low); }
 OffsetCuboid OffsetCuboid::create(const Cuboid cuboid) { return {cuboid.m_high.toOffset(), cuboid.m_low.toOffset()}; }
-OffsetCuboid OffsetCuboid::create(const Cuboid cuboid, const Point3D point) { return create(cuboid.m_high.applyOffset(point), cuboid.m_low.applyOffset(point)); }
-OffsetCuboid OffsetCuboid::create(const Offset3D a, const Offset3D b) { return {a.max(b), a.min(b)}; }
+OffsetCuboid OffsetCuboid::create(const Cuboid cuboid, Point3D point) { return create(cuboid.m_high.applyOffset(point), cuboid.m_low.applyOffset(point)); }
+OffsetCuboid OffsetCuboid::create(Offset3D a, Offset3D b) { return {a.max(b), a.min(b)}; }
 std::string OffsetCuboid::toS() const { return "{" + m_high.toS() + "," + m_low.toS() + "}"; }

@@ -103,11 +103,15 @@ struct Point3D
 	[[nodiscard]] Offset3D offsetRotated( const Offset3D initialOffset, const Facing4 previousFacing, const Facing4 newFacing) const;
 	[[nodiscard]] Offset3D offsetRotated( const Offset3D initialOffset, const Facing4 facing) const;
 	[[nodiscard]] Offset3D translate(const Point3D previousPivot, const Point3D nextPivot, const Facing4 previousFacing, const Facing4 nextFacing) const;
-	[[nodiscard]] Offset3D moveInDirection(const Facing6 facing, const Distance distance) const;
+	[[nodiscard]] Offset3D moveInDirection(const Facing6 facing, const Distance distance = {1}) const;
 	[[nodiscard]] Offset3D atAdjacentIndex(const AdjacentIndex index) const;
 	[[nodiscard]] Cuboid getAllAdjacentIncludingOutOfBounds() const;
-	[[nodiscard]] Cuboid inflated(Distance distance) const;
+	[[nodiscard]] Cuboid inflated(Distance distance = {1}) const;
+	[[nodiscard]] Cuboid inflatedHorizontal(Distance distance = {1}) const;
+	[[nodiscard]] Cuboid inflatedHorizontalAndBelow(Distance distance = {1}) const;
+	[[nodiscard]] Cuboid inflatedDirection(Facing6 facing, Distance distance = {1}) const;
 	[[nodiscard]] Cuboid boundry() const;
+	[[nodiscard]] Cuboid toCuboid() const;
 	[[nodiscard]] CuboidSet toSet() const;
 	//TODO: move to helper.
 	[[nodiscard]] bool isAdjacentToAny(const auto& points) const
@@ -219,7 +223,7 @@ struct Offset3D
 	[[nodiscard]] Offset3D west() const;
 	[[nodiscard]] Offset3D above() const;
 	[[nodiscard]] Offset3D translate(const Point3D previousPivot, const Point3D nextPivot, const Facing4 previousFacing, const Facing4 nextFacing) const;
-	[[nodiscard]] Offset3D moveInDirection(const Facing6 facing, const Distance distance) const;
+	[[nodiscard]] Offset3D moveInDirection(const Facing6 facing, const Distance distance = {1}) const;
 	[[nodiscard]] Offset3D min(const Offset3D other) const;
 	[[nodiscard]] Offset3D max(const Offset3D other) const;
 	[[nodiscard]] Offset distanceTo(const Offset3D other) const;

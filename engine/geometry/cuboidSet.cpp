@@ -8,19 +8,19 @@ template struct CuboidSetBase<OffsetCuboid, Offset3D, OffsetCuboidSet>;
 template struct CuboidSetConstIteratorBase<Cuboid, Point3D, CuboidSet>;
 template struct CuboidSetConstIteratorBase<OffsetCuboid, Offset3D, OffsetCuboidSet>;
 
-CuboidSet CuboidSet::create(const Cuboid cuboid)
+CuboidSet CuboidSet::create(Cuboid cuboid)
 {
 	CuboidSet output;
 	output.maybeAdd(cuboid);
 	return output;
 }
-CuboidSet CuboidSet::create(const Point3D point)
+CuboidSet CuboidSet::create(Point3D point)
 {
 	CuboidSet output;
 	output.maybeAdd(point);
 	return output;
 }
-CuboidSet CuboidSet::create([[maybe_unused]]const OffsetCuboid spaceBoundry, const Point3D pivot, const Facing4 newFacing, const OffsetCuboidSet& cuboids)
+CuboidSet CuboidSet::create([[maybe_unused]]OffsetCuboid spaceBoundry, Point3D pivot, Facing4 newFacing, const OffsetCuboidSet& cuboids)
 {
 	CuboidSet output;
 	for(OffsetCuboid offset : cuboids)
@@ -40,19 +40,26 @@ CuboidSet CuboidSet::create(const SmallSet<Point3D>& points)
 		output.add(point);
 	return output;
 }
+CuboidSet CuboidSet::create(const std::vector<Point3D>& points)
+{
+	CuboidSet output;
+	for(const Point3D point : points)
+		output.add(point);
+	return output;
+}
 CuboidSet CuboidSet::create(const SmallSet<Cuboid>& cuboids)
 {
 	CuboidSet output;
 	output.m_cuboids = cuboids;
 	return output;
 }
-OffsetCuboidSet OffsetCuboidSet::create(const OffsetCuboid cuboid)
+OffsetCuboidSet OffsetCuboidSet::create(OffsetCuboid cuboid)
 {
 	OffsetCuboidSet output;
 	output.maybeAdd(cuboid);
 	return output;
 }
-OffsetCuboidSet OffsetCuboidSet::create(const Offset3D point)
+OffsetCuboidSet OffsetCuboidSet::create(Offset3D point)
 {
 	OffsetCuboidSet output;
 	output.maybeAdd(point);

@@ -110,9 +110,9 @@ TEST_CASE("dig")
 		std::function<bool()> predicate = [&]() { return !space.solid_isAny(stairsLocation1); };
 		simulation.fastForwardUntillPredicate(predicate, 180);
 		actors.satisfyNeeds(dwarf1);
-		DigObjective& objective = actors.objective_getCurrent<DigObjective>(dwarf1);
+		DigObjective* objective = &actors.objective_getCurrent<DigObjective>(dwarf1);
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
-		CHECK(objective.getProject() == nullptr);
+		CHECK(objective->getProject() == nullptr);
 		CHECK(space.pointFeature_contains(stairsLocation1, PointFeatureTypeId::Stairs));
 		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(stairsLocation1, actors.getShape(dwarf1), actors.getMoveType(dwarf1), aboveStairs));
 		const auto& hasPaths = area.m_hasPaths.get(area, actors.getMoveType(dwarf1));
@@ -141,29 +141,30 @@ TEST_CASE("dig")
 		})));
 		// Find next project, make reservations, and activate.
 		simulation.doStep();
-		CHECK(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
+		CHECK(&actors.objective_getCurrent<DigObjective>(dwarf1) == objective);
 		CHECK(actors.move_getDestination(dwarf1).empty());
-		CHECK(objective.getProject() != nullptr);
+		CHECK(objective->getProject() != nullptr);
 		CHECK(items.reservable_hasAnyReservations(pick));
 		// Select haul type to get pick to location.
 		simulation.doStep();
-		CHECK(objective.getProject() != nullptr);
+		CHECK(objective->getProject() != nullptr);
 		// Path to locaton.
 		simulation.doStep();
-		CHECK(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
+		CHECK(&actors.objective_getCurrent<DigObjective>(dwarf1) == objective);
 		std::function<bool()> predicate2 = [&]() { return !space.solid_isAny(tunnelStart) || !space.solid_isAny(stairsLocation2); };
 		simulation.fastForwardUntillPredicate(predicate2, 180);
 		actors.satisfyNeeds(dwarf1);
-		CHECK(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
-		CHECK(objective.getProject() != nullptr);
-		DigProject& project2 = *objective.getProject();
+		// Refresh objective pointer after satisfying needs.
+		objective = &actors.objective_getCurrent<DigObjective>(dwarf1);
+		CHECK(objective->getProject() != nullptr);
+		DigProject& project2 = *objective->getProject();
 		CHECK(project2.hasCandidate(dwarf1));
 		simulation.doStep();
 		CHECK(project2.hasWorker(dwarf1));
 		std::function<bool()> predicate3 = [&]() { return !space.solid_isAny(tunnelStart) && !space.solid_isAny(stairsLocation2); };
 		simulation.fastForwardUntillPredicate(predicate3, 180);
 		actors.satisfyNeeds(dwarf1);
-		CHECK(objective.name() == "dig");
+		CHECK(objective->name() == "dig");
 		std::function<bool()> predicate4 = [&]() { return !space.solid_isAny(tunnelEnd); };
 		simulation.fastForwardUntillPredicate(predicate4, 600);
 	}

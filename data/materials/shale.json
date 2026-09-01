@@ -1,7 +1,7 @@
 {
   "name": "shale",
   "density": 2.3,
-  "hardness": 3,
+  "hardness": 30,
   "transparent": false,
   "meltingPoint": 1400,
   "meltsInto": "lava",

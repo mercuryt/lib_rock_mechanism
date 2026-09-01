@@ -1,6 +1,7 @@
 #pragma once
 #include "rtreeData.h"
 #include "../geometry/mapWithCuboidKeys.hpp"
+#include "../geometry/sphere.h"
 #include<iostream>
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 RTreeArrayIndex RTreeData<T, config_, nullPrimitive>::Node::offsetFor(const RTreeNodeIndex index) const
@@ -106,6 +107,12 @@ void RTreeData<T, config_, nullPrimitive>::Node::insertLeaf(const Cuboid cuboid,
 	m_cuboids.insert(m_leafEnd.get(), cuboid);
 	m_dataAndChildIndices[m_leafEnd].data = value.get();
 	++m_leafEnd;
+}
+template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
+void RTreeData<T, config_, nullPrimitive>::Node::maybeInsertLeaf(const Cuboid cuboid, const T& value)
+{
+	if(!containsLeaf(cuboid, value))
+		insertLeaf(cuboid, value);
 }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 void RTreeData<T, config_, nullPrimitive>::Node::insertBranch(const Cuboid cuboid, const RTreeNodeIndex index)
@@ -224,7 +231,7 @@ void RTreeData<T, config_, nullPrimitive>::Node::eraseLeavesByMask(BitSet mask)
 	while(mask.any())
 	{
 		const RTreeArrayIndex arrayIndex{mask.getNextAndClear()};
-		insertLeaf(copyCuboids[arrayIndex.get()], T::create(copyDataAndChildIndices[arrayIndex].data));
+		maybeInsertLeaf(copyCuboids[arrayIndex.get()], T::create(copyDataAndChildIndices[arrayIndex].data));
 	}
 	// Clear any remaning leaves.
 	for(auto i = m_leafEnd; i < leafEnd; ++i)
@@ -390,7 +397,8 @@ SmallSet<std::pair<Cuboid, T>> RTreeData<T, config_, nullPrimitive>::gatherLeave
 		const auto& nodeCuboids = node.getCuboids();
 		const auto& dataAndChildren = node.getDataAndChildIndices();
 		for(RTreeArrayIndex i{0}; i != endLeaf; ++i)
-			output.emplace(nodeCuboids[i.get()], T::create(dataAndChildren[i].data));
+			// Identical leaves may exist temperorily, they will be merged during next pass of prepare().
+			output.maybeEmplace(nodeCuboids[i.get()], T::create(dataAndChildren[i].data));
 		for(RTreeArrayIndex i = node.offsetOfFirstChild(); i != nodeSize; ++i)
 			openList.insert(RTreeNodeIndex::create(dataAndChildren[i].child));
 	}
@@ -961,7 +969,7 @@ void RTreeData<T, config_, nullPrimitive>::sort()
 		sortedNodes[newIndex] = m_nodes[oldIndex];
 	}
 	// Update copied nodes' parents and children.
-	for(RTreeNodeIndex oldIndex = RTreeNodeIndex::create(0); oldIndex < end; ++oldIndex)
+	for(RTreeNodeIndex oldIndex{0}; oldIndex < end; ++oldIndex)
 	{
 		const RTreeNodeIndex newIndex = indices[oldIndex];
 		Node& newNode = sortedNodes[newIndex];
@@ -975,7 +983,7 @@ void RTreeData<T, config_, nullPrimitive>::sort()
 		}
 	}
 	// validate.
-	for(RTreeNodeIndex index = RTreeNodeIndex::create(0); index < sortedNodes.size(); ++index)
+	for(RTreeNodeIndex index{0}; index < sortedNodes.size(); ++index)
 	{
 		const Node& node = sortedNodes[index];
 		if(index != 0)
@@ -1024,7 +1032,7 @@ void RTreeData<T, config_, nullPrimitive>::maybeInsert(const Cuboid cuboid, cons
 	else
 		for(const T& v : queryGetAll(cuboid))
 			assert(this->canOverlap(v, value));
-	constexpr RTreeNodeIndex zeroIndex = RTreeNodeIndex::create(0);
+	constexpr RTreeNodeIndex zeroIndex{0};
 	[[maybe_unused]] bool breakIf = cuboid.volume() == 1 && cuboid.m_high == Point3D::create(20, 1, 1);
 	addToNodeRecursive(zeroIndex, cuboid, value);
 	validate();
@@ -1033,7 +1041,7 @@ template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 void RTreeData<T, config_, nullPrimitive>::maybeRemove(const Cuboid cuboid)
 {
 	// Erase all contained branches and leaves.
-	constexpr RTreeNodeIndex rootIndex = RTreeNodeIndex::create(0);
+	constexpr RTreeNodeIndex rootIndex{0};
 	clearAllContained(rootIndex, cuboid);
 	if constexpr (!config_.leavesCanOverlap && !config_.splitAndMerge)
 	{
@@ -1074,7 +1082,7 @@ void RTreeData<T, config_, nullPrimitive>::maybeRemove(const Cuboid cuboid, cons
 {
 	assert(value != T::create(nullPrimitive));
 	// Erase all contained branches and leaves.
-	constexpr RTreeNodeIndex rootIndex = RTreeNodeIndex::create(0);
+	constexpr RTreeNodeIndex rootIndex{0};
 	clearAllContainedWithValueRecursive(m_nodes[rootIndex], cuboid, value);
 	OpenList openList;
 	SmallSet<RTreeNodeIndex> toUpdateBoundryMaybe;
@@ -1158,8 +1166,8 @@ CuboidSet RTreeData<T, config_, nullPrimitive>::getLeafCuboids() const
 	CuboidSet output;
 	for(const Node& node : m_nodes)
 	{
-		const int leafCount = node.getLeafCount();
-		const auto& cuboids = node.getCuboids();
+		int leafCount{node.getLeafCount()};
+		const auto& cuboids{node.getCuboids()};
 		for(RTreeArrayIndex i{0}; i < leafCount; ++i)
 			output.maybeAdd(cuboids[i.get()]);
 	}
@@ -1179,26 +1187,26 @@ void RTreeData<T, config_, nullPrimitive>::validate() const
 	for(const RTreeNodeIndex index : m_emptySlots)
 		assert(index < m_nodes.size());
 	SmallSet<RTreeNodeIndex> childIndices;
-	for(RTreeNodeIndex index = RTreeNodeIndex::create(0); index < m_nodes.size(); ++index)
+	for(RTreeNodeIndex index{0}; index < m_nodes.size(); ++index)
 	{
 		if(m_emptySlots.contains(index))
 			return;
-		const Node& node = m_nodes[index];
-		const auto cuboids = node.getCuboids();
+		const Node& node{m_nodes[index]};
+		const auto cuboids{node.getCuboids()};
 		// Check that cuboid recorded in parent matches boundry of cuboids recorded in child.
 		if(index != 0)
 		{
 			if(m_emptySlots.contains(index))
 				continue;
-			const Node& parent = m_nodes[node.getParent()];
-			const RTreeArrayIndex offset = parent.offsetFor(index);
-			const auto& parentCuboids = parent.getCuboids();
+			const Node& parent{m_nodes[node.getParent()]};
+			const RTreeArrayIndex offset{parent.offsetFor(index)};
+			const auto& parentCuboids{parent.getCuboids()};
 			assert(parentCuboids[offset.get()] == cuboids.boundry());
 		}
 		// Check that leaves don't overlap unless allowed.
-		const int leafCount = node.getLeafCount();
+		int leafCount{node.getLeafCount()};
 		if constexpr(!config_.leavesCanOverlap)
-			for(RTreeArrayIndex i = {0}; i < leafCount; ++i)
+			for(RTreeArrayIndex i{0}; i < leafCount; ++i)
 				assert(queryCount(cuboids[i.get()]) == 1);
 		const auto dataOrChildIndices = node.getDataAndChildIndices();
 		// Check that leaf values are not null.
@@ -1206,9 +1214,9 @@ void RTreeData<T, config_, nullPrimitive>::validate() const
 			assert(T::create(dataOrChildIndices[i].data) != T::create(nullPrimitive));
 		// Check that child indices aren't in m_emptySlots and are unique.
 		const auto nodeCount = m_nodes.size();
-		for(RTreeArrayIndex i = node.offsetOfFirstChild(); i != nodeSize; ++i)
+		for(RTreeArrayIndex i{node.offsetOfFirstChild()}; i != nodeSize; ++i)
 		{
-			const RTreeNodeIndex childIndex = RTreeNodeIndex::create(dataOrChildIndices[i].child);
+			RTreeNodeIndex childIndex{dataOrChildIndices[i].child};
 			childIndices.insert(childIndex);
 			assert(!m_emptySlots.contains(childIndex));
 			assert(nodeCount > childIndex);
@@ -1245,12 +1253,12 @@ int RTreeData<T, config_, nullPrimitive>::nodeCount() const
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 int RTreeData<T, config_, nullPrimitive>::leafCount() const
 {
-	int output = 0;
-	for(RTreeNodeIndex i = RTreeNodeIndex::create(0); i < m_nodes.size(); ++i)
+	int output{0};
+	for(RTreeNodeIndex i{0}; i < m_nodes.size(); ++i)
 	{
 		if(m_emptySlots.contains(i))
 			continue;
-		const Node& node = m_nodes[i];
+		const Node& node{m_nodes[i]};
 		output += node.getLeafCount();
 	}
 	return output;
@@ -1266,7 +1274,7 @@ T RTreeData<T, config_, nullPrimitive>::queryPointOne(int x, int y, int z) const
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 T RTreeData<T, config_, nullPrimitive>::queryPointFirst(int x, int y, int z) const
 {
-	const auto found = queryGetAll(Point3D::create(x,y,z));
+	const auto found{queryGetAll(Point3D::create(x,y,z))};
 	if(found.empty())
 		return T();
 	return found.front();
@@ -1279,7 +1287,7 @@ template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 Cuboid RTreeData<T, config_, nullPrimitive>::queryPointCuboid(int x, int y, int z) const
 {
 	static const Cuboid null;
-	const CuboidSet& result = queryGetAllCuboids(Point3D::create(x,y,z));
+	const CuboidSet& result{queryGetAllCuboids(Point3D::create(x,y,z))};
 	if(result.empty())
 		return null;
 	return result.front();
@@ -1287,9 +1295,9 @@ Cuboid RTreeData<T, config_, nullPrimitive>::queryPointCuboid(int x, int y, int 
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 int RTreeData<T, config_, nullPrimitive>::totalNodeVolume() const
 {
-	int output = 0;
+	int output{0};
 	const auto end = m_nodes.size();
-	for(RTreeNodeIndex index = RTreeNodeIndex::create(0); index < end; ++index)
+	for(RTreeNodeIndex index{0}; index < end; ++index)
 		if(!m_emptySlots.contains(index))
 			output += m_nodes[index].getNodeVolume();
 	return output;
@@ -1299,7 +1307,7 @@ int RTreeData<T, config_, nullPrimitive>::totalLeafVolume() const
 {
 	int output = 0;
 	const auto end = m_nodes.size();
-	for(RTreeNodeIndex index = RTreeNodeIndex::create(0); index < end; ++index)
+	for(RTreeNodeIndex index{0}; index < end; ++index)
 		if(!m_emptySlots.contains(index))
 			output += m_nodes[index].getLeafVolume();
 	return output;
@@ -1334,4 +1342,54 @@ void RTreeData<T, config_, nullPrimitive>::log() const
 {
 	 for(const Node& node : m_nodes)
 	 	node.log();
+}
+template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
+Distance RTreeData<T, config_, nullPrimitive>::distanceWithCondition(Point3D point, Distance maxRange, auto&& condition) const
+{
+	Sphere shape{point, maxRange.toFloat()};
+	OpenList openList;
+	openList.insert(RTreeNodeIndex::create(0));
+	while(!openList.empty())
+	{
+		auto index{openList.back()};
+		openList.popBack();
+		const Node& node{m_nodes[index]};
+		const auto& nodeCuboids{node.getCuboids()};
+		const auto& nodeDataAndChildIndices{node.getDataAndChildIndices()};
+		// If the point query intersects any leaf that passes condition then return 0;
+		BitSet pointIntersectMask = BitSet::create(nodeCuboids.indicesOfIntersectingCuboids(point));
+		while(!pointIntersectMask.empty())
+		{
+			RTreeArrayIndex i{pointIntersectMask.getNextAndClear()};
+			T value = T::create(nodeDataAndChildIndices[i].data);
+			if(condition(nodeCuboids[i.get()], value))
+				return {0};
+		}
+		auto sphereIntersect{nodeCuboids.indicesOfIntersectingCuboids(shape)};
+		BitSet sphereIntersectMask = BitSet::create(sphereIntersect);
+		if(!sphereIntersectMask.any())
+			continue;
+		const auto leafCount{node.getLeafCount()};
+		BitSet leafIntersectMask = sphereIntersectMask;
+		leafIntersectMask.clearAllAfterInclusive(leafCount);
+		if(leafCount != 0 && !leafIntersectMask.empty())
+		{
+			auto squaredDistances{nodeCuboids.squaredDistancesTo(point).head(leafCount)};
+			// Reduce query radius to nearest leaf.
+			DistanceFractional nearest{std::min(shape.radius, {std::sqrt((float)squaredDistances.minCoeff())})};
+			if(nearest < shape.radius)
+			{
+				shape.radius = nearest;
+				// Redo intersect check for children with new radius.
+				sphereIntersectMask = BitSet::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
+			}
+		}
+		const auto childCount{node.getChildCount()};
+		if(node.hasChildren() && sphereIntersect.tail(childCount).any())
+		{
+			addIntersectedChildrenToOpenList(node, sphereIntersectMask, openList);
+		}
+	}
+	// Radius is the shortest encountered distance.
+	return shape.radius.toInt();
 }

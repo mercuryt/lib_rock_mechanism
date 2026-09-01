@@ -1,7 +1,7 @@
 #pragma once
 
-#include "numericTypes/types.h"
-#include "config/config.h"
+#include "../numericTypes/types.h"
+#include "../config/config.h"
 
 struct ItemType;
 struct FluidType;
@@ -59,6 +59,8 @@ class PlantSpecies final
 	StrongVector<int, PlantSpeciesId> m_dayOfYearForSowStart;
 	StrongVector<int, PlantSpeciesId> m_dayOfYearForSowEnd;
 	StrongVector<int, PlantSpeciesId> m_maxWildGrowth;
+	StrongVector<Percent, PlantSpeciesId> m_maxHumidity;
+	StrongVector<Percent, PlantSpeciesId> m_minHumidity;
 	StrongBitSet<PlantSpeciesId> m_annual;
 	StrongBitSet<PlantSpeciesId> m_growsInSunLight;
 	StrongBitSet<PlantSpeciesId> m_isTree;
@@ -98,6 +100,7 @@ public:
 	[[nodiscard]] static ShapeId shapeForPercentGrown(const PlantSpeciesId species, const Percent percentGrown);
 	[[nodiscard]] static int wildGrowthForPercentGrown(const PlantSpeciesId species, const Percent percentGrown);
 	[[nodiscard]] static PlantSpeciesId byName(std::string name);
+	[[nodiscard]] static SmallSet<PlantSpeciesId> getSpeciesForClimate(Temperature maxTemp, Temperature minTemp, Percent maxHumidity, Percent minHumidity);
 	// Harvest.
 	ItemTypeId static getFruitItemType(const PlantSpeciesId species);
 	Step static getStepsDurationHarvest(const PlantSpeciesId species);

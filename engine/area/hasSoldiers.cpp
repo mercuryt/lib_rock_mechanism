@@ -2,7 +2,7 @@
 #include "area.h"
 #include "../actors/actors.h"
 #include "../config/psycology.h"
-#include "../dataStructures/rtreeData.hpp"
+#include "../dataStructures/rtreeData.h"
 void AreaHasSoldiersForFaction::prefetchToL3() const
 {
 	util::prefetchL3ReadMode(soldiers);

@@ -29,12 +29,12 @@ TEST_CASE("temperature")
 		space.solid_set(toBurn, wood, false);
 		space.solid_set(toNotBurn, marble, false);
 		Temperature temperatureBeforeHeatSource = space.temperature_get(origin);
-		[[maybe_unused]] TemperatureSourceId temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, origin, TemperatureDelta::create(1000));
+		[[maybe_unused]] TemperatureSourceId temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, origin.toCuboid(), TemperatureDelta::create(1000));
 		area.m_hasTemperature.doStep(area);
 		// ToBurn ignites, adding more temperature on top of the 1000 delta at origin.
 		CHECK(space.temperature_get(origin) > temperatureBeforeHeatSource + 1000);
-		CHECK(space.fire_exists(toBurn));
-		CHECK(!space.fire_exists(toNotBurn));
+		CHECK(area.m_fires.m_fires.queryAny(toBurn));
+		CHECK(!area.m_fires.m_fires.queryAny(toNotBurn));
 		CHECK(space.temperature_get(b1) > temperatureBeforeHeatSource + 1000);
 		CHECK(space.temperature_get(b2) < temperatureBeforeHeatSource + 262);
 		CHECK(space.temperature_get(b4) == space.temperature_get(b2));
@@ -50,23 +50,27 @@ TEST_CASE("temperature")
 		Point3D toBurn = Point3D::create(6, 5, 5);
 		auto wood = MaterialType::byName("poplar wood");
 		space.solid_set(toBurn, wood, false);
-		[[maybe_unused]] TemperatureSourceId temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, origin, TemperatureDelta::create(1000));
-		CHECK(!space.fire_exists(toBurn));
+		[[maybe_unused]] TemperatureSourceId temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, origin.toCuboid(), TemperatureDelta::create(1000));
+		CHECK(!area.m_fires.m_fires.queryAny(toBurn));
 		simulation.doStep();
-		CHECK(space.fire_exists(toBurn));
-		Fire& fire = space.fire_get(toBurn, wood);
+		CHECK(area.m_fires.m_fires.queryAny(toBurn));
+		FireData fire = area.m_fires.m_fires.queryGetFirst(toBurn);
 		CHECK(fire.m_stage == FireStage::Smouldering);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood) - 1);
+		fire = area.m_fires.m_fires.queryGetFirst(toBurn);
 		CHECK(fire.m_stage == FireStage::Burning);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood));
+		fire = area.m_fires.m_fires.queryGetFirst(toBurn);
 		CHECK(fire.m_stage == FireStage::Flaming);
 		simulation.fastForward(MaterialType::getFlameStageDuration(wood));
+		fire = area.m_fires.m_fires.queryGetFirst(toBurn);
 		CHECK(fire.m_stage == FireStage::Burning);
 		CHECK(fire.m_hasPeaked == true);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood) * Config::fireRampDownPhaseDurationFraction);
+		fire = area.m_fires.m_fires.queryGetFirst(toBurn);
 		CHECK(fire.m_stage == FireStage::Smouldering);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood) * Config::fireRampDownPhaseDurationFraction);
-		CHECK(!space.fire_exists(toBurn));
-		CHECK(!space.solid_isAny(toBurn));
+		fire = area.m_fires.m_fires.queryGetFirst(toBurn);
+		CHECK(!area.m_fires.m_fires.queryAny(toBurn));
 	}
 }

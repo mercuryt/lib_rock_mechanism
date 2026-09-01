@@ -484,6 +484,8 @@ void definitions::loadAnimalSpecies()
 			.stepsTillDieInUnsafeTemperature=Config::stepsPerDay * data["daysTillDieInUnsafeTemperature"].get<int>(),
 			.minimumSafeTemperature=data["minimumSafeTemperature"].get<Temperature>(),
 			.maximumSafeTemperature=data["maximumSafeTemperature"].get<Temperature>(),
+			.minimumHumidity=data["minimumHumidity"].get<Percent>(),
+			.maximumHumidity=data["maximumHumidity"].get<Percent>(),
 			.stepsSleepFrequency=Config::stepsPerDay * data["daysSleepFrequency"].get<int>(),
 			.stepsTillSleepOveride=Config::stepsPerHour * data["hoursTillSleepOveride"].get<int>(),
 			.stepsSleepDuration=Config::stepsPerHour * data["hoursSleepDuration"].get<int>(),

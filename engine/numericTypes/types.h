@@ -23,6 +23,7 @@
 // Facing4 is stored sequentally in Portables so it's worth using an 8 bit type.
 enum class Facing4 : int8_t {North,East,South,West,Null};
 enum class Facing6 {Below,North,East,South,West,Above,Null};
+Facing6 flipFacing6(Facing6 facing);
 enum class Facing8 {North,NorthEast,East,SouthEast,South,SouthWest,West,NorthWest,Null};
 enum class SetLocationAndFacingResult {PermanantlyBlocked,TemporarilyBlocked,Success,Null};
 using StepWidth = int64_t;
@@ -372,7 +373,7 @@ public:
 inline void to_json(Json& data, const PsycologyWeight& value) { data = value.get(); }
 inline void from_json(const Json& data, PsycologyWeight& value) { value = PsycologyWeight::create(data.get<float>()); }
 
-enum class PointFeatureTypeId
+enum class PointFeatureTypeId : uint8_t
 {
 	Door,
 	Flap,

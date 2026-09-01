@@ -1,0 +1,8 @@
+1a. cannot consolidate space directly above solid.
+1b. can consolidate any space in the highest zLevel with points that don't violate 1a.
+
+2. underfull groups flow directly down only, no horizontal or diagonal.
+
+3. as a group flows down hill it will leave behind a trail of occupied space which cannot consolidate due to being above solid. Any fluid removed from the group by outside action (such as evaporation) should consume such 'puddles' as well as reducing m_volume. Puddles are identified by being directly above a solid and not being neccesary to prevent overfull.
+
+4? Fluid surface tension can be adjusted by changing the "underfull" formula such that each point of m_occupied.m_volume is worth more then one point of m_volume.

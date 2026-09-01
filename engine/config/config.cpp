@@ -2,6 +2,7 @@
 #include "../numericTypes/types.h"
 #include "physics.h"
 #include "social.h"
+#include "world.h"
 #include <fstream>
 void Config::load()
 {
@@ -36,7 +37,7 @@ void Config::load()
 	data["bleedToDeathRatio"].get_to(bleedToDeathRatio);
 	data["bleedToUnconciousessRatio"].get_to(bleedToUnconciousessRatio);
 	data["pointsPerMeter"].get_to(pointsPerMeter);
-	data["bludgeonBleedVoumeRateModifier"].get_to(bludgeonBleedVoumeRateModifier);
+	data["bludgeonBleedVolumeRateModifier"].get_to(bludgeonBleedVolumeRateModifier);
 	data["bludgeonPercentPermanantImparmentModifier"].get_to(bludgeonPercentPermanantImparmentModifier);
 	data["bludgeonPercentTemporaryImparmentModifier"].get_to(bludgeonPercentTemporaryImparmentModifier);
 	data["bludgeonStepsTillHealedModifier"].get_to(bludgeonStepsTillHealedModifier);
@@ -51,7 +52,7 @@ void Config::load()
 	data["constructSkillModifier"].get_to(constructSkillModifier);
 	data["constructStrengthModifier"].get_to(constructStrengthModifier);
 	data["craftObjectivePriority"].get_to(craftObjectivePriority);
-	data["cutBleedVoumeRateModifier"].get_to(cutBleedVoumeRateModifier);
+	data["cutBleedVolumeRateModifier"].get_to(cutBleedVolumeRateModifier);
 	data["cutPercentPermanantImparmentModifier"].get_to(cutPercentPermanantImparmentModifier);
 	data["cutPercentTemporaryImparmentModifier"].get_to(cutPercentTemporaryImparmentModifier);
 	data["cutStepsTillHealedModifier"].get_to(cutStepsTillHealedModifier);
@@ -172,7 +173,7 @@ void Config::load()
 	data["minimumHungerLevelThresholds"].get_to(minimumHungerLevelThresholds);
 	data["percentOfPlantMassWhichIsFoliage"].get_to(percentOfPlantMassWhichIsFoliage);
 	data["percentPermanantImparmentMinimum"].get_to(percentPermanantImparmentMinimum);
-	data["pierceBleedVoumeRateModifier"].get_to(pierceBleedVoumeRateModifier);
+	data["pierceBleedVolumeRateModifier"].get_to(pierceBleedVolumeRateModifier);
 	data["pierceBoneModifier"].get_to(pierceBoneModifier);
 	data["pierceFatModifier"].get_to(pierceFatModifier);
 	data["pierceModifier"].get_to(pierceModifier);
@@ -250,4 +251,5 @@ void Config::load()
 	yokeDelaySteps = Step::create(data["yokeDelaySeconds"].get<float>() * stepsPerSecond.get());
 	Social::load();
 	Physics::load();
+	World::load();
 }

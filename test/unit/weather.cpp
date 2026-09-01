@@ -59,9 +59,10 @@ TEST_CASE("weather")
 	}
 	SUBCASE("freeze and thaw")
 	{
+		static const ItemTypeId& chunk = ItemType::byName("chunk");
+		static const ItemTypeId& pile = ItemType::byName("pile");
 		Area& area = simulation.m_hasAreas->createArea(5, 5, 5);
 		Space& space = area.getSpace();
-		Items& items = area.getItems();
 		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
 		const Point3D& above = Point3D::create(2, 2, 4);
 		CHECK(space.isExposedToSky(above));
@@ -76,44 +77,59 @@ TEST_CASE("weather")
 		CHECK(space.isExposedToSky(pond1));
 		CHECK(space.isExposedToSky(pond2));
 		CHECK(space.isExposedToSky(pond3));
-		space.fluid_add(Cuboid::create(pond1, pond3).toSet(), 299, water);
+		int chunksPerSolid = Config::maxPointVolume.get() / Shape::getTotalCollisionVolume(ItemType::getShape(chunk)).get();
+		// One unit freezes into a pile.
+		space.fluid_add(pond1.toSet(), 1, water);
 		auto& hasTemperature = area.m_hasTemperature;
+		hasTemperature.m_maxAmbiant = hasTemperature.m_minAmbiant = freezing - 1;
+		hasTemperature.setAmbient(area, freezing - 1);
 		CHECK(hasTemperature.m_freezableFluidTypeOnSurface.contains(water));
 		CHECK(!hasTemperature.m_freezableFluidTypeOnSurface[water].empty());
 		CHECK(!hasTemperature.m_meltableMaterialTypeOnSurface.contains(ice));
-		CHECK(area.m_hasFluidGroups.m_groups.size() == 1);
-		hasTemperature.setAmbient(area, freezing - 1);
-		CHECK(area.m_hasFluidGroups.m_groups.size() == 1);
-		// Point 3 is not full so it turns into chunks.
-		CHECK(!space.solid_isAny(pond3));
-		static const ItemTypeId& chunk = ItemType::byName("chunk");
-		CHECK(space.item_getCount(pond3, chunk, ice) == Quantity::create(33));
-		// Point 1 is 2 depth from the surface and won't ever freeze.
-		CHECK(!space.solid_isAny(pond1));
+		CHECK(area.m_hasPhaseChanges.m_freezing.contains(water));
+		area.m_hasPhaseChanges.doFreeze(area, water, pond1.toSet());
+		CHECK(space.item_getCount(pond1, pile, ice) == 1);
+		// Three piles freeze into a chunk.
+		space.fluid_add(pond1.toSet(), 2, water);
+		area.m_hasPhaseChanges.doFreeze(area, water, pond1.toSet());
+		CHECK(space.item_getCount(pond1, pile, ice) == 0);
+		CHECK(space.item_getCount(pond1, chunk, ice) == 1);
+		// chunksPerSolid number of chunks plus one water freezes solid (this depends on the volume of chunk being 3 and maxpointvolume being 100).
+		space.item_addGeneric(pond1, chunk, ice, {chunksPerSolid - 1});
+		space.fluid_add(pond1.toSet(), 1, water);
+		area.m_hasPhaseChanges.doFreeze(area, water, pond1.toSet());
+		CHECK(space.solid_isAny(pond1));
+		CHECK(!space.fluid_any(space.boundry()));
+		space.item_addGeneric(pond2, chunk, ice, {chunksPerSolid});
+		space.fluid_add(pond2.toSet(), 2, water);
+		area.m_hasPhaseChanges.doFreeze(area, water, pond2.toSet());
 		CHECK(space.solid_isAny(pond2));
-		CHECK(space.item_empty(above));
-		CHECK(hasTemperature.m_freezableFluidTypeOnSurface[water].empty());
-		CHECK(hasTemperature.m_meltableMaterialTypeOnSurface.contains(ice));
-		auto& blocksByMaterialType = hasTemperature.m_meltableMaterialTypeOnSurface[ice];
-		CHECK(blocksByMaterialType.solid.size() == 1);
-		const ItemIndex& chunk1 = space.item_getGeneric(pond3, chunk, ice);
-		CHECK(items.getQuantity(chunk1) == Quantity::create(33));
-		CHECK(items.isOnSurface(chunk1));
-		CHECK(area.m_hasTemperature.m_meltableMaterialTypeOnSurface[ice].items.contains(pond3));
-		CHECK(space.fluid_volumeOfTypeContains(pond1, water) == 100);
-		CHECK(space.fluid_volumeOfTypeContains(pond2, water) == 0);
-		CHECK(space.fluid_volumeOfTypeContains(pond3, water) == 0);
+		// Overfull ejects extra.
+		CHECK(space.fluid_volumeOfTypeContains(pond3, water) == 1);
+		area.m_hasPhaseChanges.doFreeze(area, water, pond3.toSet());
+		CHECK(!space.fluid_any(space.boundry()));
+		CHECK(space.item_getCount(pond3, pile, ice) == 1);
+		// Melting.
+		hasTemperature.m_maxAmbiant = hasTemperature.m_minAmbiant = freezing + 1;
 		hasTemperature.setAmbient(area, freezing + 1);
-		CHECK(!space.solid_isAny(pond3));
+		CHECK(area.m_hasPhaseChanges.m_melting.contains(ice));
+		CHECK(area.m_hasPhaseChanges.m_melting[ice].contains(pond3));
+		CHECK(area.m_hasPhaseChanges.m_melting[ice].contains(pond2));
+		// Only the top solid layer melts. The others will have to wait.
+		CHECK(!area.m_hasPhaseChanges.m_melting[ice].contains(pond1));
+		area.m_hasPhaseChanges.doMelt(area, ice, pond3.toSet());
+		CHECK(!area.m_hasPhaseChanges.m_melting[ice].contains(pond3));
+		CHECK(space.fluid_volumeOfTypeContains(pond3, water) == 1);
 		CHECK(space.item_empty(pond3));
-		CHECK(!space.solid_isAny(pond2));
-		CHECK(!space.solid_isAny(pond1));
-		CHECK(!hasTemperature.m_freezableFluidTypeOnSurface[water].empty());
-		CHECK(hasTemperature.m_meltableMaterialTypeOnSurface[ice].empty());
-		CHECK(space.fluid_volumeOfTypeContains(pond1, water) == 100);
-		CHECK(space.fluid_volumeOfTypeContains(pond2, water) == 100);
-		CHECK(space.fluid_volumeOfTypeContains(pond3, water) == 99);
-		CHECK(space.fluid_getTotalVolume(above) == 0);
+		area.m_hasPhaseChanges.doMelt(area, ice, pond2.toSet());
+		CHECK(space.fluid_volumeOfTypeContains(pond3, water) == 1);
+		CollisionVolume chunkDisplacement = Shape::getTotalCollisionVolume(ItemType::getShape(chunk));
+		int chunkCount = ((Config::maxPointVolume - 1) / chunkDisplacement).get();
+		CHECK(space.item_getCount(pond2, chunk, ice) == chunkCount);
+		CHECK(space.item_getCount(pond2, pile, ice) == Config::maxPointVolume.get() - 1 - chunkCount * chunkDisplacement.get());
+		CHECK(area.m_hasPhaseChanges.m_melting[ice].contains(pond2));
+		CHECK(!area.m_hasPhaseChanges.m_melting[ice].contains(pond3));
+		// TODO: test melting features.
 	}
 	SUBCASE("ambient temperature and exterior portals")
 	{

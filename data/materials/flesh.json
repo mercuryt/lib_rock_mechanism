@@ -1,24 +1,24 @@
 {
-  "name": "flesh",
-  "density": 1.05,
-  "hardness": 20,
-  "transparent": false,
-  "value": 1,
-  "burnData":
-  {
-	  "ignitionTemperature": 1144,
-	  "flameTemperature": 300,
-	  "burnStageDuration": 5000,
-	  "flameStageDuration": 10000
-  },
-  "spoilData":
-    [
-      {
-        "materialType": "flesh",
-        "itemType": "chunk",
-	"chance": 100,
-	"min": 10,
-	"max": 12
-      }
-    ]
+	"name": "flesh",
+	"density": 1.05,
+	"hardness": 20,
+	"transparent": false,
+	"value": 1,
+	"burnData":
+	{
+		"ignitionTemperature": 1144,
+		"flameTemperature": 300,
+		"burnStageDuration": 5000,
+		"flameStageDuration": 10000
+	},
+	"spoilData":
+		[
+			{
+				"materialType": "flesh",
+				"itemType": "chunk",
+				"chance": 100,
+				"min": 10,
+				"max": 12
+			}
+		]
 }

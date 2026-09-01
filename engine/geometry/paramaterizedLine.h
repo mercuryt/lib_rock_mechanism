@@ -9,6 +9,8 @@
 #include "point3D.h"
 #include "cuboid.h"
 
+struct CuboidSet;
+
 struct ParamaterizedLine
 {
 	Eigen::Array<float, 3, 1> sloap;
@@ -30,4 +32,5 @@ struct ParamaterizedLine
 		boundry = {begin.max(end), begin.min(end)};
 	}
 	ParamaterizedLine(const std::pair<Point3D, Point3D>& pair) : ParamaterizedLine(pair.first, pair.second) { }
+	[[nodiscard]] CuboidSet toSet() const;
 };

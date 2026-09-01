@@ -5,5 +5,10 @@
 	"minimumHeatDeltaToTrackAffectedArea": 2,
 	"rangeOfInfluenceForPortalsBetweenOutsideAndInside": 10,
 	"maxVolumeOfInfluenceForPortalsBetweenOutsideAndInside": 1000,
-	"ambiantTemperatureDeltaDecay": 2
+	"ambiantTemperatureDeltaDecay": 2,
+	"phaseChangeFrequencyMinutes": 15,
+	"unitsOfFluidToMeltPerPointVolume": 2,
+	"unitsOfFluidToFreezePerPointVolume": 2,
+	"volumeOfRubbleToGenerateWhenSolidBurns": 60,
+	"volumeOfRubbleToGenerateWhenFeatureBurns": 20
 }

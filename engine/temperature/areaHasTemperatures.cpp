@@ -7,8 +7,9 @@
 #include "../plants.h"
 #include "../fluid/fluidGroup.h"
 #include "../config/physics.h"
+#include "../geometry/cuboidSetHelper.hpp"
 void AreaHasTemperature::markToUpdate(const CuboidSet& cuboids) { m_toUpdate.maybeAddAll(cuboids); }
-void AreaHasTemperature::markToUpdate(const Cuboid cuboid) { m_toUpdate.maybeAdd(cuboid); }
+void AreaHasTemperature::markToUpdate(Cuboid cuboid) { m_toUpdate.maybeAdd(cuboid); }
 void AreaHasTemperature::doStep(Area& area)
 {
 	m_portals.doStep(area);
@@ -19,7 +20,7 @@ void AreaHasTemperature::doStep(Area& area)
 	// Actors.
 	Actors& actors = area.getActors();
 	const SmallSet<ActorIndex> actorsInArea = space.actor_getAll(m_toUpdate);
-	for(const ActorIndex actor : actorsInArea)
+	for(ActorIndex actor : actorsInArea)
 		actors.temperature_onChange(actor);
 	Plants& plants = area.getPlants();
 	// Convert plants into locations for stability.
@@ -27,106 +28,12 @@ void AreaHasTemperature::doStep(Area& area)
 	space.plant_queryForEach(m_toUpdate, [&](const PlantIndex& plant){
 		plantsInArea.maybeInsert(plants.getLocation(plant));
 	});
-	for(const Point3D plantLocation : plantsInArea)
+	for(Point3D plantLocation : plantsInArea)
 	{
 		PlantIndex plant = space.plant_get(plantLocation);
 		plants.setTemperature(plant, get(area, plantLocation));
 	}
-	// Melt or burn items.
-	const SmallSet<ItemIndex> itemIndices = space.item_getAll(m_toUpdate);
-	// Items may be destroyed by melting so store as references.
-	SmallSet<ItemReference> itemsInArea;
-	itemsInArea.reserve(itemIndices.size());
-	const int end = itemIndices.size();
-	Items& items = area.getItems();
-	for(int i = 0; i < end; ++i)
-		itemsInArea.insert(items.getReference(itemIndices[i]));
-	for(const ItemReference ref : itemsInArea)
-	{
-		const ItemIndex item = ref.getIndex(items.m_referenceData);
-		const Point3D location = items.getLocation(item);
-		items.setTemperature(item, get(area, location), location);
-	}
-	// Fluids may freeze.
-	SmallMap<FluidTypeId, CuboidSet> m_toFreeze;
-	space.fluid_queryForEachWithCuboids(m_toUpdate, [&](const Cuboid cuboid, const FluidData fluidData){
-		const Temperature freezingPoint = FluidType::getFreezingPoint(fluidData.type);
-		if(freezingPoint.empty())
-			return;
-		const CuboidSet intersection = m_toUpdate.intersection(cuboid);
-		CuboidSet toFreezeInCuboid;
-		for(const Cuboid intersectionCuboid : intersection)
-			for(const Point3D point : intersectionCuboid)
-			{
-				const Temperature temperature = get(area, point);
-				if(temperature <= freezingPoint)
-					toFreezeInCuboid.add(point);
-			}
-		if(toFreezeInCuboid.exists())
-			m_toFreeze.getOrCreate(fluidData.type).addAll(toFreezeInCuboid);
-	});
-	for(const auto& [fluidType, cuboidSet] : m_toFreeze)
-		space.temperature_freeze(cuboidSet, fluidType);
-	// Melt or burn features.
-	SmallMap<MaterialTypeId, CuboidSet> toMeltFeatures;
-	SmallMap<MaterialTypeId, CuboidSet> toBurnFeatures;
-	space.pointFeature_queryForEachWithCuboids(m_toUpdate, [&](const Cuboid cuboid, const PointFeature pointFeature){
-		Temperature meltingPoint = MaterialType::getMeltingPoint(pointFeature.materialType);
-		Temperature ignitionPoint = MaterialType::getIgnitionTemperature(pointFeature.materialType);
-		if(meltingPoint.empty() && ignitionPoint.empty())
-			return;
-		CuboidSet pointsOfCuboidToMelt;
-		CuboidSet pointsOfCuboidToBurn;
-		for(const Point3D point : cuboid)
-		{
-			Temperature temperature = get(area, point);
-			if(meltingPoint.exists() && meltingPoint <= temperature)
-				pointsOfCuboidToMelt.add(point);
-			else if(ignitionPoint.exists() && ignitionPoint <= temperature)
-				pointsOfCuboidToBurn.add(point);
-		}
-		if(pointsOfCuboidToMelt.exists())
-			toMeltFeatures.getOrCreate(pointFeature.materialType).addAll(pointsOfCuboidToMelt);
-		if(pointsOfCuboidToBurn.exists())
-			toBurnFeatures.getOrCreate(pointFeature.materialType).addAll(pointsOfCuboidToBurn);
-	});
-	for(const auto& [materialType, cuboids] : toMeltFeatures)
-		space.temperature_meltFeatures(cuboids, materialType);
-	for(const auto& [materialType, cuboids] : toBurnFeatures)
-		for(const Cuboid cuboid : cuboids)
-			for(const Point3D point : cuboid)
-				area.m_fires.ignite(area, point, materialType);
-	// Melt or burn solid.
-	SmallMap<MaterialTypeId, CuboidSet> toMeltSolid;
-	SmallMap<MaterialTypeId, CuboidSet> toBurnSolid;
-	space.solid_queryForEachWithCuboids(m_toUpdate, [&](const Cuboid cuboid, const MaterialTypeId materialType){
-		const Temperature meltingPoint = MaterialType::getMeltingPoint(materialType);
-		const Temperature ignitionPoint = MaterialType::getIgnitionTemperature(materialType);
-		if(meltingPoint.empty() && ignitionPoint.empty())
-			return;
-		CuboidSet pointsOfCuboidToMelt;
-		CuboidSet pointsOfCuboidToBurn;
-		CuboidSet pointsOfCuboidToUpdate = m_toUpdate.intersection(cuboid);
-		for(const Cuboid cuboidToUpdate : pointsOfCuboidToUpdate)
-			for(const Point3D point : cuboidToUpdate)
-			{
-				Temperature temperature = get(area, point);
-				if(!meltingPoint.empty() && meltingPoint <= temperature)
-					pointsOfCuboidToMelt.add(point);
-				else if(!ignitionPoint.empty() && ignitionPoint <= temperature && !space.fire_exists(point))
-					pointsOfCuboidToBurn.add(point);
-			}
-		if(pointsOfCuboidToMelt.exists())
-			toMeltSolid.getOrCreate(materialType).addAll(pointsOfCuboidToMelt);
-		if(pointsOfCuboidToBurn.exists())
-			toBurnSolid.getOrCreate(materialType).addAll(pointsOfCuboidToBurn);
-	});
-	for(const auto& [materialType, cuboids] : toMeltSolid)
-		space.temperature_meltSolid(cuboids, materialType);
-	for(const auto& [materialType, cuboids] : toBurnSolid)
-		for(const Cuboid cuboid : cuboids)
-			for(const Point3D point : cuboid)
-				area.m_fires.ignite(area, point, materialType);
+	doPhaseChangeAndIgnition(area);
 	m_toUpdate.clear();
 }
 void AreaHasTemperature::setAmbient(Area& area, const Temperature newAmbiant)
@@ -153,26 +60,23 @@ void AreaHasTemperature::setAmbient(Area& area, const Temperature newAmbiant)
 				cuboid.m_low.setZ(std::max(cuboid.m_low.z(), cuboid.m_high.z() - 1));
 		toFreeze = space.m_exposedToSky.get().queryGetIntersection(toFreeze);
 		if(toFreeze.exists())
-			space.temperature_freeze(toFreeze, fluidType);
+			area.m_hasPhaseChanges.setFreezing(fluidType, toFreeze);
 	}
 	area.getPlants().onChangeAmbiantSurfaceTemperature(newAmbiant, inRangeOfSource);
 	area.getActors().onChangeAmbiantSurfaceTemperature(newAmbiant, inRangeOfSource);
 	// Melt.
-	// Create a copy to modifiy
-	for(auto [materialType, onSurfaceData] : m_meltableMaterialTypeOnSurface)
+	for(auto& [materialType, onSurfaceData] : m_meltableMaterialTypeOnSurface)
 	{
 		Temperature meltingPoint = MaterialType::getMeltingPoint(materialType);
 		if(meltingPoint.exists() && meltingPoint > newAmbiant)
 			continue;
-		onSurfaceData.items.maybeRemoveAll(inRangeOfSource);
-		if(onSurfaceData.items.exists())
-			space.temperature_meltItems(onSurfaceData.items, materialType);
-		onSurfaceData.features.maybeRemoveAll(inRangeOfSource);
-		if(onSurfaceData.features.exists())
-			space.temperature_meltFeatures(onSurfaceData.features, materialType);
-		onSurfaceData.solid.maybeRemoveAll(inRangeOfSource);
-		if(onSurfaceData.solid.exists())
-			space.temperature_meltSolid(onSurfaceData.solid, materialType);
+		CuboidSet toMelt;
+		assert(!(onSurfaceData.solid.empty() && onSurfaceData.features.empty() && onSurfaceData.items.empty()));
+		toMelt.maybeAdd(onSurfaceData.solid);
+		toMelt.maybeAdd(onSurfaceData.features);
+		toMelt.maybeAdd(onSurfaceData.items);
+		if(toMelt.exists())
+			area.m_hasPhaseChanges.setMelting(materialType, toMelt);
 	}
 }
 void AreaHasTemperature::onTemperatureCanNoLongerTransmit(Area& area, const CuboidSet& cuboids)
@@ -185,7 +89,7 @@ void AreaHasTemperature::onTemperatureCanNowTransmit(Area& area, const CuboidSet
 	m_portals.onTemperatureCanNowTransmit(area, cuboids);
 	m_sources.onTemperatureCanNowTransmit(cuboids);
 }
-Temperature AreaHasTemperature::get(Area& area,const Point3D point)
+Temperature AreaHasTemperature::get(Area& area,Point3D point)
 {
 	Space& space = area.getSpace();
 	bool isExposedToSky = space.m_exposedToSky.check(point);
@@ -194,10 +98,11 @@ Temperature AreaHasTemperature::get(Area& area,const Point3D point)
 		Config::undergroundAmbiantTemperature;
 	return ambiant + m_sources.getDelta(point) + m_portals.getDelta(area, point);
 }
-void AreaHasTemperature::onSetSolid(Area& area, const CuboidSet& cuboids, const MaterialTypeId materialType)
+void AreaHasTemperature::onSetSolid(Area& area, const CuboidSet& cuboids, MaterialTypeId materialType)
 {
 	Space& space = area.getSpace();
 	onTemperatureCanNoLongerTransmit(area, cuboids);
+	area.m_hasPhaseChanges.onSolidSet(area, materialType, cuboids);
 	if(MaterialType::canMelt(materialType))
 	{
 		CuboidSet intersection = space.m_exposedToSky.get().queryGetIntersection(cuboids);
@@ -205,9 +110,10 @@ void AreaHasTemperature::onSetSolid(Area& area, const CuboidSet& cuboids, const 
 			m_meltableMaterialTypeOnSurface.getOrCreate(materialType).solid.maybeAdd(intersection);
 	}
 }
-void AreaHasTemperature::onSetNotSolid(Area& area, const CuboidSet& cuboids, const MaterialTypeId materialType)
+void AreaHasTemperature::onSetNotSolid(Area& area, const CuboidSet& cuboids, MaterialTypeId materialType)
 {
 	onTemperatureCanNowTransmit(area, cuboids);
+	area.m_hasPhaseChanges.onSolidSetNot(materialType, cuboids);
 	if(MaterialType::canMelt(materialType))
 	{
 		auto found = m_meltableMaterialTypeOnSurface.find(materialType);
@@ -216,35 +122,42 @@ void AreaHasTemperature::onSetNotSolid(Area& area, const CuboidSet& cuboids, con
 	}
 	// Gather space underneath to add to onSurface data.
 }
-void AreaHasTemperature::onSetFeature(Area& area, const Point3D point, const MaterialTypeId materialType)
+void AreaHasTemperature::onSetFeature(Area& area, const CuboidSet& cuboids, MaterialTypeId materialType)
 {
+	area.m_hasPhaseChanges.onFeatureSet(area, materialType, cuboids);
 	if(MaterialType::canMelt(materialType))
 	{
 		Space& space = area.getSpace();
-		if(space.m_exposedToSky.check(point))
-			m_meltableMaterialTypeOnSurface.getOrCreate(materialType).features.maybeAdd(point);
+		CuboidSet exposedToSky = space.m_exposedToSky.get().queryGetIntersection(cuboids);
+		m_meltableMaterialTypeOnSurface.getOrCreate(materialType).features.maybeAdd(exposedToSky);
 	}
 }
-void AreaHasTemperature::onUnsetFeature(const Point3D point, const MaterialTypeId materialType)
+void AreaHasTemperature::onUnsetFeature(Area& area, const CuboidSet& cuboids, MaterialTypeId materialType)
 {
+	area.m_hasPhaseChanges.onFeatureSetNot(area, materialType, cuboids);
 	// Count features with material type at point.
 	auto found = m_meltableMaterialTypeOnSurface.find(materialType);
 	if(found != m_meltableMaterialTypeOnSurface.end())
-		found->second.features.maybeRemove(point);
+		found->second.features.maybeRemove(cuboids);
 }
-void AreaHasTemperature::onFluidEnters(Area& area, const CuboidSet& cuboids, FluidTypeId fluidType, FluidGroupId group)
+void AreaHasTemperature::onFluidEnters(Area& area, const CuboidSet& cuboids, FluidGroup& group)
 {
-	if(FluidType::canFreeze(fluidType))
+	Space& space = area.getSpace();
+	if(!group.m_aboveGround && space.m_exposedToSky.check(cuboids))
+		group.m_aboveGround = true;
+	if(FluidType::canFreeze(group.m_fluidType))
 	{
+		area.m_hasPhaseChanges.onFluidEnters(area, group.m_fluidType, cuboids);
 		// TODO: profile this branch.
-		if(m_freezableFluidTypeOnSurface.contains(fluidType) && m_freezableFluidTypeOnSurface[fluidType].contains(group))
+		if(m_freezableFluidTypeOnSurface.contains(group.m_fluidType) && m_freezableFluidTypeOnSurface[group.m_fluidType].contains(group.m_id))
 			return;
 		if(area.getSpace().m_exposedToSky.get().query(cuboids))
-			m_freezableFluidTypeOnSurface.getOrCreate(fluidType).insert(group);
+			m_freezableFluidTypeOnSurface.getOrCreate(group.m_fluidType).insert(group.m_id);
 	}
 }
 void AreaHasTemperature::onFluidExits(Area& area, const CuboidSet& cuboids, FluidTypeId fluidType, FluidGroupId group)
 {
+	area.m_hasPhaseChanges.onFluidExits(fluidType, cuboids);
 	if(FluidType::canFreeze(fluidType))
 	{
 		if(!m_freezableFluidTypeOnSurface.contains(fluidType) || !m_freezableFluidTypeOnSurface[fluidType].contains(group))
@@ -255,13 +168,32 @@ void AreaHasTemperature::onFluidExits(Area& area, const CuboidSet& cuboids, Flui
 			m_freezableFluidTypeOnSurface[fluidType].erase(group);
 	}
 }
+void AreaHasTemperature::onItemEnters(Area& area, ItemIndex item)
+{
+	Items& items = area.getItems();
+	MaterialTypeId materialType = items.getMaterialType(item);
+	// If materialType does not exist this is a constrcuted shape.
+	// TODO: interaction between temperature and constructed shapes.
+	if(materialType.exists())
+		area.m_hasPhaseChanges.onItemEnter(area, materialType, items.getOccupied(item));
+	if(!items.isOnSurface(item) && area.getSpace().m_exposedToSky.get().query(items.getOccupied(item)))
+		items.setOnSurface(item, true);
+}
+void AreaHasTemperature::onItemExits(Area& area, ItemIndex item)
+{
+	Items& items = area.getItems();
+	MaterialTypeId materialType = items.getMaterialType(item);
+	area.m_hasPhaseChanges.onItemExit(area, materialType, items.getOccupied(item));
+	if(items.isOnSurface(item))
+		items.setOnSurface(item, false);
+}
 void AreaHasTemperature::maybeRemoveFreezeableFluidGroupAboveGround(FluidTypeId fluidType, FluidGroupId group)
 {
 	if(!m_freezableFluidTypeOnSurface.contains(fluidType))
 		return;
 	m_freezableFluidTypeOnSurface[fluidType].maybeErase(group);
 }
-void AreaHasTemperature::addItemAboveGround(Area& area, const ItemIndex item)
+void AreaHasTemperature::addItemAboveGround(Area& area, ItemIndex item)
 {
 	Items& items = area.getItems();
 	MaterialTypeId materialType = items.getMaterialType(item);
@@ -271,9 +203,10 @@ void AreaHasTemperature::addItemAboveGround(Area& area, const ItemIndex item)
 	if(materialType.exists() && MaterialType::canMelt(materialType))
 		m_meltableMaterialTypeOnSurface.getOrCreate(materialType).items.maybeAddAll(items.getOccupied(item));
 }
-void AreaHasTemperature::removeItemAboveGround(Area& area, const ItemIndex item)
+void AreaHasTemperature::removeItemAboveGround(Area& area, ItemIndex item)
 {
 	Items& items = area.getItems();
+	Space& space = area.getSpace();
 	MaterialTypeId materialType = items.getMaterialType(item);
 	if(materialType.empty())
 		materialType = items.getConstructedShape(item).getMaterialWithTheLowestMeltingPoint();
@@ -282,13 +215,19 @@ void AreaHasTemperature::removeItemAboveGround(Area& area, const ItemIndex item)
 		auto found = m_meltableMaterialTypeOnSurface.find(items.getMaterialType(item));
 		if(found == m_meltableMaterialTypeOnSurface.end())
 			return;
-		found->second.items.maybeRemoveAll(items.getOccupied(item));
+		CuboidSet toRemove = items.getOccupied(item);
+		space.item_queryForEach(toRemove, [materialType, &toRemove, &items](ItemIndex itemIndex) mutable {
+			if(items.getMaterialType(itemIndex) == materialType)
+				toRemove.remove(items.getOccupied(itemIndex));
+		});
+		if(!toRemove.empty())
+			found->second.items.maybeRemoveAll(toRemove);
 	}
 }
 void AreaHasTemperature::afterLoad(Area& area)
 {
 	Space& space = area.getSpace();
-	space.m_exposedToSky.get().forEach([&](const Cuboid exposedCuboid){
+	space.m_exposedToSky.get().forEach([&](Cuboid exposedCuboid){
 		space.fluid_queryForEach(exposedCuboid, [&](const FluidData data){ m_freezableFluidTypeOnSurface.getOrCreate(data.type).maybeInsert(data.group); });
 	});
 }
@@ -305,15 +244,14 @@ void AreaHasTemperature::updateAmbientSurfaceTemperature(Area& area)
 }
 Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature(Area& area) const
 {
-	// TODO: Latitude and altitude.
-	static Temperature yearlyHottestDailyAverage = Temperature::create(290);
-	static Temperature yearlyColdestDailyAverage = Temperature::create(270);
+	Temperature yearlyHottestDailyAverage = m_maxAmbiant.exists()? m_maxAmbiant : Temperature::create(290);
+	Temperature yearlyColdestDailyAverage = m_minAmbiant.exists()? m_minAmbiant : Temperature::create(270);;
 	static int dayOfYearOfSolstice = Config::daysPerYear / 2;
 	int day = DateTime(area.m_simulation.m_step).day;
 	int daysFromSolstice = std::abs(day - (int)dayOfYearOfSolstice);
 	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
 }
-Temperature AreaHasTemperature::lowerBound(Area& area, const Cuboid cuboid)
+Temperature AreaHasTemperature::lowerBound(Area& area, Cuboid cuboid)
 {
 	TemperatureDelta sumDelta{0};
 	m_sources.queryForEach(cuboid, [&](const TemperatureSource source){
@@ -326,7 +264,7 @@ Temperature AreaHasTemperature::lowerBound(Area& area, const Cuboid cuboid)
 		sumDelta += delta;
 	});
 	TemperatureDelta deltaBetweenExposedAndNotExposed = TemperatureDelta::create((m_ambiant - Config::undergroundAmbiantTemperature).get());
-	m_portals.queryForEach(cuboid, [&](const Cuboid portal){
+	m_portals.queryForEach(cuboid, [&](Cuboid portal){
 		// Portals are always cooling sources rather then heat sources.
 		Distance distance = portal.distanceTo(cuboid);
 		TemperatureDelta delta = deltaBetweenExposedAndNotExposed.reduceForDistanceAmbiant(distance.toFloat());
@@ -337,7 +275,7 @@ Temperature AreaHasTemperature::lowerBound(Area& area, const Cuboid cuboid)
 		return std::min(m_ambiant, Config::undergroundAmbiantTemperature) + sumDelta;
 	return Config::undergroundAmbiantTemperature + sumDelta;
 }
-std::pair<Temperature, Temperature> AreaHasTemperature::upperAndLowerBounds(Area& area, const Cuboid cuboid) const
+std::pair<Temperature, Temperature> AreaHasTemperature::upperAndLowerBounds(Area& area, Cuboid cuboid) const
 {
 	TemperatureDelta highDelta{0};
 	TemperatureDelta lowDelta{0};
@@ -358,7 +296,7 @@ std::pair<Temperature, Temperature> AreaHasTemperature::upperAndLowerBounds(Area
 		highDelta += deltaHigh;
 	});
 	TemperatureDelta deltaBetweenExposedAndNotExposed = m_ambiant.delta() - Config::undergroundAmbiantTemperature.delta();
-	m_portals.queryForEach(cuboid, [&](const Cuboid portal){
+	m_portals.queryForEach(cuboid, [&](Cuboid portal){
 		// Portals are always cooling sources rather then heat sources.
 		Distance distance = portal.distanceTo(cuboid);
 		TemperatureDelta delta = deltaBetweenExposedAndNotExposed.reduceForDistanceAmbiant(distance.toFloat());
@@ -371,4 +309,151 @@ std::pair<Temperature, Temperature> AreaHasTemperature::upperAndLowerBounds(Area
 			std::min(m_ambiant, Config::undergroundAmbiantTemperature) + lowDelta
 		};
 	return {Config::undergroundAmbiantTemperature + highDelta, Config::undergroundAmbiantTemperature + lowDelta};
+}
+void AreaHasTemperature::doPhaseChangeAndIgnition(Area& area)
+{
+	// It would be nicer logically to seperate this into AreaHasFires::onTemperatureChange and AreaHasPhaseChanges::onTemperatureChange, but it would involve many repetitive boundry computations with the temperature source tree.
+	auto [upperToUpdateBound, lowerToUpdateBound] = area.m_hasTemperature.upperAndLowerBounds(area, m_toUpdate.boundry());
+	Space& space = area.getSpace();
+	// Melt or ignite
+	CuboidSet maybeStopMelting;
+	CuboidSet maybeStartMelting;
+	SmallMap<MaterialTypeId, CuboidSet> maybeStartOrStopMelting;
+	CuboidSet igniteIfNotBurning;
+	SmallMap<MaterialTypeId, CuboidSet> maybeIgniteIfNotBurning;
+	// This query collects cuboids into catagories yes, no, maybe for each cuboid for both melting and iginition.
+	// Note that the "maybe" in maybeStartMelting, etc. means set if not set already, it does not refer to temperature.
+	space.solid_queryForEachWithCuboids(m_toUpdate, [upperToUpdateBound, lowerToUpdateBound, &maybeStopMelting, &maybeStartMelting, &maybeStartOrStopMelting, &igniteIfNotBurning, &maybeIgniteIfNotBurning](Cuboid cuboid, MaterialTypeId material){
+		// Melting.
+		Temperature meltingPoint = MaterialType::getMeltingPoint(material);
+		if(meltingPoint.exists())
+		{
+			if(meltingPoint > upperToUpdateBound)
+				// No point in the m_toUpdate of this materialType is melting.
+				maybeStopMelting.add(cuboid);
+			else if(meltingPoint < lowerToUpdateBound)
+				// All points in the m_toUpdate are melting
+				maybeStartMelting.add(cuboid);
+			else
+				// Some but not all are melting.
+				maybeStartOrStopMelting.getOrCreate(material).add(cuboid);
+		}
+		// Ignition.
+		Temperature ignitionPoint = MaterialType::getIgnitionTemperature(material);
+		if(ignitionPoint.exists())
+		{
+			if(ignitionPoint > upperToUpdateBound)
+			{
+				// Do nothing
+			}
+			else if(ignitionPoint <= lowerToUpdateBound)
+				// All points in m_toUpdate for this material type are iginiting.
+				igniteIfNotBurning.add(cuboid);
+			else
+				// Some but not all are iginiting.
+				maybeIgniteIfNotBurning.getOrCreate(material).add(cuboid);
+		}
+	});
+	// Categorize the remainder using cuboidSetHelper::queryReturnTrueAndFalse to categorize the cuboids not categorized in the inital broad phase.
+	// These will be subdivided and/or examined point-by-point as needed.
+	// TODO: is there a redundant temperature bounds check at the begining of queryReturnTrueAndFalse?
+	// First melting.
+	for(auto& [material, cuboidSet] : maybeStartOrStopMelting)
+	{
+		Temperature meltingPoint = MaterialType::getMeltingPoint(material);
+		auto cuboidCondition = [meltingPoint, &area](Cuboid cuboid) -> std::optional<bool> {
+			auto [upper, lower] = area.m_hasTemperature.upperAndLowerBounds(area, cuboid);
+			// If the highest temperature that could exist in the cuboid is less then the melting point then none of it melts.
+			if(upper < meltingPoint)
+				return {false};
+			// If the lowest temperature that could exist in the cuboid is greater then or equal to melting point then all of it melts.
+			if(lower >= meltingPoint)
+				return {true};
+			// Some but not all of the cuboid melts.
+			return std::optional<bool>{};
+		};
+		auto pointCondition = [meltingPoint, &area](Point3D point) -> bool {
+			return meltingPoint <= area.m_hasTemperature.get(area, point);
+		};
+		auto [toMelt, toNotMelt] = cuboidSetHelper::queryReturnTrueAndFalse(cuboidSet, cuboidCondition, pointCondition);
+		if(toMelt.exists())
+			area.m_hasPhaseChanges.m_melting.getOrCreate(material).maybeAdd(toMelt);
+		if(toNotMelt.exists())
+		{
+			auto found = area.m_hasPhaseChanges.m_melting.find(material);
+			if(found != area.m_hasPhaseChanges.m_melting.end())
+				found->second.maybeRemove(toNotMelt);
+		}
+	}
+	// Second ignition.
+	for(auto& [material, cuboidSet] : maybeIgniteIfNotBurning)
+	{
+		Temperature ignitionPoint = MaterialType::getIgnitionTemperature(material);
+		auto cuboidCondition = [ignitionPoint, &area](Cuboid cuboid) -> std::optional<bool> {
+			auto [upper, lower] = area.m_hasTemperature.upperAndLowerBounds(area, cuboid);
+			// If the highest temperature that could exist in the cuboid is less then the ignition point then none of it ignites.
+			if(upper < ignitionPoint)
+				return {false};
+			// If the lowest temperature that could exist in the cuboid is greater then or equal to the ignition point then all of it ignites.
+			if(lower >= ignitionPoint)
+				return {true};
+			// Some but not all of the cuboid ignites.
+			return std::optional<bool>{};
+		};
+		auto pointCondition = [ignitionPoint, &area](Point3D point) -> bool {
+			return ignitionPoint <= area.m_hasTemperature.get(area, point);
+		};
+		// No toNotIgnite here: ignition cannot be reversed.
+		auto toIgnite = cuboidSetHelper::query(cuboidSet, cuboidCondition, pointCondition);
+		if(toIgnite.exists())
+			area.m_fires.ignite(area, toIgnite, material);
+	}
+	// Freeze.
+	CuboidSet maybeStopFreezing;
+	CuboidSet maybeStartFreezing;
+	SmallMap<FluidTypeId, CuboidSet> maybeStartOrStopFreezing;
+	space.fluid_queryForEachWithCuboids(m_toUpdate,
+		[upperToUpdateBound, lowerToUpdateBound, &maybeStopFreezing, &maybeStartFreezing, &maybeStartOrStopFreezing]
+		(Cuboid cuboid, FluidData fluid){
+			Temperature freezingPoint = FluidType::getFreezingPoint(fluid.type);
+			if(freezingPoint.empty())
+				return;
+			if(freezingPoint > upperToUpdateBound)
+				// No point in the m_toUpdate of this materialType is freezeing.
+				maybeStopFreezing.add(cuboid);
+			else if(freezingPoint < lowerToUpdateBound)
+				// All points in the m_toUpdate are freezeing
+				maybeStartFreezing.add(cuboid);
+			else
+				// Some but not all are freezeing.
+				maybeStartOrStopFreezing.getOrCreate(fluid.type).add(cuboid);
+		}
+	);
+	for(auto& [fluid, cuboidSet] : maybeStartOrStopFreezing)
+	{
+		Temperature freezeingPoint = FluidType::getFreezingPoint(fluid);
+		auto cuboidCondition = [freezeingPoint, &area](Cuboid cuboid) -> std::optional<bool> {
+			auto [upper, lower] = area.m_hasTemperature.upperAndLowerBounds(area, cuboid);
+			// If the highest temperature that could exist in the cuboid is less then or equal to the freezeing point then all of it freezes.
+			if(upper <= freezeingPoint)
+				return {true};
+			// If the lowest temperature that could exist in the cuboid is greater then freezeing point then none of it freezes.
+			if(lower > freezeingPoint)
+				return {false};
+			// Some but not all of the cuboid freezes.
+			return std::optional<bool>{};
+		};
+		auto pointCondition = [freezeingPoint, &area](Point3D point) -> bool {
+			return freezeingPoint >= area.m_hasTemperature.get(area, point);
+		};
+		auto [toFreeze, toNotFreeze] = cuboidSetHelper::queryReturnTrueAndFalse(cuboidSet, cuboidCondition, pointCondition);
+		if(toFreeze.exists())
+			area.m_hasPhaseChanges.m_freezing.getOrCreate(fluid).maybeAdd(toFreeze);
+		if(toNotFreeze.exists())
+		{
+			auto found = area.m_hasPhaseChanges.m_freezing.find(fluid);
+			if(found != area.m_hasPhaseChanges.m_freezing.end())
+				found->second.maybeRemove(toNotFreeze);
+		}
+	}
 }

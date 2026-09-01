@@ -8,38 +8,39 @@
  #include "../items/items.h"
  #include "../plants.h"
  #include "../pointFeature.h"
+ #include "../geometry/cuboidSet.h"
  #include<cmath>
 std::string TemperatureSource::toS() const
 {
 	return "location: " + m_location.toS() + " id: " + m_id.toS() + " delta: " + m_delta.toS();
 }
-CuboidSet AreaHasTemperatureSources::getAffectedArea(Area& area, const Point3D location, const TemperatureDelta delta)
+CuboidSet AreaHasTemperatureSources::getAffectedArea(Area& area, Cuboid cuboid, TemperatureDelta delta)
 {
 	int maxRange = delta.effectDistanceRadiant().get();
 	int maxVolume = std::pow(maxRange, 3);
 	Space& space = area.getSpace();
-	auto query = [&](const Cuboid cuboid) -> CuboidSet {
-		CuboidSet output = space.temperature_queryTransmitsCuboidsIntersection(CuboidSet::create(cuboid));
+	auto query = [&](const Cuboid candidate) -> CuboidSet {
+		CuboidSet output = space.temperature_queryTransmitsCuboidsIntersection(CuboidSet::create(candidate));
 		// Include walls, floors, etc.
 		output.inflate({1});
-		output = output.intersection(cuboid);
+		output = output.intersection(candidate);
 		return output;
 	};
-	CuboidSet output = RTreeHelpers::findCuboidSetWithMaxVolumeAndMaxRangeStartingFromPoint(maxVolume, maxRange, location, query);
+	CuboidSet output = RTreeHelpers::findCuboidSetWithMaxVolumeAndMaxRangeStartingFromCuboid(maxVolume, maxRange, cuboid, query);
 	return output;
 }
-void AreaHasTemperatureSources::updateTemperatureSourceDelta(Area& area, const Point3D location, const TemperatureDelta oldDelta, const TemperatureSourceId id, const TemperatureDelta newDelta)
+void AreaHasTemperatureSources::updateTemperatureSourceDelta(Area& area, Cuboid cuboid, TemperatureDelta oldDelta, TemperatureSourceId id, TemperatureDelta newDelta)
 {
 	assert(newDelta != oldDelta);
 	auto condition = [&](const TemperatureSource other){ return other.m_id == id; };
-	CuboidSet removed = RTreeHelpers::deleteAdjacentWithConditionRecursive(m_data, location, condition);
-	CuboidSet toAdd = getAffectedArea(area, location, newDelta);
-	TemperatureSource source = TemperatureSource::create(location, id, newDelta);
+	CuboidSet removed = RTreeHelpers::deleteAdjacentWithConditionRecursive(m_data, cuboid, condition);
+	CuboidSet toAdd = getAffectedArea(area, cuboid, newDelta);
+	TemperatureSource source = TemperatureSource::create(cuboid, id, newDelta);
 	m_data.insert(toAdd, source);
 	toAdd.maybeAddAll(removed);
 	area.m_hasTemperature.markToUpdate(toAdd);
 }
-TemperatureSourceId AreaHasTemperatureSources::addTemperatureSource(Area& area, const Point3D location, const TemperatureDelta delta)
+TemperatureSourceId AreaHasTemperatureSources::addTemperatureSource(Area& area, Cuboid location, TemperatureDelta delta)
 {
 	TemperatureSourceId id = getNextId();
 	TemperatureSource source = TemperatureSource::create(location, id, delta);
@@ -48,7 +49,7 @@ TemperatureSourceId AreaHasTemperatureSources::addTemperatureSource(Area& area, 
 	area.m_hasTemperature.markToUpdate(affectedArea);
 	return id;
 }
-void AreaHasTemperatureSources::removeTemperatureSource(Area& area, const Point3D location, TemperatureSourceId id)
+void AreaHasTemperatureSources::removeTemperatureSource(Area& area, Cuboid location, TemperatureSourceId id)
 {
 	auto condition = [&](const TemperatureSource other){ return other.m_id == id; };
 	CuboidSet recordedArea = RTreeHelpers::deleteAdjacentWithConditionRecursive(m_data, location, condition);
@@ -78,8 +79,8 @@ void AreaHasTemperatureSources::doStep(Area& area)
 TemperatureDelta AreaHasTemperatureSources::getDelta(const Point3D point)
 {
 	TemperatureDelta output{0};
-	m_data.queryForEach(point, [&](const TemperatureSource temperatureSource){
-		if(point == temperatureSource.m_location)
+	m_data.queryForEach(point, [point, &output](const TemperatureSource temperatureSource){
+		if(temperatureSource.m_location.contains(point))
 			output += temperatureSource.m_delta;
 		else
 		{
@@ -131,7 +132,7 @@ CuboidSet AreaHasTemperatureSources::getPointsIntersectingExposedToSky(Area& are
 }
 std::string AreaHasTemperatureSources::toS(Area& area, int x, int y, int z)
 {
-	Point3D location = Point3D::create(x, y, z);
+	Cuboid location = Cuboid::create(Point3D::create(x, y, z));
 	TemperatureSource source = m_data.queryGetOneWithCondition(location, [&](const TemperatureSource otherSource) { return otherSource.m_location == location; });
 	CuboidSet affectedArea = getAffectedArea(area, location, source.m_delta);
 	return source.toS() + " affecting: " + affectedArea.toS();

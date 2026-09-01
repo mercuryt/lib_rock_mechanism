@@ -168,6 +168,7 @@ private:
 public:
 	[[nodiscard]] CuboidSet queryGetIntersection(const CuboidSet& cuboids) const;
 	[[nodiscard]] CuboidSet queryGetIntersection(const Cuboid cuboid) const;
+	[[nodiscard]] int queryIntersectionVolume(const auto& shape) const { return queryGetIntersection(shape).volume(); }
 	template<typename ShapeT>
 	[[nodiscard]] Cuboid queryGetLeafWithCondition(ShapeT&& shape, auto&& condition) const;
 	template<typename ShapeT>
@@ -175,6 +176,7 @@ public:
 	void queryRemove(CuboidSet& set) const;
 	template<typename ActionT>
 	void forEachCuboid(ActionT&& action) const;
+	Distance distance(Point3D point, Distance maxRange) const;
 	// For test and debug.
 	GDB_CALLABLE int nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
 	GDB_CALLABLE int leafCount() const;

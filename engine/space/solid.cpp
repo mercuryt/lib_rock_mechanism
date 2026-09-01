@@ -133,6 +133,10 @@ Mass Space::solid_getMass(const CuboidSet& cuboidSet) const
 			output += solid_getMass(point);
 	return output;
 }
+CuboidSet Space::solid_getCuboidsWithMaterialType(const CuboidSet& shape, MaterialTypeId materialType) const
+{
+	return m_solid.queryGetAllCuboidsWithCondition(shape, [materialType](MaterialTypeId otherType){ return otherType == materialType; });
+}
 std::pair<MaterialTypeId, int> Space::solid_getHardest(const CuboidSet& cuboids)
 {
 	// Check Solid first.

@@ -7,7 +7,7 @@ class Area;
 class RainEvent;
 struct FluidType;
 struct DeserializationMemo;
-class AreaHasRain final
+struct AreaHasRain final
 {
 	std::array<Percent, 4> m_humidityBySeason;
 	HasScheduledEvent<RainEvent> m_event;
@@ -15,7 +15,6 @@ class AreaHasRain final
 	FluidTypeId m_currentlyRainingFluidType;
 	FluidTypeId m_defaultRainFluidType;
 	Percent m_intensityPercent = Percent::create(0);
-public:
 	AreaHasRain(Area& a, Simulation& s);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
@@ -30,6 +29,8 @@ public:
 	[[nodiscard]] FluidTypeId getFluidType() const { assert(m_currentlyRainingFluidType.exists()); return m_currentlyRainingFluidType; }
 	[[nodiscard]] Percent getIntensityPercent() const { return m_intensityPercent; }
 	[[nodiscard]] Percent humidityForSeason();
+	[[nodiscard]] Percent maxHumidity();
+	[[nodiscard]] Percent minHumidity();
 	friend class RainEvent;
 };
 class RainEvent final : public ScheduledEvent

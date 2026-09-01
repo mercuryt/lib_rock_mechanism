@@ -9,14 +9,14 @@ struct TemperatureSource
 {
 	struct Primitive
 	{
-		Point3D::Primitive location;
+		Cuboid::Primitive location;
 		TemperatureSourceIdWidth id;
 		TemperatureDeltaWidth delta;
 		bool operator<=>(const Primitive& other) const = default;
 		bool operator==(const Primitive& other) const { return other.id == id; }
 		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Primitive, location, id, delta);
 	};
-	Point3D m_location;
+	Cuboid m_location;
 	TemperatureSourceId m_id;
 	TemperatureDelta m_delta;
 	void updateDelta(Area& area, TemperatureDelta newValue);
@@ -25,22 +25,22 @@ struct TemperatureSource
 	[[nodiscard]] bool empty() const { return m_location.empty(); };
 	[[nodiscard]] Primitive get() const { return {m_location.get(), m_id.get(), m_delta.get()}; }
 	[[nodiscard]] constexpr static TemperatureSource null() { return {}; }
-	[[nodiscard]] constexpr static Primitive nullPrimitive() { return {Point3D::nullPrimitive(), TemperatureSourceId::nullPrimitive(), TemperatureDelta::nullPrimitive()}; }
-	[[nodiscard]] constexpr static TemperatureSource create(const Primitive& primitive) { return {Point3D::create(primitive.location), TemperatureSourceId::create(primitive.id), TemperatureDelta::create(primitive.delta)}; }
-	[[nodiscard]] constexpr static TemperatureSource create(Point3D location, TemperatureSourceId id, TemperatureDelta delta) { return {location, id, delta}; }
+	[[nodiscard]] constexpr static Primitive nullPrimitive() { return {Cuboid::nullPrimitive(), TemperatureSourceId::nullPrimitive(), TemperatureDelta::nullPrimitive()}; }
+	[[nodiscard]] constexpr static TemperatureSource create(const Primitive& primitive) { return {Cuboid::create(primitive.location), TemperatureSourceId::create(primitive.id), TemperatureDelta::create(primitive.delta)}; }
+	[[nodiscard]] constexpr static TemperatureSource create(Cuboid location, TemperatureSourceId id, TemperatureDelta delta) { return {location, id, delta}; }
 	[[nodiscard]] std::string toS() const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(TemperatureSource, m_location, m_id, m_delta);
 };
 class AreaHasTemperatureSources
 {
 	RTreeData<TemperatureSource, RTreeDataConfigs::canOverlapNoMerge> m_data;
-	std::vector<std::pair<Point3D, TemperatureSourceId>> m_sourcesToUpdate;
+	std::vector<std::pair<Cuboid, TemperatureSourceId>> m_sourcesToUpdate;
 	TemperatureSourceId m_nextId{0};
 	std::vector<TemperatureSourceId> m_unusedIds;
 public:
-	TemperatureSourceId addTemperatureSource(Area& area, const Point3D location, const TemperatureDelta delta);
-	void removeTemperatureSource(Area& area, const Point3D location, const TemperatureSourceId id);
-	void updateTemperatureSourceDelta(Area& area, const Point3D location, const TemperatureDelta oldDelta, const TemperatureSourceId id, const TemperatureDelta newDelta);
+	TemperatureSourceId addTemperatureSource(Area& area, Cuboid location, TemperatureDelta delta);
+	void removeTemperatureSource(Area& area, Cuboid location, TemperatureSourceId id);
+	void updateTemperatureSourceDelta(Area& area, Cuboid location, TemperatureDelta oldDelta, TemperatureSourceId id, TemperatureDelta newDelta);
 	// Returns area which is exposed to sky but also in range of at least one temperature source. Exclude this area from normal ambient temperature change. It has already been marked for processing in the context of this object.
 	[[nodiscard]] CuboidSet onChangeAmbiantSurfaceTemperatureReturnIntersection(Area& area);
 	void doStep(Area& area);
@@ -51,7 +51,7 @@ public:
 	[[nodiscard]] TemperatureDelta getDelta(const Point3D point);
 	[[nodiscard]] TemperatureSourceId getNextId();
 	[[nodiscard]] CuboidSet getPointsIntersectingExposedToSky(Area& area) const;
-	[[nodiscard]] static CuboidSet getAffectedArea(Area& area, const Point3D location, const TemperatureDelta delta);
+	[[nodiscard]] static CuboidSet getAffectedArea(Area& area, Cuboid cuboid, const TemperatureDelta delta);
 	GDB_CALLABLE std::string toS(Area& area, int x, int y, int z);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(AreaHasTemperatureSources, m_data, m_sourcesToUpdate, m_nextId, m_unusedIds);
 };

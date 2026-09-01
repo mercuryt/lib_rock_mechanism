@@ -1,7 +1,7 @@
 {
   "name": "granite",
   "density": 2.7,
-  "hardness": 7,
+  "hardness": 70,
   "transparent": false,
   "meltingPoint": 1500,
   "meltsInto": "lava",

@@ -58,8 +58,13 @@ template<typename IntType, IntType capacity>
 void BitSet<IntType, capacity>::clearAllBefore(const IntType& index)
 {
 	assert(index <= capacity);
-	const IntType mask = ~zero << index;
-	data &= mask;
+	if(index == capacity)
+		data = 0;
+	else
+	{
+		const IntType mask = ~zero << index;
+		data &= mask;
+	}
 }
 template<typename IntType, IntType capacity>
 IntType BitSet<IntType, capacity>::getNextAndClear()

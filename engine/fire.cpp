@@ -5,59 +5,71 @@
 #include "space/space.h"
 #include "numericTypes/types.h"
 #include "numericTypes/idTypes.h"
-void Fire::nextPhase(Area& area)
+#include "config/physics.h"
+void FireData::nextPhase(Area& area, Cuboid cuboid)
 {
-	if(!m_hasPeaked &&m_stage == FireStage::Smouldering)
+	TemperatureDelta baseTemperature = MaterialType::getFlameTemperature(m_materialType);
+	if(!m_hasPeaked && m_stage == FireStage::Smouldering)
 	{
 		m_stage = FireStage::Burning;
-		TemperatureDelta oldDelta = MaterialType::getFlameTemperature(m_materialType) * Config::heatFractionForSmoulder;
-		TemperatureDelta newDelta = MaterialType::getFlameTemperature(m_materialType) * Config::heatFractionForBurn;
-		area.m_hasTemperature.m_sources.updateTemperatureSourceDelta(area, m_location, oldDelta, m_temperatureSource, newDelta);
-		area.m_fires.scheduleNextPhase(area.m_simulation.m_step + MaterialType::getBurnStageDuration(m_materialType), *this);
+		TemperatureDelta oldDelta = baseTemperature * Config::heatFractionForSmoulder;
+		TemperatureDelta newDelta = baseTemperature * Config::heatFractionForBurn;
+		area.m_hasTemperature.m_sources.updateTemperatureSourceDelta(area, cuboid, oldDelta, m_temperatureSource, newDelta);
+		area.m_fires.scheduleNextPhase(area.m_simulation.m_step + MaterialType::getBurnStageDuration(m_materialType), *this, cuboid);
 	}
 	else if(!m_hasPeaked && m_stage == FireStage::Burning)
 	{
 		m_stage = FireStage::Flaming;
-		TemperatureDelta oldDelta = MaterialType::getFlameTemperature(m_materialType) * Config::heatFractionForBurn;
-		TemperatureDelta newDelta = MaterialType::getFlameTemperature(m_materialType);
-		area.m_hasTemperature.m_sources.updateTemperatureSourceDelta(area, m_location, oldDelta, m_temperatureSource, newDelta);
-		area.m_fires.scheduleNextPhase(area.m_simulation.m_step + MaterialType::getFlameStageDuration(m_materialType), *this);
+		TemperatureDelta oldDelta = baseTemperature * Config::heatFractionForBurn;
+		TemperatureDelta newDelta = baseTemperature;
+		area.m_hasTemperature.m_sources.updateTemperatureSourceDelta(area, cuboid, oldDelta, m_temperatureSource, newDelta);
+		area.m_fires.scheduleNextPhase(area.m_simulation.m_step + MaterialType::getFlameStageDuration(m_materialType), *this, cuboid);
 	}
 	else if(m_stage == FireStage::Flaming)
 	{
 		m_hasPeaked = true;
 		m_stage = FireStage::Burning;
-		TemperatureDelta oldDelta = MaterialType::getFlameTemperature(m_materialType);
-		TemperatureDelta newDelta = MaterialType::getFlameTemperature(m_materialType) * Config::heatFractionForBurn;
-		area.m_hasTemperature.m_sources.updateTemperatureSourceDelta(area, m_location, oldDelta, m_temperatureSource, newDelta);
+		TemperatureDelta oldDelta = baseTemperature;
+		TemperatureDelta newDelta = baseTemperature * Config::heatFractionForBurn;
+		area.m_hasTemperature.m_sources.updateTemperatureSourceDelta(area, cuboid, oldDelta, m_temperatureSource, newDelta);
 		Step delay = MaterialType::getBurnStageDuration(m_materialType) * Config::fireRampDownPhaseDurationFraction;
-		area.m_fires.scheduleNextPhase(area.m_simulation.m_step + delay, *this);
+		area.m_fires.scheduleNextPhase(area.m_simulation.m_step + delay, *this, cuboid);
 		Space& space = area.getSpace();
-		if(space.solid_isAny(m_location) && space.solid_get(m_location) == m_materialType)
-		{
-			space.solid_setNot(m_location);
-			//TODO: create debris / wreckage?
-		}
+		CuboidSet solidWithMaterialType = space.solid_getCuboidsWithMaterialType(cuboid.toSet(), m_materialType);
+		space.solid_setNotAll(solidWithMaterialType);
+		space.item_addChunksAndPiles(solidWithMaterialType, Config::Physics::volumeOfRubbleToGenerateWhenSolidBurns, m_materialType);
+		CuboidSet featuresWithMaterialType = space.pointFeature_getCuboidsWithMaterialType(cuboid.toSet(), m_materialType);
+		space.pointFeature_removeAllWithMaterialType(featuresWithMaterialType, m_materialType);
+		space.item_addChunksAndPiles(featuresWithMaterialType, Config::Physics::volumeOfRubbleToGenerateWhenFeatureBurns, m_materialType);
 	}
 	else if(m_hasPeaked && m_stage == FireStage::Burning)
 	{
 		m_stage = FireStage::Smouldering;
-		TemperatureDelta oldDelta = MaterialType::getFlameTemperature(m_materialType) * Config::heatFractionForBurn;
-		TemperatureDelta newDelta = MaterialType::getFlameTemperature(m_materialType) * Config::heatFractionForSmoulder;
-		area.m_hasTemperature.m_sources.updateTemperatureSourceDelta(area, m_location, oldDelta, m_temperatureSource, newDelta);
+		TemperatureDelta oldDelta = baseTemperature * Config::heatFractionForBurn;
+		TemperatureDelta newDelta = baseTemperature * Config::heatFractionForSmoulder;
+		area.m_hasTemperature.m_sources.updateTemperatureSourceDelta(area, cuboid, oldDelta, m_temperatureSource, newDelta);
 		Step delay = MaterialType::getBurnStageDuration(m_materialType) * Config::fireRampDownPhaseDurationFraction;
-		area.m_fires.scheduleNextPhase(area.m_simulation.m_step + delay, *this);
+		area.m_fires.scheduleNextPhase(area.m_simulation.m_step + delay, *this, cuboid);
 	}
 	else if(m_hasPeaked && m_stage == FireStage::Smouldering)
 	{
-		// Clear the event pointer so ~Fire doesn't try to cancel the event which is currently executing.
-		// Implicitly removes the influence of m_temperatureSource.
-		area.m_fires.extinguish(area, *this);
+		area.m_hasTemperature.m_sources.removeTemperatureSource(area, cuboid, m_temperatureSource);
+		clear();
 	}
 }
-bool Fire::operator==(const Fire& fire) const { return &fire == this; }
-FireDelta Fire::createDelta() const { return { m_location, m_materialType}; }
-TemperatureDelta Fire::getTemperatureDelta() const
+void FireData::clear()
+{
+	m_temperatureSource.clear();
+	m_materialType.clear();
+	m_stage = FireStage::Smouldering;
+	m_hasPeaked = false;
+}
+bool FireData::empty() const
+{
+	return m_temperatureSource.empty();
+}
+FireDelta FireData::createDelta(Cuboid cuboid) const { return { cuboid, m_materialType}; }
+TemperatureDelta FireData::getTemperatureDelta() const
 {
 	float modifier;
 	switch(m_stage)
@@ -74,81 +86,54 @@ TemperatureDelta Fire::getTemperatureDelta() const
 	}
 	return TemperatureDelta::create(modifier * (float)MaterialType::getFlameTemperature(m_materialType).get());
 }
-Fire Fire::create(Area& area, Point3D location, MaterialTypeId materialType, bool hasPeaked, FireStage stage)
+std::string FireData::toS() const
 {
-	auto temperatureSource = area.m_hasTemperature.m_sources.addTemperatureSource(area, location, MaterialType::getFlameTemperature(materialType) * Config::heatFractionForSmoulder);
-	return {temperatureSource, location, materialType, stage, hasPeaked};
+	return "{source: " + m_temperatureSource.toS() + ", material: " + m_materialType.toS() + ", stage: " + std::to_string((int)m_stage) + ", peaked: " + std::to_string(m_hasPeaked) + "}";
 }
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Fire, m_temperatureSource, m_location, m_materialType, m_stage, m_hasPeaked);
+FireData FireData::create(Area& area, Cuboid cuboid, MaterialTypeId materialType, bool hasPeaked, FireStage stage)
+{
+	auto temperatureSource = area.m_hasTemperature.m_sources.addTemperatureSource(area, cuboid, MaterialType::getFlameTemperature(materialType) * Config::heatFractionForSmoulder);
+	return {temperatureSource, materialType, stage, hasPeaked};
+}
 void AreaHasFires::doStep(const Step step, Area& area)
 {
-	m_deltas.sortDescending();
-	if(m_deltas.empty() || m_deltas.back().first != step)
+	auto iter = m_deltas.find(step);
+	if(iter == m_deltas.end())
 		return;
-	// Move copy deltas for step so we can popBack before adding any new deltas via nextPhase.
-	auto deltasForStep = std::move(m_deltas.back().second);
-	m_deltas.popBack();
+	auto deltasForStep = std::move(iter->second);
+	m_deltas.erase(iter);
 	// Deltas may have become invalidated due to the fire being extinguished, missing fires are ignored.
-	for(const FireDelta delta : deltasForStep)
+	for(const FireDelta& delta : deltasForStep)
 	{
-		auto foundLocation = m_fires.find(delta.location);
-		if(foundLocation != m_fires.end())
-		{
-			auto foundFire = foundLocation->second.find(delta.materialType);
-			if(foundFire != foundLocation->second.end())
-				foundFire->second.nextPhase(area);
-		}
+		m_fires.updateOrDestroyActionWithConditionAll(
+			delta.location,
+			[&area](Cuboid cuboid, FireData& fireData){
+				fireData.nextPhase(area, cuboid);
+			},
+			[material = delta.materialType](FireData fireData) -> bool {
+				return fireData.m_materialType == material;
+			}
+		);
 	}
 }
-void AreaHasFires::scheduleNextPhase(const Step step, const Fire& fire)
+void AreaHasFires::scheduleNextPhase(Step step, FireData fire, Cuboid cuboid)
 {
-	m_deltas.getOrCreate(step).insert(fire.createDelta());
+	m_deltas.getOrCreate(step).push_back(fire.createDelta(cuboid));
 }
-void AreaHasFires::ignite(Area& area, const Point3D point, const MaterialTypeId materialType)
+void AreaHasFires::ignite(Area& area, const CuboidSet& cuboidSet, MaterialTypeId materialType)
 {
-	if(m_fires.contains(point))
-		assert(!m_fires.at(point).contains(materialType));
-	m_fires[point].insert(materialType, Fire::create(area, point, materialType));
-	scheduleNextPhase(area.m_simulation.m_step + MaterialType::getBurnStageDuration(materialType), m_fires[point].back().second);
-	// Temperature delta is applied to space in Fire constructor.
-	Space& space = area.getSpace();
-	if(!space.fire_exists(point))
-		space.fire_setPointer(point, &m_fires.at(point));
+	CuboidSet toIgnite = cuboidSet;
+	m_fires.queryRemoveWithCondition(toIgnite, [materialType](FireData fire){ return fire.m_materialType == materialType; });
+	for(Cuboid cuboid : toIgnite)
+	{
+		// Temperature source is created and it's id assigned by FireData::Create.
+		FireData fire = FireData::create(area, cuboid, materialType);
+		scheduleNextPhase(area.m_simulation.m_step + MaterialType::getBurnStageDuration(materialType), fire, cuboid);
+		m_fires.insert(cuboid, fire);
+	}
 }
-void AreaHasFires::extinguish(Area& area, Fire& fire)
+void AreaHasFires::extinguish(Area& area, FireData fire, Cuboid cuboid)
 {
-	assert(m_fires.contains(fire.m_location));
-	Point3D point = fire.m_location;
-	area.m_hasTemperature.m_sources.removeTemperatureSource(area, fire.m_location, fire.m_temperatureSource);
-	m_fires.at(point).erase(fire.m_materialType);
-	if(m_fires.at(point).empty())
-		area.getSpace().fire_clearPointer(point);
+	m_fires.removeWithCondition(cuboid, [&fire](FireData otherFire) { return fire.m_materialType == otherFire.m_materialType; });
+	area.m_hasTemperature.m_sources.removeTemperatureSource(area, cuboid, fire.m_temperatureSource);
 }
-Fire& AreaHasFires::at(const Point3D point, const MaterialTypeId materialType)
-{
-	assert(m_fires.contains(point));
-	assert(m_fires.at(point).contains(materialType));
-	return m_fires.at(point)[materialType];
-}
-bool AreaHasFires::contains(const Point3D point, const MaterialTypeId materialType)
-{
-	if(!m_fires.contains(point))
-		return false;
-	return m_fires.at(point).contains(materialType);
-}
-
-bool AreaHasFires::containsFireAt(Fire& fire, const Point3D point) const { return m_fires.at(point).contains(fire.m_materialType); }
-bool AreaHasFires::containsDeltaFor(Fire& fire) const
-{
-	const FireDelta delta = fire.createDelta();
-	for(const auto& [step, deltas] : m_deltas)
-		if(deltas.contains(delta))
-			return true;
-	return false;
-}
-bool AreaHasFires::containsDeltas() const
-{
-	return !m_deltas.empty();
-}
-void to_json(Json& j, const AreaHasFires& a) { j = {{"fires", a.m_fires}, {"deltas", a.m_deltas}}; }
-void from_json(const Json& j, AreaHasFires& a) { j["fires"].get_to(a.m_fires); j["deltas"].get_to(a.m_deltas); }

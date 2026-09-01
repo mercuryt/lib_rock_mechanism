@@ -36,11 +36,11 @@ int WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTypeId b
 	switch (woundType)
 	{
 		case WoundType::Pierce:
-			return std::max(1, (int)(ratio * Config::pierceBleedVoumeRateModifier));
+			return std::max(1, (int)(ratio * Config::pierceBleedVolumeRateModifier));
 		case WoundType::Cut:
-			return std::max(1, (int)(ratio * Config::cutBleedVoumeRateModifier));
+			return std::max(1, (int)(ratio * Config::cutBleedVolumeRateModifier));
 		case WoundType::Bludgeon:
-			return std::max(1, (int)(ratio * Config::bludgeonBleedVoumeRateModifier));
+			return std::max(1, (int)(ratio * Config::bludgeonBleedVolumeRateModifier));
 		default:
 			std::unreachable();
 			return 0;

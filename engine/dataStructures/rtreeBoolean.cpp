@@ -937,3 +937,42 @@ void RTreeBoolean::queryRemove(CuboidSet& set) const
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 	}
 }
+Distance RTreeBoolean::distance(Point3D point, Distance maxRange) const
+{
+	Sphere shape{point, maxRange.toFloat()};
+	OpenList openList;
+	openList.insert(RTreeNodeIndex::create(0));
+	while(!openList.empty())
+	{
+		auto index = openList.back();
+		openList.popBack();
+		const RTreeBoolean::Node& node = m_nodes[index];
+		const auto& nodeCuboids = node.getCuboids();
+		auto intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+		if(!intersectMask.any())
+			continue;
+		const auto leafCount = node.getLeafCount();
+		// If touching any leaf
+		if(nodeCuboids.indicesOfIntersectingCuboids(point).head(leafCount).any())
+			return {0};
+		const auto childCount = node.getChildCount();
+		if(leafCount != 0 && intersectMask.head(leafCount).any())
+		{
+			auto squaredDistances = nodeCuboids.squaredDistancesTo(point);
+			// Reduce query radius to nearest leaf.
+			DistanceFractional nearest = std::min(shape.radius, {std::sqrt((float)squaredDistances.head(leafCount).minCoeff())});
+			if(nearest < shape.radius)
+			{
+				shape.radius = nearest;
+				// Redo intersect check for children with new radius.
+				intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			}
+		}
+		if(node.hasChildren() && intersectMask.tail(childCount).any())
+		{
+			auto bitset = BitSet::create(intersectMask);
+			addIntersectedChildrenToOpenList(node, bitset, openList);
+		}
+	}
+	return shape.radius.toInt();
+}

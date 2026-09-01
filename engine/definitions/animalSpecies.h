@@ -22,6 +22,8 @@ struct AnimalSpeciesParamaters
 	Step stepsTillDieInUnsafeTemperature;
 	Temperature minimumSafeTemperature;
 	Temperature maximumSafeTemperature;
+	Percent minimumHumidity;
+	Percent maximumHumidity;
 	Step stepsSleepFrequency;
 	Step stepsTillSleepOveride;
 	Step stepsSleepDuration;
@@ -56,6 +58,8 @@ class AnimalSpecies
 	StrongVector<Step, AnimalSpeciesId> m_stepsTillDieInUnsafeTemperature;
 	StrongVector<Temperature, AnimalSpeciesId> m_minimumSafeTemperature;
 	StrongVector<Temperature, AnimalSpeciesId> m_maximumSafeTemperature;
+	StrongVector<Percent, AnimalSpeciesId> m_minimumHumidity;
+	StrongVector<Percent, AnimalSpeciesId> m_maximumHumidity;
 	StrongVector<Step, AnimalSpeciesId> m_stepsSleepFrequency;
 	StrongVector<Step, AnimalSpeciesId> m_stepsTillSleepOveride;
 	StrongVector<Step, AnimalSpeciesId> m_stepsSleepDuration;
@@ -105,5 +109,6 @@ public:
 	[[nodiscard]] static BodyTypeId getBodyType(const AnimalSpeciesId id);
 	[[nodiscard]] static std::vector<ShapeId> getShapes(const AnimalSpeciesId id);
 	[[nodiscard]] static AnimalSpeciesId size();
+	[[nodiscard]] static SmallSet<AnimalSpeciesId> getSpeciesForClimate(Temperature maxTemp, Temperature minTemp, Percent maxHumidity, Percent minHumidity);
 };
 inline AnimalSpecies g_animalSpeciesData;

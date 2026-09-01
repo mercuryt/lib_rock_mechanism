@@ -29,6 +29,8 @@ AnimalSpeciesId AnimalSpecies::create(AnimalSpeciesParamaters p)
 	g_animalSpeciesData.m_stepsTillDieInUnsafeTemperature.add(p.stepsTillDieInUnsafeTemperature);
 	g_animalSpeciesData.m_minimumSafeTemperature.add(p.minimumSafeTemperature);
 	g_animalSpeciesData.m_maximumSafeTemperature.add(p.maximumSafeTemperature);
+	g_animalSpeciesData.m_maximumHumidity.add(p.maximumHumidity);
+	g_animalSpeciesData.m_minimumHumidity.add(p.minimumHumidity);
 	g_animalSpeciesData.m_stepsSleepFrequency.add(p.stepsSleepFrequency);
 	g_animalSpeciesData.m_stepsTillSleepOveride.add(p.stepsTillSleepOveride);
 	g_animalSpeciesData.m_stepsSleepDuration.add(p.stepsSleepDuration);
@@ -76,3 +78,18 @@ FluidTypeId AnimalSpecies::getFluidType(const AnimalSpeciesId id) { return g_ani
 BodyTypeId AnimalSpecies::getBodyType(const AnimalSpeciesId id) { return g_animalSpeciesData.m_bodyType[id]; };
 std::vector<ShapeId> AnimalSpecies::getShapes(const AnimalSpeciesId id) { return g_animalSpeciesData.m_shapes[id]; };
 AnimalSpeciesId AnimalSpecies::size() { return AnimalSpeciesId::create(g_animalSpeciesData.m_name.size()); }
+SmallSet<AnimalSpeciesId> AnimalSpecies::getSpeciesForClimate(Temperature maxTemp, Temperature minTemp, Percent maxHumidity, Percent minHumidity)
+{
+	SmallSet<AnimalSpeciesId> output;
+	for(AnimalSpeciesId id{0}; id < g_animalSpeciesData.m_name.size(); ++id)
+	{
+		if(
+			g_animalSpeciesData.m_maximumSafeTemperature[id] <= maxTemp &&
+			g_animalSpeciesData.m_minimumSafeTemperature[id] >= minTemp &&
+			g_animalSpeciesData.m_maximumHumidity[id] <= maxHumidity &&
+			g_animalSpeciesData.m_minimumHumidity[id] >= minHumidity
+		)
+			output.insert(id);
+	}
+	return output;
+}

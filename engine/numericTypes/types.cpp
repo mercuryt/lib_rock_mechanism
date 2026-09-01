@@ -2,6 +2,19 @@
 #include "config/config.h"
 #include "config/physics.h"
 #include "geometry/cuboid.h"
+Facing6 flipFacing6(Facing6 facing)
+{
+	switch(facing)
+	{
+		case Facing6::Above: return Facing6::Below;
+		case Facing6::Below: return Facing6::Above;
+		case Facing6::North: return Facing6::South;
+		case Facing6::South: return Facing6::North;
+		case Facing6::East: return Facing6::West;
+		case Facing6::West: return Facing6::East;
+		default: std::unreachable();
+	}
+}
 Step Step::createDbg(const StepWidth& value) { return Step::create(value); }
 Speed Force::operator/(const Mass mass) const { return Speed::create((float)data / (float)mass.get()); }
 FullDisplacement FullDisplacement::operator*(Quantity other) const { return FullDisplacement::create(data * other.get()); }

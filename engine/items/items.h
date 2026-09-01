@@ -151,7 +151,6 @@ public:
 	void destroyAll(const SmallSet<ItemIndex>& index);
 	void setName(const ItemIndex index, std::string name);
 	void pierced(const ItemIndex index, const FullDisplacement volume);
-	void setTemperature(const ItemIndex index, const Temperature temperature, const Point3D point);
 	void addQuantity(const ItemIndex index, const Quantity delta);
 	void removeQuantity(const ItemIndex index, const Quantity delta, CanReserve* canReserve = nullptr);
 	void install(const ItemIndex index, const Point3D point, const Facing4 facing, const FactionId faction);

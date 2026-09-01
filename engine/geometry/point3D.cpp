@@ -392,6 +392,25 @@ Cuboid Point3D::inflated(Distance distance) const
 	output.inflate(distance);
 	return output;
 }
+Cuboid Point3D::inflatedHorizontal(Distance distance) const
+{
+	Cuboid output{*this, *this};
+	output.inflateHorizontal(distance);
+	return output;
+}
+Cuboid Point3D::inflatedHorizontalAndBelow(Distance distance) const
+{
+	Cuboid output{*this, *this};
+	output.inflateHorizontalAndBelow(distance);
+	return output;
+}
+Cuboid Point3D::inflatedDirection(Facing6 facing, Distance distance) const
+{
+	Cuboid output{*this, *this};
+	output.inflateDirection(facing, distance);
+	return output;
+}
+Cuboid Point3D::toCuboid() const { return boundry(); }
 Cuboid Point3D::boundry() const { return {*this, *this}; }
 CuboidSet Point3D::toSet() const { return CuboidSet::create(*this); }
 Point3D Point3D::max() { return { Distance::max(), Distance::max(), Distance::max()}; }

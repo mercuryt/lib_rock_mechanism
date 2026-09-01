@@ -14,6 +14,7 @@ struct AreaHasFluidGroups
 	void createGroup(const CuboidSet& occupied, int64_t volume, FluidTypeId type);
 	void destroyGroup(FluidGroupId id);
 	void clearMerged();
+	void clearEmpty();
 	[[nodiscard]] FluidGroup& byId(FluidGroupId id);
 	[[nodiscard]] bool hasUnstable() const;
 };

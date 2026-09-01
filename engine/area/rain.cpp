@@ -98,6 +98,8 @@ void AreaHasRain::disable()
 	m_event.unschedule();
 }
 Percent AreaHasRain::humidityForSeason() { return m_humidityBySeason[DateTime::toSeason(m_area.m_simulation.m_step)]; }
+Percent AreaHasRain::maxHumidity() { return *std::ranges::max_element(m_humidityBySeason); }
+Percent AreaHasRain::minHumidity() { return *std::ranges::min_element(m_humidityBySeason); }
 RainEvent::RainEvent(const Step delay, Simulation& simulation, const Step start) : ScheduledEvent(simulation, delay, start) { }
 void RainEvent::execute(Simulation&, Area* area)
 {

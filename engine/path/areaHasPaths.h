@@ -31,7 +31,8 @@ struct AreaHasPathsForMoveType
 };
 class AreaHasPaths
 {
-	std::vector<AreaHasPathsForMoveType> m_data;
+	// Unique pointer used here because a path request may implicitly create a move type in a callback mid iteration.
+	std::vector<std::unique_ptr<AreaHasPathsForMoveType>> m_data;
 	std::vector<std::pair<int, int>> m_outerAndInnerIndices;
 public:
 	void doStep(Area& area);

@@ -8,6 +8,7 @@ FluidGroup::FluidGroup(const CuboidSet& occupied, int64_t volume, FluidTypeId ty
 	m_fluidType(type),
 	m_id(id)
 {
+	assert(volume > 0);
 	updateHighAndLowZ();
 }
 void FluidGroup::maybeDisplaceFromMoreDenseFluid(Area& area)
@@ -40,6 +41,30 @@ void FluidGroup::maybeDisplaceFromMoreDenseFluid(Area& area)
 		}
 	}
 }
+void FluidGroup::maybeDrainFromEdge(Area& area)
+{
+	Space& space = area.getSpace();
+	Cuboid spaceBoundry = space.boundry();
+	CuboidSet spaceEdges = spaceBoundry.toSet();
+	spaceEdges.remove(spaceBoundry.deflated());
+	CuboidSet candidates = m_occupied;
+	if(!isOverFull())
+	{
+		// Prevent fluid from exiting from the top or bottom, depending on if it's flowng up or down, if not overfull.
+		// This also prevents exiting from the horizontal edges where they touch top or bottom. This is ok.
+		spaceEdges.maybeRemove(m_flowingUp ? spaceBoundry.getFaceAbove() : spaceBoundry.getFaceBelow());
+	}
+	CuboidSet touchingEdge = candidates.intersection(spaceEdges);
+	if(touchingEdge.empty())
+		m_drainingFromEdge = false;
+	else
+	{
+		int64_t volumeToDrain = std::min(m_occupied.volume(), getVolume(touchingEdge));
+		m_volume -= volumeToDrain;
+		assert(m_volume >= 0);
+		m_drainingFromEdge = true;
+	}
+}
 void FluidGroup::maybeExpand(Area& area)
 {
 	int64_t occupiedVolume = m_occupied.volume();
@@ -70,21 +95,30 @@ void FluidGroup::maybeExpand(Area& area)
 		space.fluid_removeAllFilledWithDensityEqualOrGreaterThenFrom(m_newlyAdded, m_fluidType);
 	if(m_newlyAdded.empty())
 		return;
-	// The trailing level is either the top if flowing down or the bottom if flowing up.
-	// If drainage is coming from this level only then we need to check there is enough volume in the group to cover more area.
 	Cuboid newlyAddedBoundry = m_newlyAdded.boundry();
-	bool drainingFromTrailingLevelOnly = false;
+	// Only flow into top or bottom layer, depending on if flowing up or down, unless overfull.
+	if(newlyAddedBoundry.sizeZ() > 1 && m_volume <= maximumFluidVolumeRepresentableByThisPointVolume)
+	{
+		if(m_flowingUp)
+			m_newlyAdded = m_newlyAdded.intersection(newlyAddedBoundry.getFaceAbove());
+		else
+			m_newlyAdded = m_newlyAdded.intersection(newlyAddedBoundry.getFaceBelow());
+		newlyAddedBoundry = m_newlyAdded.boundry();
+	}
+	// The trailing level is either the top if flowing down or the bottom if flowing up.
+	// If drainage is coming from this level then we need to check there is enough volume in the group to cover more area.
+	bool drainingFromTrailingLevel = false;
 	if(m_flowingUp)
 	{
 		if(newlyAddedBoundry.m_high.z() == m_lowZ)
-			drainingFromTrailingLevelOnly = true;
+			drainingFromTrailingLevel = true;
 	}
 	else
 	{
 		if(newlyAddedBoundry.m_low.z() == m_highZ)
-			drainingFromTrailingLevelOnly = true;
+			drainingFromTrailingLevel = true;
 	}
-	if(drainingFromTrailingLevelOnly)
+	if(drainingFromTrailingLevel)
 	{
 		// Draining from the trailing level only.
 		Cuboid trailingLevelQuery = m_flowingUp ?
@@ -156,6 +190,7 @@ std::vector<std::pair<CuboidSet, int64_t>> FluidGroup::maybeSplit()
 		// We could add newly split groups to noLongerOccupied but there isn't any reason to.
 	}
 	m_occupied = std::move(newOccupied);
+	assert(newVolume > 0);
 	m_volume = newVolume;
 	return output;
 }
@@ -227,6 +262,7 @@ void FluidGroup::mergeInto(Area& area, FluidGroup& other)
 	m_merged = true;
 	other.m_occupied.maybeAdd(m_occupied);
 	other.updateHighAndLowZ(m_occupied);
+	assert(other.m_volume > 0);
 	other.m_volume += m_volume;
 	area.getSpace().fluid_setGroupId(m_occupied, m_fluidType, other.m_id);
 }
@@ -240,13 +276,39 @@ void FluidGroup::removeFluid(Area& area, int64_t quantity)
 	if(m_volume == quantity)
 	{
 		area.m_hasFluidGroups.destroyGroup(m_id);
-		area.getSpace().fluid_flowOutFrom(m_occupied, m_fluidType);
+		area.getSpace().fluid_flowOutFrom(m_occupied, *this);
 	}
 	else
 	{
 		m_volume -= quantity;
 		m_stable = false;
 	}
+}
+bool FluidGroup::maybeDisplaceFromSolid(Area& area, const CuboidSet& solid)
+{
+	Space& space = area.getSpace();
+	space.fluid_flowOutFrom(m_occupied, *this);
+	auto findCandidates = [&]->CuboidSet
+	{
+		CuboidSet candidates = m_occupied.inflated();
+		space.solid_removeAllFrom(candidates);
+		if(candidates.empty())
+			return candidates;
+		candidates.maybeRemove(m_occupied);
+		if(candidates.empty())
+			return candidates;
+		candidates.maybeRemove(solid);
+		return candidates;
+	};
+	CuboidSet candidates = findCandidates();
+	if(solid.contains(m_occupied) && candidates.empty())
+		//No where to flow into, destroy.
+		return false;
+	space.fluid_flowInto(candidates, *this);
+	m_occupied = candidates;
+	updateHighAndLowZ();
+	m_stable = false;
+	return true;
 }
 int64_t FluidGroup::trailingLevelFluidVolume() const
 {
@@ -386,4 +448,8 @@ CuboidSet FluidGroup::intersectionWithFull(const CuboidSet& query) const
 		return output;
 	}
 	std::unreachable();
+}
+bool FluidGroup::isOverFull() const
+{
+	return Config::maxPointVolume < m_volume / m_occupied.volume();
 }
