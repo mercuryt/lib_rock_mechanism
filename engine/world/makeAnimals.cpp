@@ -148,7 +148,7 @@ void MakeAnimals::spawn(int targetMass, SmallSet<AnimalSpeciesId>& species, Cubo
 				currentMass += actors.getMass(animal).get();
 			}
 			else
-				actors.destroy(animal);
+				actors.remove(animal);
 		}
 	}
 }

@@ -15,7 +15,7 @@
 #include "actors/actors.h"
 #include <cstdint>
 // Static method.
-Wound::Wound(Area& area, const ActorIndex a, const WoundType wt, BodyPart& bp, Hit h, int bvr, Percent ph) :
+Wound::Wound(Area& area, ActorIndex a, const WoundType wt, BodyPart& bp, Hit h, int bvr, Percent ph) :
 	woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(area.m_eventSchedule)
 {
 	AnimalSpeciesId species = area.getActors().getSpecies(a);
@@ -66,7 +66,7 @@ Json BodyPart::toJson() const
 		data["wounds"].push_back(wound.toJson());
 	return data;
 }
-Body::Body(Area& area, const ActorIndex a) : m_bleedEvent(area.m_eventSchedule), m_woundsCloseEvent(area.m_eventSchedule), m_actor(a) { }
+Body::Body(Area& area, ActorIndex a) : m_bleedEvent(area.m_eventSchedule), m_woundsCloseEvent(area.m_eventSchedule), m_actor(a) { }
 void Body::initialize(Area& area)
 {
 	AnimalSpeciesId species = area.getActors().getSpecies(m_actor);
@@ -78,7 +78,7 @@ void Body::initialize(Area& area)
 	}
 	m_volumeOfBlood = healthyBloodVolume();
 }
-Body::Body(const Json& data, DeserializationMemo& deserializationMemo, const ActorIndex a) :
+Body::Body(const Json& data, DeserializationMemo& deserializationMemo, ActorIndex a) :
 	m_bleedEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_woundsCloseEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_actor(a),
@@ -239,6 +239,8 @@ void Body::bleed(Area& area)
 {
 	Actors& actors = area.getActors();
 	--m_volumeOfBlood;
+	if(area.hasSpace())
+		area.getSpace().fluid_add(actors.getOccupied(m_actor), {1}, FluidType::byName("blood"));
 	float ratio = (float)m_volumeOfBlood.get() / (float)healthyBloodVolume().get();
 	if(ratio <= Config::bleedToDeathRatio)
 		actors.die(m_actor, CauseOfDeath::bloodLoss);
@@ -320,6 +322,11 @@ void Body::recalculateBleedAndImpairment(Area& area)
 	area.getActors().move_updateIndividualSpeed(m_actor);
 	// Update combat score for current manipulation impairment level.
 	area.getActors().combat_update(m_actor);
+}
+void Body::updateIndex(ActorIndex oldIndex, ActorIndex newIndex)
+{
+	assert(m_actor == oldIndex);
+	m_actor = newIndex;
 }
 Wound& Body::getWoundWhichIsBleedingTheMost()
 {

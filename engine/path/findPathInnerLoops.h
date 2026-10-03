@@ -1,9 +1,9 @@
 #pragma once
-#include "area/area.h"
-#include "definitions/shape.h"
-#include "space/space.h"
-#include "numericTypes/index.h"
-#include "callbackTypes.h"
+#include "../area/area.h"
+#include "../definitions/shape.h"
+#include "../space/space.h"
+#include "../numericTypes/index.h"
+#include "../callbackTypes.h"
 
 class MoveType;
 

@@ -116,7 +116,7 @@ class Project
 	SmallSet<ActorReference> m_actorsToPickup;
 	SmallSet<ItemReference> m_fluidContainersToPickup;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
-	void addWorker(const ActorIndex actor, Objective& objective);
+	void addWorker(ActorIndex actor, Objective& objective);
 	// Load requirements from child class.
 	void recordRequiredActorsAndItemsAndFluids();
 	void disperseContained();
@@ -164,14 +164,14 @@ public:
 	bool m_qualityBonus = false;
 	// Seperated from primary Json constructor because must be run after objectives are created.
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	void addWorkerCandidate(const ActorIndex actor, Objective& objective);
-	void removeWorkerCandidate(const ActorIndex actor);
+	void addWorkerCandidate(ActorIndex actor, Objective& objective);
+	void removeWorkerCandidate(ActorIndex actor);
 	// To be called by Objective::execute.
-	void commandWorker(const ActorIndex actor);
+	void commandWorker(ActorIndex actor);
 	// To be called by Objective::interupt.
-	void removeWorker(const ActorIndex actor);
-	void addToMaking(const ActorIndex actor);
-	void removeFromMaking(const ActorIndex actor);
+	void removeWorker(ActorIndex actor);
+	void addToMaking(ActorIndex actor);
+	void removeFromMaking(ActorIndex actor);
 	void complete();
 	// To be called by the player for manually created project types or in place of reset otherwise.
 	void cancel();
@@ -186,7 +186,7 @@ public:
 	// Calls offDelay.
 	void setDelayOff();
 	// Record reserved shapes which need haul subprojects dispatched for them.
-	void addActorToPickup(const ActorIndex actor);
+	void addActorToPickup(ActorIndex actor);
 	void addItemToPickup(const ItemIndex item, ProjectRequirementCounts& counts, const Quantity quantity);
 	void removeActorToPickup(const ActorReference actor);
 	void removeFluidContainerToPickup(const ItemReference item);
@@ -213,8 +213,8 @@ public:
 	[[nodiscard]] bool isOnDelay() { return m_delay; }
 	// point where the work will be done.
 	[[nodiscard]] Point3D getLocation() const { return m_location; }
-	[[nodiscard]] bool hasCandidate(const ActorIndex actor) const;
-	[[nodiscard]] bool hasWorker(const ActorIndex actor) const;
+	[[nodiscard]] bool hasCandidate(ActorIndex actor) const;
+	[[nodiscard]] bool hasWorker(ActorIndex actor) const;
 	[[nodiscard]] bool hasWorkers() const;
 	[[nodiscard]] bool inProgress() const;
 	[[nodiscard]] ItemIndex getRandomItemToConsume() const;
@@ -225,7 +225,7 @@ public:
 	[[nodiscard]] SmallSet<ActorIndex> getWorkersAndCandidates();
 	[[nodiscard]] std::vector<std::pair<ActorIndex, Objective*>> getWorkersAndCandidatesWithObjectives();
 	[[nodiscard]] Percent getPercentComplete() const { return m_finishEvent.exists() ? m_finishEvent.percentComplete() : Percent::create(0); }
-	[[nodiscard]] virtual bool canAddWorker(const ActorIndex actor) const;
+	[[nodiscard]] virtual bool canAddWorker(ActorIndex actor) const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	[[nodiscard]] virtual Step getDuration() const = 0;
 	// True for stockpile because there is no 'work' to do after the hauling is done.
@@ -314,7 +314,7 @@ public:
 	void readStep(Simulation& simulation, Area* area);
 	void writeStep(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	[[nodiscard]] Point3D containsDesiredItemOrActor(const Cuboid cuboid, const ActorIndex hauler);
+	[[nodiscard]] Point3D containsDesiredItemOrActor(const Cuboid cuboid, ActorIndex hauler);
 };
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {

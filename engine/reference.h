@@ -29,7 +29,7 @@ class Reference
 	#endif
 public:
 	Reference() = default;
-	Reference(const ReferenceIndex& index,[[maybe_unused]] Data& data) :
+	Reference(ReferenceIndex index,[[maybe_unused]] Data& data) :
 		m_referenceIndex(index)
 	{
 		#ifdef TRACK_REFERENCES
@@ -133,6 +133,15 @@ public:
 			maybeSetReferenceData(dataStore);
 		#endif
 		setReferenceIndex(dataStore.getReferenceIndex(index));
+	}
+	void moveAndUpdate([[maybe_unused]]ReferenceIndex oldRef, ReferenceIndex newRef, [[maybe_unused]] Data& newDataStore)
+	{
+		assert(getReferenceIndex() == oldRef);
+		#ifdef TRACK_REFERENCES
+			clear();
+			m_data = *newDataStore;
+		#endif
+		setReferenceIndex(newRef);
 	}
 	void clear() { setReferenceIndex(ReferenceIndex::null()); }
 	void load(const Json& data, [[maybe_unused]] Data& dataStore)
@@ -294,17 +303,15 @@ public:
 			m_references.reserve(size);
 		#endif
 	}
-	void reserve(const Index& size)
-	{
-		reserve(size.get());
-	}
+	void reserve(Index& size) { reserve(size.get()); }
 	void validateReference([[maybe_unused]] const ReferenceIndex& ref) const
 	{
 		assert(ref < m_indicesByReference.size());
 		assert(m_indicesByReference[ref].exists());
 	}
 	[[nodiscard]] size_t size() const { return m_referencesByIndex.size(); }
-	[[nodiscard]] auto getReference(const Index index) -> const Reference<Index, ReferenceIndex> { return Reference<Index, ReferenceIndex>(m_referencesByIndex[index], *this); }
+	// ReferenceData is allowed to cheat const for for reference tracking.
+	[[nodiscard]] auto getReference(Index index) const { return Reference<Index, ReferenceIndex>(m_referencesByIndex[index], const_cast<ReferenceData<Index, ReferenceIndex>&>(*this)); }
 	// For testing.
 	[[nodiscard]] const auto& getIndices() const { return m_indicesByReference; }
 	[[nodiscard]] const StrongVector<ReferenceIndex, Index>& getReferenceIndices() const { return m_referencesByIndex; }
@@ -392,6 +399,8 @@ public:
 		else
 			return toItemReference().toS();
 	}
+	[[nodiscard]] ActorOrItemReference static create(ActorReference actor) { ActorOrItemReference output; output.setActor(actor); return output; }
+	[[nodiscard]] ActorOrItemReference static create(ItemReference item) { ActorOrItemReference output; output.setItem(item); return output; }
 	struct Hash
 	{
 		[[nodiscard]] constexpr std::size_t operator()(const ActorOrItemReference reference) const

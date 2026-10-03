@@ -14,7 +14,7 @@ void SimulationHasSquads::destroy(const FactionId faction, const SquadIndex squa
 		Actors& actors = area.getActors();
 		for(const ActorId actor : squad.getAll())
 		{
-			const ActorIndex index = simulation.m_actors.getIndexForId(actor);
+			ActorIndex index = simulation.m_actors.getIndexForId(actor);
 			actors.soldier_setSquad(index, squadIndex);
 		}
 	}

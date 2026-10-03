@@ -236,7 +236,7 @@ Your renderer backend is not using the font texture correctly or it hasn't been 
 ### Q: I integrated Dear ImGui in my engine and some elements are clipping or disappearing when I move windows around...
 ### Q: I integrated Dear ImGui in my engine and some elements are displaying outside their expected windows boundaries...
 You are probably mishandling the clipping rectangles in your render function.
-Each draw command needs the triangle rendered using the clipping rectangle provided in the ImDrawCmd structure (`ImDrawCmd->CllipRect`).
+Each drawArea command needs the triangle rendered using the clipping rectangle provided in the ImDrawCmd structure (`ImDrawCmd->CllipRect`).
 Rectangles provided by Dear ImGui are defined as
 `(x1=left,y1=top,x2=right,y2=bottom)`
 and **NOT** as
@@ -444,7 +444,7 @@ node open/closed state differently. See what makes more sense in your situation!
 ### Q: What are ImTextureID/ImTextureRef?
 
 **Short explanation:**
-- You may use functions such as `ImGui::Image()`, `ImGui::ImageButton()` or lower-level `ImDrawList::AddImage()` to emit draw calls that will use your own textures.
+- You may use functions such as `ImGui::Image()`, `ImGui::ImageButton()` or lower-level `ImDrawList::AddImage()` to emit drawArea calls that will use your own textures.
 - To load and display your own textures, refer to [Image Loading and Displaying Examples](https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples) on the [Wiki](https://github.com/ocornut/imgui/wiki).
 - Actual textures are identified in a way that is up to the user/engine. Those identifiers are stored and passed as an opaque ImTextureID value.
 - By default ImTextureID can store up to 64-bits. You may `#define` it to a custom type/structure if you need.
@@ -489,7 +489,7 @@ struct ImTextureRef
 ```
 - The identifier is valid even before the texture has been uploaded to the GPU/graphics system.
 - This is what gets passed to functions such as `ImGui::Image()`, `ImDrawList::AddImage()`.
-- This is what gets stored in draw commands (`ImDrawCmd`) to identify a texture during rendering.
+- This is what gets stored in drawArea commands (`ImDrawCmd`) to identify a texture during rendering.
  - When a texture is created by user code (e.g. custom images), we directly store the low-level `ImTextureID`.
    - Because of this, when displaying your own texture you are likely to ever only manage ImTextureID values on your side.
  - When a texture is created by the backend, we store a `ImTextureData*` which becomes an indirection to extract the `ImTextureID` value during rendering, after texture upload has happened.
@@ -502,7 +502,7 @@ struct ImTextureRef
 **Please read documentations or tutorials on your graphics API to understand how to display textures on the screen before moving onward.**
 
 Long explanation:
-- Dear ImGui's job is to create "meshes", defined in a renderer-agnostic format made of draw commands and vertices. At the end of the frame, those meshes (ImDrawList) will be displayed by your rendering function. They are made up of textured polygons and the code to render them is generally fairly short (a few dozen lines). In the examples/ folder, we provide functions for popular graphics APIs (OpenGL, DirectX, etc.).
+- Dear ImGui's job is to create "meshes", defined in a renderer-agnostic format made of drawArea commands and vertices. At the end of the frame, those meshes (ImDrawList) will be displayed by your rendering function. They are made up of textured polygons and the code to render them is generally fairly short (a few dozen lines). In the examples/ folder, we provide functions for popular graphics APIs (OpenGL, DirectX, etc.).
 - Each rendering function decides on a data type to represent "textures". The concept of what is a "texture" is entirely tied to your underlying engine/graphics API.
 We carry the information to identify a "texture" in the ImTextureID type, which itself tends to be stored inside a ImTextureRef.
 ImTextureID default to ImU64 aka 8 bytes worth of data: just enough to store one pointer or integer of your choice.
@@ -543,7 +543,7 @@ ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2(texture->Width, texture->Hei
 ```
 The renderer function called after ImGui::Render() will receive that same value that the user code passed:
 ```cpp
-// Cast ImTextureID stored in the draw command as our texture type
+// Cast ImTextureID stored in the drawArea command as our texture type
 MyTexture* texture = (MyTexture*)(intptr_t)pcmd->GetTexID();
 MyEngineBindTexture2D(texture);
 ```
@@ -641,8 +641,8 @@ ImGui::End();
 - Refer to "Demo > Examples > Custom Rendering" in the demo window and read the code of `ShowExampleAppCustomRendering()` in `imgui_demo.cpp` from more examples.
 - To generate colors: you can use the macro `IM_COL32(255,255,255,255)` to generate them at compile time, or use `ImGui::GetColorU32(IM_COL32(255,255,255,255))` or `ImGui::GetColorU32(ImVec4(1.0f,1.0f,1.0f,1.0f))` to generate a color that is multiplied by the current value of `style.Alpha`.
 - Math operators: if you have setup `IM_VEC2_CLASS_EXTRA` in `imconfig.h` to bind your own math types, you can use your own math types and their natural operators instead of ImVec2. ImVec2 by default doesn't export any math operators in the public API. You may use `#define IMGUI_DEFINE_MATH_OPERATORS` `#include "imgui.h"` to use our math operators, but instead prefer using your own math library and set it up in `imconfig.h`.
-- You can use `ImGui::GetBackgroundDrawList()` or `ImGui::GetForegroundDrawList()` to access draw lists which will be displayed behind and over every other Dear ImGui window (one bg/fg drawlist per viewport). This is very convenient if you need to quickly display something on the screen that is not associated with a Dear ImGui window.
-- You can also create your own empty window and draw inside it. Call Begin() with the NoBackground | NoDecoration | NoSavedSettings | NoInputs flags (The `ImGuiWindowFlags_NoDecoration` flag itself is a shortcut for NoTitleBar | NoResize | NoScrollbar | NoCollapse). Then you can retrieve the ImDrawList* via `GetWindowDrawList()` and draw to it in any way you like.
+- You can use `ImGui::GetBackgroundDrawList()` or `ImGui::GetForegroundDrawList()` to access drawArea lists which will be displayed behind and over every other Dear ImGui window (one bg/fg drawlist per viewport). This is very convenient if you need to quickly display something on the screen that is not associated with a Dear ImGui window.
+- You can also create your own empty window and drawArea inside it. Call Begin() with the NoBackground | NoDecoration | NoSavedSettings | NoInputs flags (The `ImGuiWindowFlags_NoDecoration` flag itself is a shortcut for NoTitleBar | NoResize | NoScrollbar | NoCollapse). Then you can retrieve the ImDrawList* via `GetWindowDrawList()` and drawArea to it in any way you like.
 - You can create your own ImDrawList instance. You'll need to initialize them with `ImGui::GetDrawListSharedData()`, or create your own instancing `ImDrawListSharedData`, and then call your renderer function with your own ImDrawList or ImDrawData data.
 - Looking for fun? The [ImDrawList coding party 2020](https://github.com/ocornut/imgui/issues/3606) thread is full of "don't do this at home" extreme uses of the ImDrawList API.
 

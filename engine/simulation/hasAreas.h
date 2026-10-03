@@ -13,7 +13,6 @@ class SimulationHasAreas final
 {
 	Simulation& m_simulation;
 	AreaId m_nextId = AreaId::create(0);
-	SmallMap<AreaId, Area*> m_areasById;
 	SmallMapStable<AreaId, Area> m_areas;
 public:
 	SimulationHasAreas(Simulation& simulation) : m_simulation(simulation) { }
@@ -30,10 +29,10 @@ public:
 	void incrementHour();
 	void save();
 	void clearAll();
-	void recordId(Area& area);
 	[[nodiscard]] Step getNextStepToSimulate() const;
 	[[nodiscard]] Step getNextEventStep() const;
-	[[nodiscard]] Area& getById(const AreaId id) const {return *m_areasById[id]; }
+	[[nodiscard]] Area& getById(const AreaId id) {return m_areas[id]; }
+	[[nodiscard]] const Area& getById(const AreaId id) const {return m_areas[id]; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] SmallMapStable<AreaId, Area>& getAll() { return m_areas; }
 };

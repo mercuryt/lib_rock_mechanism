@@ -237,5 +237,6 @@
 	"woodCuttingSkillModifier": 0.1,
 	"woodCuttingStrengthModifier": 0.1,
 	"yokeDelaySeconds": 20,
+	"expeditionArriveIntervalSeconds": 0.3,
 	"dummy": 0
 }

@@ -6,6 +6,7 @@
 #include "../dialogueBox.h"
 #include "../eventSchedule.hpp"
 #include "../faction.h"
+#include "../expedition/expedition.h"
 //#include "input.h"
 #include "../random.h"
 #include "../threadedTask.h"
@@ -22,10 +23,10 @@
 #include <memory>
 #include <mutex>
 
-//class World;
 class HourlyEvent;
 class DramaEngine;
 class SimulationHasAreas;
+class World;
 
 class Simulation final
 {
@@ -41,6 +42,7 @@ public:
 	SimulationHasItems m_items;
 	SimulationHasConstructedItemTypes m_constructedItemTypes;
 	SimulationHasSquads m_hasSquads;
+	SimulationHasExpeditions m_hasExpeditions;
 	DialogueBoxQueue m_hasDialogues;
 private:
 	DeserializationMemo m_deserializationMemo;
@@ -50,11 +52,11 @@ public:
 	std::string m_name;
 	std::filesystem::path m_path;
 	Step m_step;
-	//std::unique_ptr<World> m_world;
 	// Dependency injection.
 	std::unique_ptr<SimulationHasAreas> m_hasAreas;
 	// Drama engine must be created after hasAreas.
 	std::unique_ptr<DramaEngine> m_dramaEngine;
+	std::unique_ptr<World> m_world;
 	std::mutex m_uiReadMutex;
 	// Default dateTime provided for testing: mid day, so not too cold, 1000 years, so even the oldest living things are born at a positive numbered step.
 	Simulation(const std::string& name = "", const DateTime& dateTime = DateTime(12, 160, 1000));
@@ -79,15 +81,15 @@ public:
 	[[maybe_unused]] void fastForwardUntill(DateTime now);
 	[[maybe_unused]] void fastForward(Step step);
 	[[maybe_unused]] void fasterForward(Step step);
-	[[maybe_unused]] void fastForwardUntillActorIsAtDestination(Area& area, const ActorIndex actor, const Point3D destination);
-	[[maybe_unused]] void fastForwardUntillActorIsAt(Area& area, const ActorIndex actor, const Point3D destination);
-	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToDestination(Area& area, const ActorIndex actor, const Point3D destination);
-	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToLocation(Area& area, const ActorIndex actor, const Point3D point);
-	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToActor(Area& area, const ActorIndex actor, const ActorIndex other);
-	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToItem(Area& area, const ActorIndex actor, const ItemIndex other);
-	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToPolymorphic(Area& area, const ActorIndex actor, const ActorOrItemIndex target);
-	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Area& area, const ActorIndex actor);
-	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Area& area, const ActorIndex actor, const ItemIndex item);
+	[[maybe_unused]] void fastForwardUntillActorIsAtDestination(Area& area, ActorIndex actor, const Point3D destination);
+	[[maybe_unused]] void fastForwardUntillActorIsAt(Area& area, ActorIndex actor, const Point3D destination);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToDestination(Area& area, ActorIndex actor, const Point3D destination);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToLocation(Area& area, ActorIndex actor, const Point3D point);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToActor(Area& area, ActorIndex actor, ActorIndex other);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToItem(Area& area, ActorIndex actor, const ItemIndex other);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToPolymorphic(Area& area, ActorIndex actor, const ActorOrItemIndex target);
+	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Area& area, ActorIndex actor);
+	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Area& area, ActorIndex actor, const ItemIndex item);
 	[[maybe_unused]] void fastForwardUntillItemIsAt(Area& area, const ItemIndex actor, const Point3D destination);
 	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>&& predicate, int minutes = 10);
 	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>& predicate, int minutes = 10);

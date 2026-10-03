@@ -1,25 +1,29 @@
 #include "hasActors.h"
 #include "actors/actors.h"
 #include "deserializationMemo.h"
-void SimulationHasActors::registerActor(const ActorId id, Actors& store, const ActorIndex index)
+void SimulationHasActors::registerActor(ActorId id, Actors& store, ActorIndex index)
 {
 	assert(!m_actors.contains(id));
 	m_actors.try_emplace(id, &store, index);
 }
-void SimulationHasActors::removeActor(const ActorId id)
+void SimulationHasActors::removeActor(ActorId id)
 {
 	assert(m_actors.contains(id));
 	m_actors.erase(id);
 }
-const ActorIndex SimulationHasActors::getIndexForId(const ActorId id) const
+void SimulationHasActors::update(ActorId id, Actors& store, ActorIndex index)
+{
+	m_actors[id] = {&store, index};
+}
+ActorIndex SimulationHasActors::getIndexForId(ActorId id) const
 {
 	return m_actors.at(id).index;
 }
-Area& SimulationHasActors::getAreaForId(const ActorId id) const
+Area& SimulationHasActors::getAreaForId(ActorId id) const
 {
 	return m_actors.at(id).store->getArea();
 }
-const ActorDataLocation& SimulationHasActors::getDataLocation(const ActorId id) const
+const ActorDataLocation& SimulationHasActors::getDataLocation(ActorId id) const
 {
 	return m_actors.at(id);
 }

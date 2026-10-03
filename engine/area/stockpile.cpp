@@ -130,7 +130,7 @@ Simulation& StockPile::getSimulation()
 	assert(!m_cuboids.empty());
 	return m_area.m_simulation;
 }
-void StockPile::addToProjectNeedingMoreWorkers(const ActorIndex actor, StockPileObjective& objective)
+void StockPile::addToProjectNeedingMoreWorkers(ActorIndex actor, StockPileObjective& objective)
 {
 	assert(m_projectNeedingMoreWorkers != nullptr);
 	m_projectNeedingMoreWorkers->addWorkerCandidate(actor, objective);
@@ -481,7 +481,7 @@ void AreaHasStockPilesForFaction::setUnavailable(StockPile& stockPile)
 		m_itemsWithDestinationsByStockPile.erase(&stockPile);
 	}
 }
-void AreaHasStockPilesForFaction::makeProject(const ItemIndex item, const Point3D destination, StockPileObjective& objective, const ActorIndex actor)
+void AreaHasStockPilesForFaction::makeProject(const ItemIndex item, const Point3D destination, StockPileObjective& objective, ActorIndex actor)
 {
 	Space& space = m_area.getSpace();
 	Actors& actors = m_area.getActors();
@@ -549,12 +549,12 @@ void AreaHasStockPilesForFaction::removeQuery(StockPile& stockPile, const ItemQu
 	else
 		m_availableStockPilesByItemType[query.m_itemType].erase(&stockPile);
 }
-bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor([[maybe_unused]] const ActorIndex actor) const
+bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor([[maybe_unused]] ActorIndex actor) const
 {
 	assert(m_faction == m_area.getActors().getFaction(actor));
 	return !m_itemsToBeStockPiled.empty();
 }
-ItemIndex AreaHasStockPilesForFaction::getHaulableItemForAt(const ActorIndex actor, const Point3D point)
+ItemIndex AreaHasStockPilesForFaction::getHaulableItemForAt(ActorIndex actor, const Point3D point)
 {
 	assert(m_area.getActors().getFaction(actor).exists());
 	Space& space = m_area.getSpace();

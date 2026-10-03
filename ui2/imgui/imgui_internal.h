@@ -278,7 +278,7 @@ extern IMGUI_API ImGuiContext* GImGui;  // Current implicit context pointer
 #define IM_F32_TO_INT8_UNBOUND(_VAL)    ((int)((_VAL) * 255.0f + ((_VAL)>=0 ? 0.5f : -0.5f)))   // Unsaturated, for display purpose
 #define IM_F32_TO_INT8_SAT(_VAL)        ((int)(ImSaturate(_VAL) * 255.0f + 0.5f))               // Saturated, always output 0..255
 #define IM_TRUNC(_VAL)                  ((float)(int)(_VAL))                                    // Positive values only! ImTrunc() is not inlined in MSVC debug builds
-#define IM_ROUND(_VAL)                  ((float)(int)((_VAL) + 0.5f))                           // Positive values only! 
+#define IM_ROUND(_VAL)                  ((float)(int)((_VAL) + 0.5f))                           // Positive values only!
 //#define IM_FLOOR IM_TRUNC             // [OBSOLETE] Renamed in 1.90.0 (Sept 2023)
 
 // Hint for branch prediction
@@ -871,7 +871,7 @@ struct IMGUI_API ImDrawListSharedData
     ImDrawListFlags InitialFlags;               // Initial flags at the beginning of the frame (it is possible to alter flags on a per-drawlist basis afterwards)
     ImVec4          ClipRectFullscreen;         // Value for PushClipRectFullscreen()
     ImVector<ImVec2> TempBuffer;                // Temporary write buffer
-    ImVector<ImDrawList*> DrawLists;            // All draw lists associated to this ImDrawListSharedData
+    ImVector<ImDrawList*> DrawLists;            // All drawArea lists associated to this ImDrawListSharedData
     ImGuiContext*   Context;                    // [OPTIONAL] Link to Dear ImGui context. 99% of ImDrawList/ImFontAtlas can function without an ImGui context, but this facilitate handling one legacy edge case.
 
     // Lookup tables
@@ -1958,8 +1958,8 @@ struct IMGUI_API ImGuiMultiSelectState
 // Every instance of ImGuiViewport is in fact a ImGuiViewportP.
 struct ImGuiViewportP : public ImGuiViewport
 {
-    int                 BgFgDrawListsLastFrame[2]; // Last frame number the background (0) and foreground (1) draw lists were used
-    ImDrawList*         BgFgDrawLists[2];       // Convenience background (0) and foreground (1) draw lists. We use them to draw software mouser cursor when io.MouseDrawCursor is set and to draw most debug overlays.
+    int                 BgFgDrawListsLastFrame[2]; // Last frame number the background (0) and foreground (1) drawArea lists were used
+    ImDrawList*         BgFgDrawLists[2];       // Convenience background (0) and foreground (1) drawArea lists. We use them to drawArea software mouser cursor when io.MouseDrawCursor is set and to drawArea most debug overlays.
     ImDrawData          DrawDataP;
     ImDrawDataBuilder   DrawDataBuilder;        // Temporary data while building final ImDrawData
 
@@ -2882,7 +2882,7 @@ struct ImGuiTableColumn
     float                   ItemWidth;                      // Current item width for the column, preserved across rows
     float                   ContentMaxXFrozen;              // Contents maximum position for frozen rows (apart from headers), from which we can infer content width.
     float                   ContentMaxXUnfrozen;
-    float                   ContentMaxXHeadersUsed;         // Contents maximum position for headers rows (regardless of freezing). TableHeader() automatically softclip itself + report ideal desired size, to avoid creating extraneous draw calls
+    float                   ContentMaxXHeadersUsed;         // Contents maximum position for headers rows (regardless of freezing). TableHeader() automatically softclip itself + report ideal desired size, to avoid creating extraneous drawArea calls
     float                   ContentMaxXHeadersIdeal;
     ImS16                   NameOffset;                     // Offset into parent ColumnsNames[]
     ImGuiTableColumnIdx     DisplayOrder;                   // Index within Table's IndexToDisplayOrder[] (column may be reordered by users)
@@ -3012,12 +3012,12 @@ struct IMGUI_API ImGuiTable
     ImRect                      BgClipRect;                 // We use this to cpu-clip cell background color fill, evolve during the frame as we cross frozen rows boundaries
     ImRect                      Bg0ClipRectForDrawCmd;      // Actual ImDrawCmd clip rect for BG0/1 channel. This tends to be == OuterWindow->ClipRect at BeginTable() because output in BG0/BG1 is cpu-clipped
     ImRect                      Bg2ClipRectForDrawCmd;      // Actual ImDrawCmd clip rect for BG2 channel. This tends to be a correct, tight-fit, because output to BG2 are done by widgets relying on regular ClipRect.
-    ImRect                      HostClipRect;               // This is used to check if we can eventually merge our columns draw calls into the current draw call of the current window.
+    ImRect                      HostClipRect;               // This is used to check if we can eventually merge our columns drawArea calls into the current drawArea call of the current window.
     ImRect                      HostBackupInnerClipRect;    // Backup of InnerWindow->ClipRect during PushTableBackground()/PopTableBackground()
     ImGuiWindow*                OuterWindow;                // Parent window for the table
     ImGuiWindow*                InnerWindow;                // Window holding the table data (== OuterWindow or a child window)
     ImGuiTextBuffer             ColumnsNames;               // Contiguous buffer holding columns names
-    ImDrawListSplitter*         DrawSplitter;               // Shortcut to TempData->DrawSplitter while in table. Isolate draw commands per columns to avoid switching clip rect constantly
+    ImDrawListSplitter*         DrawSplitter;               // Shortcut to TempData->DrawSplitter while in table. Isolate drawArea commands per columns to avoid switching clip rect constantly
     ImGuiTableInstanceData      InstanceDataFirst;
     ImVector<ImGuiTableInstanceData>    InstanceDataExtra;  // FIXME-OPT: Using a small-vector pattern would be good.
     ImGuiTableColumnSortSpecs   SortSpecsSingle;
@@ -3207,8 +3207,8 @@ namespace ImGui
     IMGUI_API void          PushPasswordFont();
     IMGUI_API void          PopPasswordFont();
     inline ImDrawList*      GetForegroundDrawList(ImGuiWindow* window) { IM_UNUSED(window); return GetForegroundDrawList(); } // This seemingly unnecessary wrapper simplifies compatibility between the 'master' and 'docking' branches.
-    IMGUI_API ImDrawList*   GetBackgroundDrawList(ImGuiViewport* viewport);                     // get background draw list for the given viewport. this draw list will be the first rendering one. Useful to quickly draw shapes/text behind dear imgui contents.
-    IMGUI_API ImDrawList*   GetForegroundDrawList(ImGuiViewport* viewport);                     // get foreground draw list for the given viewport. this draw list will be the last rendered one. Useful to quickly draw shapes/text over dear imgui contents.
+    IMGUI_API ImDrawList*   GetBackgroundDrawList(ImGuiViewport* viewport);                     // get background drawArea list for the given viewport. this drawArea list will be the first rendering one. Useful to quickly drawArea shapes/text behind dear imgui contents.
+    IMGUI_API ImDrawList*   GetForegroundDrawList(ImGuiViewport* viewport);                     // get foreground drawArea list for the given viewport. this drawArea list will be the last rendered one. Useful to quickly drawArea shapes/text over dear imgui contents.
     IMGUI_API void          AddDrawListToDrawDataEx(ImDrawData* draw_data, ImVector<ImDrawList*>* out_list, ImDrawList* draw_list);
 
     // Init

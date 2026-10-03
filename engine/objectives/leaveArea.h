@@ -20,7 +20,7 @@ class LeaveAreaPathRequest final : public PathRequest
 {
 	LeaveAreaObjective& m_objective;
 public:
-	LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective, const ActorIndex actor);
+	LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective, ActorIndex actor);
 	LeaveAreaPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
 	void writeStep(Area& area, bool useCurrentLocation) override;

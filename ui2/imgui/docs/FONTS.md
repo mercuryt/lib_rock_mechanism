@@ -467,7 +467,7 @@ io.Fonts->GetTexDataAsRGBA32(&tex_pixels, &tex_width, &tex_height);
 for (int rect_n = 0; rect_n < IM_COUNTOF(rect_ids); rect_n++)
     if (const ImTextureRect* rect = io.Fonts->GetCustomRect(rect_ids[rect_n]))
     {
-        // Fill the custom rectangle with red pixels (in reality you would draw/copy your bitmap data here!)
+        // Fill the custom rectangle with red pixels (in reality you would drawArea/copy your bitmap data here!)
         for (int y = 0; y < rect->Height; y++)
         {
             ImU32* p = (ImU32*)tex_pixels + (rect->Y + y) * tex_width + (rect->X);

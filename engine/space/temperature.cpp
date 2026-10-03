@@ -119,7 +119,7 @@ void Space::temperature_meltItems(const CuboidSet& cuboids, const MaterialTypeId
 		for(const Cuboid cuboid : occupied)
 			for(const Point3D point : cuboid)
 				volumeMelted.getOrInsert(point, {0}) += volume;
-		items.destroy(item);
+		items.remove(item);
 	}
 	for(const auto& [point, volume] : volumeMelted)
 		// TODO:(optimization) do this by cuboids rather then by points.

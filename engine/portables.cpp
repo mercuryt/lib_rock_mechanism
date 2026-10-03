@@ -8,7 +8,7 @@ Speed PortablesHelpers::getMoveSpeedForGroup(const Area& area, std::vector<Actor
 {
 	return getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, Mass::create(0), Mass::create(0), Mass::create(0));
 }
-Speed PortablesHelpers::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, const Mass addedRollingMass, const Mass addedFloatingMass, const Mass addedDeadMass)
+Speed PortablesHelpers::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass, Mass addedFloatingMass, Mass addedDeadMass)
 {
 	Mass rollingMass = addedRollingMass;
 	Mass floatingMass = addedFloatingMass;
@@ -18,7 +18,7 @@ Speed PortablesHelpers::getMoveSpeedForGroupWithAddedMass(const Area& area, std:
 	const Items& items = area.getItems();
 	const Actors& actors = area.getActors();
 	static MoveTypeId roll = MoveType::byName("roll");
-	auto recordMass = [&](const MoveTypeId moveType, const Mass mass) {
+	auto recordMass = [&](const MoveTypeId moveType, Mass mass) {
 
 				if(MoveType::getFloating(moveType).first.exists())
 					floatingMass += mass;
@@ -31,9 +31,9 @@ Speed PortablesHelpers::getMoveSpeedForGroupWithAddedMass(const Area& area, std:
 	{
 		if(index.isItem())
 		{
-			const ItemIndex itemIndex = ItemIndex::cast(index.get());
+			ItemIndex itemIndex = ItemIndex::cast(index.get());
 			const MoveTypeId moveType = items.getMoveType(itemIndex);
-			const ActorIndex pilot = items.pilot_get(itemIndex);
+			ActorIndex pilot = items.pilot_get(itemIndex);
 			Mass mass = items.getMass(itemIndex);
 			if(pilot.exists())
 			{
@@ -53,7 +53,7 @@ Speed PortablesHelpers::getMoveSpeedForGroupWithAddedMass(const Area& area, std:
 		else
 		{
 			assert(index.isActor());
-			const ActorIndex actor = ActorIndex::cast(index.get());
+			ActorIndex actor = ActorIndex::cast(index.get());
 			if(actors.move_canMove(actor))
 			{
 				carryMass += actors.getUnencomberedCarryMass(actor);

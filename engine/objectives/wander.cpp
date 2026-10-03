@@ -8,7 +8,7 @@
 #include "../actors/actors.h"
 #include "../numericTypes/types.h"
 // PathRequest
-WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective, const ActorIndex actorIndex) :
+WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective, ActorIndex actorIndex) :
 	m_objective(objective)
 {
 	Actors& actors = area.getActors();
@@ -79,7 +79,7 @@ Json WanderObjective::toJson() const
 		data["destination"] = m_destination;
 	return data;
 }
-void WanderObjective::execute(Area& area, const ActorIndex actor)
+void WanderObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(m_destination.exists())
@@ -92,9 +92,9 @@ void WanderObjective::execute(Area& area, const ActorIndex actor)
 	else
 		area.getActors().move_pathRequestRecord(actor, std::make_unique<WanderPathRequest>(area, *this, actor));
 }
-void WanderObjective::cancel(Area& area, const ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
-bool WanderObjective::hasPathRequest(const Area& area, const ActorIndex actor) const { return area.getActors().move_hasPathRequest(actor); }
-void WanderObjective::reset(Area& area, const ActorIndex actor)
+void WanderObjective::cancel(Area& area, ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
+bool WanderObjective::hasPathRequest(const Area& area, ActorIndex actor) const { return area.getActors().move_hasPathRequest(actor); }
+void WanderObjective::reset(Area& area, ActorIndex actor)
 {
 	cancel(area, actor);
 	area.getActors().canReserve_clearAll(actor);

@@ -11,9 +11,9 @@ FollowScriptSubObjective::FollowScriptSubObjective(const Json& data, Area& area,
 	m_parent(deserializationMemo.m_objectives[data["parent"]]),
 	m_parentOwner(data["parentOwner"], area.getActors().m_referenceData)
 { }
-void FollowScriptSubObjective::cancel(Area& area, const ActorIndex actor) { m_parent->actorGoesOffScript(area, m_parentOwner.getIndex(area.getActors().m_referenceData), actor); }
-void FollowScriptSubObjective::delay(Area& area, const ActorIndex actor) { cancel(area, actor); }
-void FollowScriptSubObjective::reset(Area& area, const ActorIndex actor) { cancel(area, actor); }
+void FollowScriptSubObjective::cancel(Area& area, ActorIndex actor) { m_parent->actorGoesOffScript(area, m_parentOwner.getIndex(area.getActors().m_referenceData), actor); }
+void FollowScriptSubObjective::delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+void FollowScriptSubObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }
 Json FollowScriptSubObjective::toJson() const
 {
 	Json data = Objective::toJson();

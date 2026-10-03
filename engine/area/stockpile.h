@@ -50,7 +50,7 @@ public:
 	void disableIndefinately() { m_enabled = false; }
 	void disableTemporarily(Step duration) { m_reenableScheduledEvent.schedule(*this, duration); disableIndefinately(); }
 	void reenable() { m_enabled = true; }
-	void addToProjectNeedingMoreWorkers(const ActorIndex actor, StockPileObjective& objective);
+	void addToProjectNeedingMoreWorkers(ActorIndex actor, StockPileObjective& objective);
 	void destroy();
 	void removeQuery(const ItemQuery& query);
 	void addQuery(const ItemQuery& query);
@@ -136,7 +136,7 @@ public:
 	void removePoint(const Point3D point);
 	void setAvailable(StockPile& stockPile);
 	void setUnavailable(StockPile& stockPile);
-	void makeProject(const ItemIndex item, const Point3D destination, StockPileObjective& objective, const ActorIndex actor);
+	void makeProject(const ItemIndex item, const Point3D destination, StockPileObjective& objective, ActorIndex actor);
 	void cancelProject(StockPileProject& project);
 	void destroyProject(StockPileProject& project);
 	void removeFromProjectsByItem(StockPileProject& project);
@@ -145,8 +145,8 @@ public:
 	void maybeRemoveFromItemsWithDestinationByStockPile(const StockPile& stockpile, const ItemIndex item);
 	void updateItemReferenceForProject(StockPileProject& project, const ItemReference ref);
 	[[nodiscard]] bool isValidStockPileDestinationfor(const Point3D point, const ItemIndex item) const;
-	[[nodiscard]] bool isAnyHaulingAvailableFor(const ActorIndex actor) const;
-	[[nodiscard]] ItemIndex getHaulableItemForAt(const ActorIndex actor, const Point3D point);
+	[[nodiscard]] bool isAnyHaulingAvailableFor(ActorIndex actor) const;
+	[[nodiscard]] ItemIndex getHaulableItemForAt(ActorIndex actor, const Point3D point);
 	[[nodiscard]] StockPile* getStockPileFor(const ItemIndex item) const;
 	friend class StockPilePathRequest;
 	friend class StockPileDestinationPathRequest;

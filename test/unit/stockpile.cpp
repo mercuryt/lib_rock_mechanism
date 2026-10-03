@@ -724,7 +724,7 @@ TEST_CASE("stockpile")
 		CHECK(project.getProjectWorkerFor(dwarf1Ref).haulSubproject != nullptr);
 		HaulSubproject& haulSubproject = *project.getProjectWorkerFor(dwarf1Ref).haulSubproject;
 		CHECK(haulSubproject.getHaulStrategy() == HaulStrategy::Cart);
-		items.destroy(cart1);
+		items.remove(cart1);
 		CHECK(actors.project_get(dwarf1)->getWorkers()[area.getActors().m_referenceData.getReference(dwarf1)].haulSubproject == nullptr);
 		CHECK(project.getHaulRetries() == 0);
 		// Fast forward until haul project retry event spawns the haul retry threaded task.
@@ -765,7 +765,7 @@ TEST_CASE("stockpile")
 		simulation.doStep();
 		// Path to chunk.
 		simulation.doStep();
-		items.destroy(chunk1);
+		items.remove(chunk1);
 		CHECK(!actors.project_exists(dwarf1));
 		// Cannot find alternative stockpile project.
 		simulation.doStep();

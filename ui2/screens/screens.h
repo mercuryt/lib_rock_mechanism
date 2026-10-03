@@ -11,12 +11,14 @@ namespace screens
 	void mainMenu(Window& window);
 	void load(Window& window);
 	void gameView(Window& window);
-	void actorDetails(Window& window, const ActorReference actorRef);
+	void actorDetails(Window& window, ActorReference actorRef);
+	void actorDetails(Window& window, ActorIndex actor);
 	void objectivePriorities(Window& window, const ActorReference actor);
 	void editStockPile(Window& window, StockPile* stockPile);
 	void selectUniformToEdit(Window& window);
 	void editUniform(Window& window, Uniform* uniform);
 	void production(Window& window);
+	void expeditionDetails(Window& window, ExpeditionId id);
 	// Editor screens.
 	void createSimulation(Window& window);
 	void editSimulation(Window& window);
@@ -25,4 +27,5 @@ namespace screens
 	void selectFactionToEdit(Window& window);
 	void editActor(Window& window, const ActorReference actorRef);
 	void editDrama(Window& window, Area& area);
+	void editExpedition(Window& window, ExpeditionId id);
 };

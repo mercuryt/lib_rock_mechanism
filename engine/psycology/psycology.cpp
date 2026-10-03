@@ -90,7 +90,7 @@ void Psycology::initialize()
 	m_highTriggers.setAllToZero();
 	m_lowTriggers.setAllToZero();
 }
-void Psycology::checkThreasholds(Area& area, const ActorIndex actor)
+void Psycology::checkThreasholds(Area& area, ActorIndex actor)
 {
 	if(m_current.anyAbove(m_highTriggers))
 	{
@@ -147,7 +147,7 @@ void Psycology::setExpiration(const Step duration, Simulation& simulation, const
 		holder->schedule(duration, eventType, eventDeltas, actor, simulation);
 		m_expirationEvents.insert(std::move(holder));
 }
-void Psycology::apply(PsycologyEvent& event, Area& area, const ActorIndex actor, const Step duration, const Step cooldown)
+void Psycology::apply(PsycologyEvent& event, Area& area, ActorIndex actor, const Step duration, const Step cooldown)
 {
 	auto found = m_cooldowns.find(event.type);
 	if(found != m_cooldowns.end() && found->second < area.m_simulation.m_step)
@@ -178,7 +178,7 @@ void Psycology::apply(PsycologyEvent& event, Area& area, const ActorIndex actor,
 		// Do not allow another event of the same same type for at least duration, we don't have the infastructure to expire them seperately.
 		m_cooldowns.getOrCreate(event.type) = duration;
 }
-void Psycology::remove(const PsycologyEventType& eventType, const PsycologyData& deltas, Area& area, const ActorIndex actor)
+void Psycology::remove(const PsycologyEventType& eventType, const PsycologyData& deltas, Area& area, ActorIndex actor)
 {
 	SmallSet<PsycologyAttribute> attributesToUpdateThreasholds;
 	for(int i = 0; i != (int)PsycologyAttribute::Null; ++i)

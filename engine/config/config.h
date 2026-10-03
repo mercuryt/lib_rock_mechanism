@@ -264,6 +264,7 @@ namespace Config
 	inline float woodCuttingSkillModifier;
 	inline float woodCuttingStrengthModifier;
 	inline Step yokeDelaySteps;
+	inline Step expeditionArriveInterval;
 
 	inline int convertBodyPartVolumeToArea(FullDisplacement volume){ return std::sqrt(volume.get()); }
 	void load();

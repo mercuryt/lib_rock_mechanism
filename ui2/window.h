@@ -25,7 +25,8 @@ _Pragma("GCC diagnostic pop")
 #include <functional>
 #include <chrono>
 #include "backgroundTask.h"
-#include "gameOverlay.h"
+#include "overlay/area.h"
+#include "overlay/map.h"
 #include "atomicBool.h"
 #include "renderBuffer.h"
 #include "../engine/simulation/simulation.h"
@@ -38,22 +39,26 @@ class DateTime;
 class SDL_Window;
 enum class PanelId
 {
+	// Not editor screens.
 	MainMenu,
 	Load,
-	Edit,
-	LoadEdit,
 	CreateSimulation,
 	CreateArea,
 	GameView,
 	ActorDetails,
 	ObjectivePriorities,
-	EditUniform,
 	Production,
+	ExpeditionDetails,
+	EditUniform,
+	// Editor screens.
+	Edit,
+	LoadEdit,
 	SelectFactionToEdit,
 	EditFaction,
 	EditActor,
 	EditDrama
 };
+// TODO: What is this for?
 constexpr PanelId overlayPanels[] = {
 	PanelId::ActorDetails,
 	PanelId::ObjectivePriorities,
@@ -63,6 +68,7 @@ constexpr PanelId overlayPanels[] = {
 	PanelId::EditFaction,
 	PanelId::EditActor,
 	PanelId::EditDrama,
+	PanelId::ExpeditionDetails
 };
 struct POV final
 {
@@ -81,18 +87,23 @@ struct LoadResult final
 class Window final
 {
 public:
-	GameOverlay m_gameOverlay;
+	AreaOverlay m_areaOverlay;
+	MapOverlay m_mapOverlay;
 	RenderBuffer m_renderBuffer;
 	// Stable because we store a pointer to POV in window.
 	SmallMapStable<AreaId, POV> m_lastViewedSpotInArea;
 	std::thread m_simulationThread;
+	SDL_Point m_mousePosition;
+	POV m_mapPov;
+	Point3D m_blockUnderCursor;
 	SDL_Window* m_window = nullptr;
 	SDL_Renderer* m_sdlRenderer = nullptr;
 	SDL_Texture* m_gameView = nullptr;
 	Area* m_area = nullptr;
 	POV* m_pov = nullptr;
 	std::chrono::milliseconds m_minimumTimePerStep;
-	SDL_Point m_mousePosition;
+	Distance m_currentDisplayTargetTotalTilesX;
+	Distance m_currentDisplayTargetTotalTilesY;
 	std::atomic<float> m_speed = 1.0;
 	float m_mainScale = ImGui_ImplSDL2_GetContentScaleForDisplay(0);
 	AtomicBool m_paused;
@@ -108,9 +119,11 @@ public:
 	std::unique_ptr<Simulation> m_simulation = nullptr;
 	int m_screenWidth;
 	int m_screenHeight;
+	int m_drawDepth = 5;
 	float m_dpiScaleX;
 	float m_dpiScaleY;
 	FactionId m_faction;
+	bool m_mapOpen = false;
 	bool m_editMode = false;
 	std::atomic<bool> m_lockInput = false;
 	constexpr static ImGuiWindowFlags m_menuWindowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBackground;
@@ -134,6 +147,7 @@ public:
 	void showEditFaction(const FactionId faction);
 	void showEditUniform(Uniform* uniform);
 	void showEditActor(const ActorReference actor);
+	void showMap();
 	void setArea(Area& area);
 	void zoom(float zoomDelta);
 	void pan(float dx, float dy);
@@ -148,4 +162,6 @@ public:
 	[[nodiscard]] Point3D getBlockAtScreenPosition(const SDL_Point point) const;
 	[[nodiscard]] Distance invertY(const Distance distance) const;
 	[[nodiscard]] static std::chrono::milliseconds msSinceEpoch();
+	// Will return a boundry for either area or map, depending on m_mapOpen.
+	[[nodiscard]] Cuboid boundry() const;
 };

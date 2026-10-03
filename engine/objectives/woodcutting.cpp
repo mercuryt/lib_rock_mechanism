@@ -6,7 +6,7 @@
 #include "../reference.h"
 #include "../numericTypes/types.h"
 #include "../path/areaHasPaths.hpp"
-WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective, const ActorIndex actorIndex) :
+WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective, ActorIndex actorIndex) :
 	m_woodCuttingObjective(woodCuttingObjective)
 {
 	Actors& actors = area.getActors();
@@ -83,7 +83,7 @@ Json WoodCuttingObjective::toJson() const
 		data["project"] = m_project;
 	return data;
 }
-void WoodCuttingObjective::execute(Area& area, const ActorIndex actor)
+void WoodCuttingObjective::execute(Area& area, ActorIndex actor)
 {
 	if(m_project != nullptr)
 		m_project->commandWorker(actor);
@@ -110,19 +110,19 @@ void WoodCuttingObjective::execute(Area& area, const ActorIndex actor)
 		actors.move_pathRequestRecord(actor, std::make_unique<WoodCuttingPathRequest>(area, *this, actor));
 	}
 }
-void WoodCuttingObjective::cancel(Area& area, const ActorIndex actor)
+void WoodCuttingObjective::cancel(Area& area, ActorIndex actor)
 {
 	if(m_project != nullptr)
 		m_project->removeWorker(actor);
 	area.getActors().move_pathRequestMaybeCancel(actor);
 }
-void WoodCuttingObjective::delay(Area& area, const ActorIndex actor)
+void WoodCuttingObjective::delay(Area& area, ActorIndex actor)
 {
 	cancel(area, actor);
 	m_project = nullptr;
 	area.getActors().project_unset(actor);
 }
-void WoodCuttingObjective::reset(Area& area, const ActorIndex actor)
+void WoodCuttingObjective::reset(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(m_project)
@@ -142,13 +142,13 @@ void WoodCuttingObjective::onProjectCannotReserve(Area&, const ActorIndex)
 	assert(m_project);
 	m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
 }
-void WoodCuttingObjective::joinProject(WoodCuttingProject& project, const ActorIndex actor)
+void WoodCuttingObjective::joinProject(WoodCuttingProject& project, ActorIndex actor)
 {
 	assert(m_project == nullptr);
 	m_project = &project;
 	project.addWorkerCandidate(actor, *this);
 }
-WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, const Point3D point, const ActorIndex actor)
+WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, const Point3D point, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
@@ -161,7 +161,7 @@ WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, const
 		return nullptr;
 	return &output;
 }
-Point3D WoodCuttingObjective::joinableProjectExistsAt(Area& area, const Cuboid cuboid, const ActorIndex actor) const
+Point3D WoodCuttingObjective::joinableProjectExistsAt(Area& area, const Cuboid cuboid, ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
@@ -177,7 +177,7 @@ Point3D WoodCuttingObjective::joinableProjectExistsAt(Area& area, const Cuboid c
 		return project->getLocation();
 	return Point3D::null();
 }
-bool WoodCuttingObjectiveType::canBeAssigned(Area& area, const ActorIndex actor) const
+bool WoodCuttingObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
 	// Pilots and passengers onDeck cannot cut wood.
 	Actors& actors = area.getActors();

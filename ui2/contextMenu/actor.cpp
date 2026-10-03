@@ -17,29 +17,29 @@ void contextMenu::controlls::actors(Window& window)
 		Area& area = *window.m_area;
 		Space& space =  area.getSpace();
 		Actors& actors = area.getActors();
-		ControllsState& state = window.m_gameOverlay.m_controllsState;
+		ControllsState& state = window.m_areaOverlay.m_controllsState;
 		SmallSet<ActorIndex> selected;
-		if(window.m_gameOverlay.m_selectMode == SelectMode::Space)
-			selected = space.actor_getAll(window.m_gameOverlay.m_selectedArea);
-		else if(window.m_gameOverlay.m_selectMode == SelectMode::Actors)
-			for(const ActorReference& ref : window.m_gameOverlay.m_selectedActors)
+		if(window.m_areaOverlay.m_selectMode == SelectMode::Space)
+			selected = space.actor_getAll(window.m_areaOverlay.m_selectedArea);
+		else if(window.m_areaOverlay.m_selectMode == SelectMode::Actors)
+			for(const ActorReference& ref : window.m_areaOverlay.m_selectedActors)
 				selected.insert(ref.getIndex(actors.m_referenceData));
 		else
-			selected = space.actor_getAll(window.m_gameOverlay.m_blockUnderCursor);
+			selected = space.actor_getAll(window.m_areaOverlay.m_blockUnderCursor);
 		// Actor submenu.
-		for(const ActorIndex actor : space.actor_getAll(state.clickedOnPoint))
+		for(ActorIndex actor : space.actor_getAll(state.clickedOnPoint))
 		{
 			if(ImGui::BeginMenu(actors.getName(actor).c_str()))
 			{
 				if(ImGui::MenuItem("info"))
 				{
-					window.m_gameOverlay.m_detailActor = actors.getReference(actor);
-					window.m_gameOverlay.m_infoPopUp = InfoPopUpId::Actor;
+					window.m_areaOverlay.m_detailActor = actors.getReference(actor);
+					window.m_areaOverlay.m_infoPopUp = InfoPopUpId::Actor;
 					ImGui::CloseCurrentPopup();
 				}
 				if(ImGui::MenuItem("details"))
 				{
-					window.m_gameOverlay.m_detailActor = actors.getReference(actor);
+					window.m_areaOverlay.m_detailActor = actors.getReference(actor);
 					window.m_panel = PanelId::ActorDetails;
 					ImGui::CloseCurrentPopup();
 				}
@@ -47,7 +47,7 @@ void contextMenu::controlls::actors(Window& window)
 				{
 					if(ImGui::MenuItem("edit"))
 					{
-						window.m_gameOverlay.m_detailActor = actors.getReference(actor);
+						window.m_areaOverlay.m_detailActor = actors.getReference(actor);
 						window.m_panel = PanelId::EditActor;
 						ImGui::CloseCurrentPopup();
 					}
@@ -57,7 +57,7 @@ void contextMenu::controlls::actors(Window& window)
 				{
 					if(ImGui::MenuItem("priorities"))
 					{
-						window.m_gameOverlay.m_detailActor = actors.getReference(actor);
+						window.m_areaOverlay.m_detailActor = actors.getReference(actor);
 						window.m_panel = PanelId::ObjectivePriorities;
 						ImGui::CloseCurrentPopup();
 					}
@@ -66,7 +66,7 @@ void contextMenu::controlls::actors(Window& window)
 				{
 					if(ImGui::MenuItem("destroy"))
 					{
-						window.m_gameOverlay.deselectAll();
+						window.m_areaOverlay.deselectAll();
 						actors.destroy(actor);
 						const ActorId& actorId = actors.getId(actor);
 						window.m_simulation->m_actors.removeActor(actorId);
@@ -81,7 +81,7 @@ void contextMenu::controlls::actors(Window& window)
 					{
 
 						const ActorReference& ref = actors.getReference(actor);
-						for(const ActorIndex selectedActor : selected)
+						for(ActorIndex selectedActor : selected)
 							if(selectedActor != actor)
 							{
 								std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(ref);
@@ -99,7 +99,7 @@ void contextMenu::controlls::actors(Window& window)
 			{
 				if(ImGui::MenuItem("go to"))
 				{
-					for(const ActorIndex selectedActor : selected)
+					for(ActorIndex selectedActor : selected)
 					{
 						std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(state.clickedOnPoint);
 						actors.objective_replaceTasks(selectedActor, std::move(objective));
@@ -108,7 +108,7 @@ void contextMenu::controlls::actors(Window& window)
 				}
 				if(ImGui::MenuItem("station"))
 				{
-					for(const ActorIndex selectedActor : selected)
+					for(ActorIndex selectedActor : selected)
 					{
 						std::unique_ptr<Objective> objective = std::make_unique<StationObjective>(state.clickedOnPoint);
 						actors.objective_replaceTasks(selectedActor, std::move(objective));
@@ -127,7 +127,7 @@ void contextMenu::controlls::actors(Window& window)
 				widgets::faction(&state.faction, *window.m_simulation);
 				if(ImGui::MenuItem("confirm"))
 				{
-					const ActorIndex newActor = actors.create({
+					ActorIndex newActor = actors.create({
 						.species = state.animalSpecies,
 						.name = state.name,
 						.location = state.clickedOnPoint,

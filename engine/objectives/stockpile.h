@@ -11,8 +11,8 @@ struct MaterialType;
 class StockPileObjectiveType final : public ObjectiveType
 {
 public:
-	bool canBeAssigned(Area& area, const ActorIndex actor) const;
-	std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex actor) const;
+	bool canBeAssigned(Area& area, ActorIndex actor) const;
+	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
 	StockPileObjectiveType() = default;
 	[[nodiscard]] std::string name() const { return "stockpile"; }
 };
@@ -29,14 +29,14 @@ public:
 	StockPileProject* m_project = nullptr;
 	StockPileObjective();
 	StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
-	void execute(Area& area, const ActorIndex actor);
-	void cancel(Area& area, const ActorIndex actor);
-	void delay(Area& area, const ActorIndex actor) { cancel(area, actor); }
-	void reset(Area& area, const ActorIndex actor);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor);
 	void setItemAndDestination(Area& area, ItemIndex item, Point3D destination);
 	void unsetItemAndDestination();
 	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("stockpile").getId(); }
-	[[nodiscard]] bool destinationCondition(Area& area, const Point3D point, const ItemIndex item, const ActorIndex actor);
+	[[nodiscard]] bool destinationCondition(Area& area, const Point3D point, const ItemIndex item, ActorIndex actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] constexpr std::string name() const { return "stockpile"; }
 	// For debug.
@@ -57,7 +57,7 @@ class StockPilePathRequest final : public PathRequest
 	SmallMap<StockPile*, CuboidSet> m_pointsByStockPile;
 	SmallSet<ItemIndex> m_items;
 public:
-	StockPilePathRequest(Area& area, StockPileObjective& spo, const ActorIndex actor);
+	StockPilePathRequest(Area& area, StockPileObjective& spo, ActorIndex actor);
 	StockPilePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
 	void writeStep(Area& area, bool useCurrentLocation) override;
@@ -72,7 +72,7 @@ class StockPileDestinationPathRequest final : public PathRequest
 {
 	StockPileObjective& m_objective;
 public:
-	StockPileDestinationPathRequest(Area& area, StockPileObjective& spo, const ActorIndex actor);
+	StockPileDestinationPathRequest(Area& area, StockPileObjective& spo, ActorIndex actor);
 	StockPileDestinationPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
 	void writeStep(Area& area, bool useCurrentLocation) override;

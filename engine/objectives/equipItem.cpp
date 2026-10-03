@@ -12,7 +12,7 @@ Json EquipItemObjective::toJson() const
 {
 	return {"item", m_item};
 }
-void EquipItemObjective::execute(Area& area, const ActorIndex actor)
+void EquipItemObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	ItemIndex item = m_item.getIndex(area.getItems().m_referenceData);
@@ -32,5 +32,5 @@ void EquipItemObjective::execute(Area& area, const ActorIndex actor)
 			actors.objective_canNotCompleteObjective(actor, *this);
 	}
 }
-void EquipItemObjective::cancel(Area& area, const ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }
-void EquipItemObjective::reset(Area& area, const ActorIndex actor) { cancel(area, actor); }
+void EquipItemObjective::cancel(Area& area, ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }
+void EquipItemObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }

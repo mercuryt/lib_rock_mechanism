@@ -50,13 +50,13 @@ protected:
 	StrongVector<CuboidSet, Index> m_cuboidsContainingFluidOnDeck;
 	StrongVector<FluidTypeId, Index> m_floating;
 	Portables(Area& area);
-	void create(const Index index, const MoveTypeId moveType, const ShapeId shape, const FactionId faction, bool isStatic, const Quantity quantity);
-	void log(const Index index) const;
-	void updateLeaderSpeedActual(const Index index);
-	void updateIndexInCarrier(const Index& oldIndex, const Index& newIndex);
-	void updateStoredIndicesPortables(const Index& oldIndex, const Index& newIndex);
+	void create(Index index, MoveTypeId moveType, const ShapeId shape, FactionId faction, bool isStatic, Quantity quantity);
+	void log(Index index) const;
+	void updateLeaderSpeedActual(Index index);
+	void updateIndexInCarrier(Index oldIndex, Index newIndex);
+	void updateStoredIndicesPortables(Index oldIndex, Index newIndex);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] ActorOrItemIndex getActorOrItemIndex(const Index index);
+	[[nodiscard]] ActorOrItemIndex getActorOrItemIndex(Index index) const;
 public:
 	ReferenceData<Index, ReferenceIndex> m_referenceData;
 	void forEachDataPortables(auto&& action)
@@ -76,106 +76,103 @@ public:
 		action(m_floating);
 	}
 	void load(const Json& data);
-	void followActor(const Index index, const ActorIndex actor);
-	void followActorAllowTeleport(const Index index, const ActorIndex actor);
-	void followItem(const Index index, const ItemIndex item);
-	void followPolymorphic(const Index index, const ActorOrItemIndex ActorOrItem);
-	void unfollow(const Index index);
-	void unfollowIfAny(const Index index);
-	void maybeLeadAndFollowDisband(const Index index);
-	void unfollowActor(const Index index, const ActorIndex actor);
-	void unfollowItem(const Index index, const ItemIndex item);
-	void leadAndFollowDisband(const Index index);
-	void setCarrier(const Index index, const ActorOrItemIndex carrier);
-	void maybeSetCarrier(const Index index, const ActorOrItemIndex carrier);
-	void unsetCarrier(const Index index, const ActorOrItemIndex carrier);
-	void updateCarrierIndex(const Index index, const HasShapeIndex newIndex) { m_carrier[index].updateIndex(newIndex); }
-	void setFollower(const Index index, const ActorOrItemIndex follower) { assert(!follower.isStatic(getArea())); m_follower[index] = follower; }
-	void setLeader(const Index index, const ActorOrItemIndex leader) { assert(!leader.isStatic(getArea())); m_leader[index] = leader; }
-	void unsetFollower(const Index index, [[maybe_unused]] const ActorOrItemIndex follower) { assert(m_follower[index] == follower); m_follower[index].clear(); }
-	void unsetLeader(const Index index, const ActorOrItemIndex leader) { assert(m_follower[index] == leader); m_leader[index].clear(); }
-	void fall(const Index index);
-	void maybeFall(const Index index);
-	void onSetLocation(const Index index, const Point3D previousLocation, const Facing4 previousFacing);
-	void onRemove(const Index index);
-	void setFloating(const Index index, const FluidTypeId fluidType, Distance depth);
-	void unsetFloating(const Index index);
-	void setMoveType(const Index index, const MoveTypeId moveType);
-	[[nodiscard]] ActorIndex getLineLeader(const Index index);
-	[[nodiscard]] const MoveTypeId getMoveType(const Index index) const { return m_moveType[index]; }
-	[[nodiscard]] bool isFollowing(const Index index) const;
-	[[nodiscard]] bool isLeading(const Index index) const;
-	[[nodiscard]] bool isLeadingActor(const Index index, const ActorIndex actor) const;
-	[[nodiscard]] bool isLeadingItem(const Index index, const ItemIndex item) const;
-	[[nodiscard]] bool isLeadingPolymorphic(const Index index, const ActorOrItemIndex ActorOrItem) const;
-	[[nodiscard]] ActorOrItemIndex& getFollower(const Index index) { return m_follower[index]; }
-	[[nodiscard]] ActorOrItemIndex& getLeader(const Index index) { return m_leader[index]; }
-	[[nodiscard]] const ActorOrItemIndex getFollower(const Index index) const { return m_follower[index]; }
-	[[nodiscard]] const ActorOrItemIndex getLeader(const Index &index) const { return m_leader[index]; }
-	[[nodiscard]] Items& getItems() { return getArea().getItems(); }
-	[[nodiscard]] Actors& getActors() { return getArea().getActors(); }
-	[[nodiscard]] Area& getArea() { return HasShapes<Derived, Index>::getArea(); }
-	[[nodiscard]] const Area& getArea() const { return HasShapes<Derived, Index>::getArea(); }
-	[[nodiscard]] Point3D getLocation(const Index index) const { return HasShapes<Derived, Index>::getLocation(index); }
-	[[nodiscard]] ShapeId getShape(const Index index) const { return HasShapes<Derived, Index>::getShape(index); }
-	[[nodiscard]] Facing4 getFacing(const Index index) const { return HasShapes<Derived, Index>::getFacing(index); }
-	[[nodiscard]] auto getReference(const Index index) -> Reference<Index, ReferenceIndex> const { return m_referenceData.getReference(index); }
-	[[nodiscard]] CuboidSet getOccupiedCombined(const Index index) const;
-	[[nodiscard]] MapWithCuboidKeys<CollisionVolume> getOccupiedCombinedWithVolumes(const Index index) const;
+	void followActor(Index index, ActorIndex actor);
+	void followActorAllowTeleport(Index index, ActorIndex actor);
+	void followItem(Index index, ItemIndex item);
+	void followPolymorphic(Index index, ActorOrItemIndex ActorOrItem);
+	void unfollow(Index index);
+	void unfollowIfAny(Index index);
+	void maybeLeadAndFollowDisband(Index index);
+	void unfollowActor(Index index, ActorIndex actor);
+	void unfollowItem(Index index, ItemIndex item);
+	void leadAndFollowDisband(Index index);
+	void setCarrier(Index index, ActorOrItemIndex carrier);
+	void maybeSetCarrier(Index index, ActorOrItemIndex carrier);
+	void unsetCarrier(Index index, ActorOrItemIndex carrier);
+	void updateCarrierIndex(Index index, HasShapeIndex newIndex) { m_carrier[index].updateIndex(newIndex); }
+	void setFollower(Index index, ActorOrItemIndex follower) { assert(!follower.isStatic(this->m_area)); m_follower[index] = follower; }
+	void setLeader(Index index, ActorOrItemIndex leader) { assert(!leader.isStatic(this->m_area)); m_leader[index] = leader; }
+	void unsetFollower(Index index, [[maybe_unused]] ActorOrItemIndex follower) { assert(m_follower[index] == follower); m_follower[index].clear(); }
+	void unsetLeader(Index index, ActorOrItemIndex leader) { assert(m_follower[index] == leader); m_leader[index].clear(); }
+	void fall(Index index);
+	void maybeFall(Index index);
+	void onSetLocation(Index index, Point3D previousLocation, Facing4 previousFacing);
+	void onRemove(Index index);
+	void setFloating(Index index, FluidTypeId fluidType, Distance depth);
+	void unsetFloating(Index index);
+	void setMoveType(Index index, MoveTypeId moveType);
+	Index moveTo(Portables<Derived, Index, ReferenceIndex, isActors>& other, Index index);
+	[[nodiscard]] ActorIndex getLineLeader(Index index) const;
+	[[nodiscard]] MoveTypeId getMoveType(Index index) const { return m_moveType[index]; }
+	[[nodiscard]] bool movingIndependently(Index index) const;
+	[[nodiscard]] bool hasCarrier(Index index) const;
+	[[nodiscard]] bool isFollowing(Index index) const;
+	[[nodiscard]] bool isLeading(Index index) const;
+	[[nodiscard]] bool isLeadingActor(Index index, ActorIndex actor) const;
+	[[nodiscard]] bool isLeadingItem(Index index, ItemIndex item) const;
+	[[nodiscard]] bool isLeadingPolymorphic(Index index, ActorOrItemIndex ActorOrItem) const;
+	[[nodiscard]] ActorOrItemIndex getFollower(Index index) const { return m_follower[index]; }
+	[[nodiscard]] ActorOrItemIndex getLeader(Index index) const { return m_leader[index]; }
+	[[nodiscard]] Point3D getLocation(Index index) const { return HasShapes<Derived, Index>::getLocation(index); }
+	[[nodiscard]] ShapeId getShape(Index index) const { return HasShapes<Derived, Index>::getShape(index); }
+	[[nodiscard]] Facing4 getFacing(Index index) const { return HasShapes<Derived, Index>::getFacing(index); }
+	[[nodiscard]] auto getReference(Index index) const -> Reference<Index, ReferenceIndex> { return m_referenceData.getReference(index); }
+	[[nodiscard]] CuboidSet getOccupiedCombined(Index index) const;
+	[[nodiscard]] MapWithCuboidKeys<CollisionVolume> getOccupiedCombinedWithVolumes(Index index) const;
 	// Floating.
-	[[nodiscard]] Distance floatsInAtDepth(const Index index, const FluidTypeId fluidType) const;
-	[[nodiscard]] bool canFloatAt(const Index index, const Point3D point, const Facing4 facing) const;
-	[[nodiscard]] FluidTypeId getFluidTypeCanFloatInAt(const Index index, const Point3D point, const Facing4 facing) const;
-	[[nodiscard]] bool canFloatAtInFluidTypeWithFacing(const Index index, const Point3D point, const FluidTypeId fluidType, const Facing4 facing) const;
-	[[nodiscard]] bool isFloating(const Index index) const { return m_floating[index].exists(); }
-	void setNotFloating(const Index index) { m_floating[index].clear(); }
+	[[nodiscard]] Distance floatsInAtDepth(Index index, FluidTypeId fluidType) const;
+	[[nodiscard]] bool canFloatAt(Index index, Point3D point, Facing4 facing) const;
+	[[nodiscard]] FluidTypeId getFluidTypeCanFloatInAt(Index index, Point3D point, Facing4 facing) const;
+	[[nodiscard]] bool canFloatAtInFluidTypeWithFacing(Index index, Point3D point, FluidTypeId fluidType, Facing4 facing) const;
+	[[nodiscard]] bool isFloating(Index index) const { return m_floating[index].exists(); }
+	void setNotFloating(Index index) { m_floating[index].clear(); }
 	// For testing.
-	[[nodiscard]] Speed lead_getSpeed(const Index index);
+	[[nodiscard]] Speed lead_getSpeed(Index index) const;
 	// Reservations.
 	// Quantity defaults to 0, which becomes maxReservations;
-	void reservable_reserve(const Index index, CanReserve& canReserve, const Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> callback = nullptr);
-	void reservable_unreserve(const Index index, CanReserve& canReserve, const Quantity quantity = Quantity::create(1));
-	void reservable_unreserveFaction(const Index index, const FactionId faction);
-	void reservable_maybeUnreserve(const Index index, CanReserve& canReserve, const Quantity quantity = Quantity::create(1));
-	void reservable_unreserveAll(const Index index);
-	void reservable_setDishonorCallback(const Index index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback);
-	void reservable_merge(const Index index, Reservable& other);
-	[[nodiscard]] bool reservable_hasAnyReservations(const Index index) const;
-	[[nodiscard]] bool reservable_exists(const Index index, const FactionId faction) const;
-	[[nodiscard]] bool reservable_existsFor(const Index index, const CanReserve& canReserve) const;
-	[[nodiscard]] bool reservable_isFullyReserved(const Index index, const FactionId faction) const;
-	[[nodiscard]] Quantity reservable_getUnreservedCount(const Index index, const FactionId faction) const;
+	void reservable_reserve(Index index, CanReserve& canReserve, Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> callback = nullptr);
+	void reservable_unreserve(Index index, CanReserve& canReserve, Quantity quantity = Quantity::create(1));
+	void reservable_unreserveFaction(Index index, FactionId faction);
+	void reservable_maybeUnreserve(Index index, CanReserve& canReserve, Quantity quantity = Quantity::create(1));
+	void reservable_unreserveAll(Index index);
+	void reservable_setDishonorCallback(Index index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback);
+	void reservable_merge(Index index, Reservable& other);
+	[[nodiscard]] bool reservable_hasAnyReservations(Index index) const;
+	[[nodiscard]] bool reservable_exists(Index index, FactionId faction) const;
+	[[nodiscard]] bool reservable_existsFor(Index index, const CanReserve& canReserve) const;
+	[[nodiscard]] bool reservable_isFullyReserved(Index index, FactionId faction) const;
+	[[nodiscard]] Quantity reservable_getUnreservedCount(Index index, FactionId faction) const;
 	// On Destroy.
-	void onDestroy_subscribe(const Index index, HasOnDestroySubscriptions& onDestroy);
-	void onDestroy_subscribeThreadSafe(const Index index, HasOnDestroySubscriptions& onDestroy);
-	void onDestroy_unsubscribe(const Index index, HasOnDestroySubscriptions& onDestroy);
-	void onDestroy_unsubscribeAll(const Index index);
-	void onDestroy_merge(const Index index, OnDestroy& other);
+	void onDestroy_subscribe(Index index, HasOnDestroySubscriptions& onDestroy);
+	void onDestroy_subscribeThreadSafe(Index index, HasOnDestroySubscriptions& onDestroy);
+	void onDestroy_unsubscribe(Index index, HasOnDestroySubscriptions& onDestroy);
+	void onDestroy_unsubscribeAll(Index index);
+	void onDestroy_merge(Index index, OnDestroy& other);
 	// On deck.
-	void onDeck_updateIsOnDeckOf(const Index index, const ActorOrItemIndex value) { m_isOnDeckOf[index] = value; }
-	void onDeck_updateIndex(const Index index, const ActorOrItemIndex oldValue, const ActorOrItemIndex newValue) { m_onDeck[index].update(oldValue, newValue); }
+	void onDeck_updateIsOnDeckOf(Index index, ActorOrItemIndex value) { m_isOnDeckOf[index] = value; }
+	void onDeck_updateIndex(Index index, ActorOrItemIndex oldValue, ActorOrItemIndex newValue) { m_onDeck[index].update(oldValue, newValue); }
 	// These two are for internal use only.
-	void onDeck_removeFromOnDeck(const Index index, const ActorOrItemIndex value) { m_onDeck[index].erase(value); }
-	void onDeck_insertIntoOnDeck(const Index index, const ActorOrItemIndex value) { m_onDeck[index].insert(value); }
-	void onDeck_clear(const Index index);
-	void onDeck_set(const Index index, const ActorOrItemIndex onDeckOf);
-	void onDeck_destroyDecks(const Index index);
-	void onDeck_recordPointsContainingFluid(const Index index, const CuboidSet& points) { m_cuboidsContainingFluidOnDeck[index].addAll(points); }
-	void onDeck_erasePointsContainingFluid(const Index index, const CuboidSet& points) { m_cuboidsContainingFluidOnDeck[index].maybeRemoveAll(points); }
-	[[nodiscard]] DeckId onDeck_createDecks(const Index index, const CuboidSet& cuboidSet);
-	[[nodiscard]] const ActorOrItemIndex onDeck_getIsOnDeckOf(const Index index) const { return m_isOnDeckOf[index]; }
-	[[nodiscard]] bool onDeck_isOnDeck(const Index index) const { return m_isOnDeckOf[index].exists(); }
-	[[nodiscard]] bool onDeck_hasDecks(const Index index) const { return m_hasDecks[index].exists(); }
-	[[nodiscard]] const SmallSet<ActorOrItemIndex>& onDeck_get(const Index index) const { return m_onDeck[index]; }
-	[[nodiscard]] bool onDeck_hasAnyContent(const Index index) const { return !m_onDeck[index].empty(); }
-	[[nodiscard]] Mass onDeck_getMass(const Index index) const;
-	[[nodiscard]] const SmallSet<Project*>& onDeck_getProjects(const Index index) const { return m_projectsOnDeck[index]; }
-	[[nodiscard]] const CuboidSet& onDeck_getCuboidsContainingFluid(const Index index) const { return m_cuboidsContainingFluidOnDeck[index]; }
+	void onDeck_removeFromOnDeck(Index index, ActorOrItemIndex value) { m_onDeck[index].erase(value); }
+	void onDeck_insertIntoOnDeck(Index index, ActorOrItemIndex value) { m_onDeck[index].insert(value); }
+	void onDeck_clear(Index index);
+	void onDeck_set(Index index, ActorOrItemIndex onDeckOf);
+	void onDeck_destroyDecks(Index index);
+	void onDeck_recordPointsContainingFluid(Index index, const CuboidSet& points) { m_cuboidsContainingFluidOnDeck[index].addAll(points); }
+	void onDeck_erasePointsContainingFluid(Index index, const CuboidSet& points) { m_cuboidsContainingFluidOnDeck[index].maybeRemoveAll(points); }
+	[[nodiscard]] DeckId onDeck_createDecks(Index index, const CuboidSet& cuboidSet);
+	[[nodiscard]] ActorOrItemIndex onDeck_getIsOnDeckOf(Index index) const { return m_isOnDeckOf[index]; }
+	[[nodiscard]] bool onDeck_isOnDeck(Index index) const { return m_isOnDeckOf[index].exists(); }
+	[[nodiscard]] bool onDeck_hasDecks(Index index) const { return m_hasDecks[index].exists(); }
+	[[nodiscard]] const SmallSet<ActorOrItemIndex>& onDeck_get(Index index) const { return m_onDeck[index]; }
+	[[nodiscard]] bool onDeck_hasAnyContent(Index index) const { return !m_onDeck[index].empty(); }
+	[[nodiscard]] Mass onDeck_getMass(Index index) const;
+	[[nodiscard]] const SmallSet<Project*>& onDeck_getProjects(Index index) const { return m_projectsOnDeck[index]; }
+	[[nodiscard]] const CuboidSet& onDeck_getCuboidsContainingFluid(Index index) const { return m_cuboidsContainingFluidOnDeck[index]; }
 };
 class PortablesHelpers
 {
 public:
 	// Static methods.
-	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, const Mass addedRollingMass, const Mass addedFloatingMass, const Mass addedDeadMass);
+	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass, Mass addedFloatingMass, Mass addedDeadMass);
 	[[nodiscard]] static Speed getMoveSpeedForGroup(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems);
 };

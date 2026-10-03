@@ -6,7 +6,7 @@
 #include "../path/areaHasPaths.hpp"
 #include "../definitions/moveType.h"
 // Path Request.
-SleepPathRequest::SleepPathRequest(Area&area, SleepObjective &so, const ActorIndex actorIndex) : m_sleepObjective(so)
+SleepPathRequest::SleepPathRequest(Area&area, SleepObjective &so, ActorIndex actorIndex) : m_sleepObjective(so)
 {
 	Actors &actors = area.getActors();
 	start = actors.getLocation(actorIndex);
@@ -120,7 +120,7 @@ Json SleepObjective::toJson() const
 	data["noWhereToSleepFound"] = m_noWhereToSleepFound;
 	return data;
 }
-void SleepObjective::execute(Area&area, const ActorIndex actor)
+void SleepObjective::execute(Area&area, ActorIndex actor)
 {
 	Actors &actors = area.getActors();
 	Space &space = area.getSpace();
@@ -167,7 +167,7 @@ void SleepObjective::execute(Area&area, const ActorIndex actor)
 		execute(area, actor);
 	}
 }
-DesireToSleepAt SleepObjective::desireToSleepAt(Area& area, const Point3D point, const ActorIndex actor) const
+DesireToSleepAt SleepObjective::desireToSleepAt(Area& area, const Point3D point, ActorIndex actor) const
 {
 	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
@@ -192,21 +192,21 @@ DesireToSleepAt SleepObjective::desireToSleepAt(Area& area, const Point3D point,
 		// Moderatly desirable.
 		return DesireToSleepAt::Inside;
 }
-void SleepObjective::cancel(Area& area, const ActorIndex actor)
+void SleepObjective::cancel(Area& area, ActorIndex actor)
 {
 	Actors &actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	actors.canReserve_clearAll(actor);
 	actors.sleep_clearObjective(actor);
 }
-void SleepObjective::reset(Area&area, const ActorIndex actor)
+void SleepObjective::reset(Area&area, ActorIndex actor)
 {
 	Actors &actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	actors.canReserve_clearAll(actor);
 	m_noWhereToSleepFound = false;
 }
-void SleepObjective::selectLocation(Area& area, const Point3D location, const ActorIndex actor)
+void SleepObjective::selectLocation(Area& area, const Point3D location, ActorIndex actor)
 {
 	Actors &actors = area.getActors();
 	actors.sleep_setSpot(actor, location);
@@ -215,11 +215,11 @@ void SleepObjective::selectLocation(Area& area, const Point3D location, const Ac
 	else
 		execute(area, actor);
 }
-void SleepObjective::makePathRequest(Area&area, const ActorIndex actor)
+void SleepObjective::makePathRequest(Area&area, ActorIndex actor)
 {
 	area.getActors().move_pathRequestRecord(actor, std::make_unique<SleepPathRequest>(area, *this, actor));
 }
-bool SleepObjective::onCanNotPath(Area&area, const ActorIndex actor)
+bool SleepObjective::onCanNotPath(Area&area, ActorIndex actor)
 {
 	Actors &actors = area.getActors();
 	Point3D sleepSpot = actors.sleep_getSpot(actor);

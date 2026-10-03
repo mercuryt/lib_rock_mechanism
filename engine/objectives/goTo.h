@@ -14,7 +14,7 @@ public:
 	GoToObjective(const Point3D l) : Objective(Config::goToPriority), m_location(l) { }
 	GoToObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const override;
-	void execute(Area& area, const ActorIndex actor) override;
+	void execute(Area& area, ActorIndex actor) override;
 	void cancel(Area&, const ActorIndex) override { }
 	void delay(Area&, const ActorIndex) override { }
 	void reset(Area&, const ActorIndex) override { }

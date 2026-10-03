@@ -67,5 +67,10 @@ namespace Config::World
 	inline Temperature treesMaxDeltaFromIdealTemperature;
 	inline float seaLevelAttractorWeight;
 	inline float ratioOfAnimalMassFlying;
+	inline int depthOfTransitZone;
+	inline MoveCost baseMoveCost;
+	inline float fractionToIncreaseCostByPerZLevelUp;
+	inline float fractionToDecreaseCostByPerZLevelDown;
+	inline Percent humidityPercentPerFluidBlock;
 	void load();
 }

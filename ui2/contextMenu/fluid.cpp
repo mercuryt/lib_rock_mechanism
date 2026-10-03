@@ -8,12 +8,12 @@ void contextMenu::controlls::fluid(Window& window)
 	assert(window.m_editMode);
 	if(ImGui::BeginMenu("fluid"))
 	{
-		ControllsState& state = window.m_gameOverlay.m_controllsState;
+		ControllsState& state = window.m_areaOverlay.m_controllsState;
 		widgets::fluidType(&state.fluidType);
 		ImGui::InputInt("volume", &state.fluidVolume);
 		if(ImGui::MenuItem("create fluid"))
 		{
-			window.m_area->getSpace().fluid_add(window.m_gameOverlay.m_selectedArea, {state.fluidVolume}, state.fluidType);
+			window.m_area->getSpace().fluid_add(window.m_areaOverlay.m_selectedArea, {state.fluidVolume}, state.fluidType);
 			ImGui::CloseCurrentPopup();
 		}
 		if(ImGui::MenuItem("create fluid source"))
@@ -30,7 +30,7 @@ void contextMenu::controlls::fluid(Window& window)
 			if(ImGui::MenuItem("remove fluid source"))
 			{
 				auto& fluidSources = window.m_area->m_fluidSources;
-				for(const Cuboid& cuboid : window.m_gameOverlay.m_selectedArea)
+				for(const Cuboid& cuboid : window.m_areaOverlay.m_selectedArea)
 					for(const Point3D point : cuboid)
 						if(fluidSources.contains(point))
 							fluidSources.destroy(point);
@@ -38,11 +38,11 @@ void contextMenu::controlls::fluid(Window& window)
 			}
 		}
 		const Space& space = window.m_area->getSpace();
-		if(space.fluid_any(window.m_gameOverlay.m_selectedArea))
+		if(space.fluid_any(window.m_areaOverlay.m_selectedArea))
 		{
 			if(ImGui::MenuItem("remove fluid"))
 			{
-				for(const Cuboid& cuboid : window.m_gameOverlay.m_selectedArea)
+				for(const Cuboid& cuboid : window.m_areaOverlay.m_selectedArea)
 					for(const Point3D point : cuboid)
 						window.m_area->getSpace().fluid_removeSyncronus(point, {state.fluidVolume}, state.fluidType);
 				ImGui::CloseCurrentPopup();
@@ -51,12 +51,12 @@ void contextMenu::controlls::fluid(Window& window)
 			{
 				const CuboidSet fluidGroupArea = window.m_area->getSpace().fluid_getGroup(state.clickedOnPoint, state.fluidType)->getPoints();
 				if(window.m_controllKey)
-					window.m_gameOverlay.m_selectedArea.maybeRemoveAll(fluidGroupArea);
+					window.m_areaOverlay.m_selectedArea.maybeRemoveAll(fluidGroupArea);
 				else
 				{
 					if(!window.m_shiftKey)
-						window.m_gameOverlay.m_selectedArea.clear();
-					window.m_gameOverlay.m_selectedArea.addAll(fluidGroupArea);
+						window.m_areaOverlay.m_selectedArea.clear();
+					window.m_areaOverlay.m_selectedArea.addAll(fluidGroupArea);
 				}
 				ImGui::CloseCurrentPopup();
 			}

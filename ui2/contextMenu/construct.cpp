@@ -6,7 +6,7 @@
 #include "../../engine/pointFeature.h"
 void contextMenu::controlls::construct(Window& window)
 {
-	ControllsState& state = window.m_gameOverlay.m_controllsState;
+	ControllsState& state = window.m_areaOverlay.m_controllsState;
 	if(ImGui::BeginMenu("construct"))
 	{
 		widgets::materialType(&state.materialType);
@@ -37,11 +37,11 @@ void contextMenu::controlls::construct(Window& window)
 }
 void contextMenu::helpers::construct(Window& window, bool feature)
 {
-	CuboidSet toConstruct = window.m_gameOverlay.m_selectedArea;
+	CuboidSet toConstruct = window.m_areaOverlay.m_selectedArea;
 	Space& space = window.m_area->getSpace();
-	ControllsState& state = window.m_gameOverlay.m_controllsState;
-	space.solid_queryForEachCuboid(window.m_gameOverlay.m_selectedArea, [&](const Cuboid cuboid){ toConstruct.remove(cuboid); });
-	space.pointFeature_queryForEachCuboid(window.m_gameOverlay.m_selectedArea, [&](const Cuboid cuboid){ toConstruct.remove(cuboid); });
+	ControllsState& state = window.m_areaOverlay.m_controllsState;
+	space.solid_queryForEachCuboid(window.m_areaOverlay.m_selectedArea, [&](const Cuboid cuboid){ toConstruct.remove(cuboid); });
+	space.pointFeature_queryForEachCuboid(window.m_areaOverlay.m_selectedArea, [&](const Cuboid cuboid){ toConstruct.remove(cuboid); });
 	if(window.m_editMode)
 	{
 		if(!feature)

@@ -16,13 +16,13 @@ class InspirationalSpeachObjective final : public Objective
 	HasOnDestroySubscriptions m_audienceOnDestroy;
 public:
 	InspirationalSpeachObjective(const Priority priority = Config::Social::socialPriorityHigh);
-	InspirationalSpeachObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex actor) override;
-	void cancel(Area& area, const ActorIndex actor) override;
-	void delay(Area& area, const ActorIndex actor) override;
-	void reset(Area& area, const ActorIndex actor) override;
+	InspirationalSpeachObjective(const Json& data, Area& area, ActorIndex actor, DeserializationMemo& deserializationMemo);
+	void execute(Area& area, ActorIndex actor) override;
+	void cancel(Area& area, ActorIndex actor) override;
+	void delay(Area& area, ActorIndex actor) override;
+	void reset(Area& area, ActorIndex actor) override;
 	void createOnDestroy(Area& area);
-	void callback(Area& area, const ActorIndex actor);
+	void callback(Area& area, ActorIndex actor);
 	void removeAudienceMember(const ActorReference actor);
 	[[nodiscard]] constexpr std::string name() const override { return "inspirational speach"; }
 	[[nodiscard]] Json toJson() const override;

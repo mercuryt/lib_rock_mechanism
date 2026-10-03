@@ -81,6 +81,7 @@ class RTreeBoolean
 	[[nodiscard]] bool canMerge(const Cuboid, const Cuboid) const { return true; }
 public:
 	RTreeBoolean() { m_nodes.add(); m_nodes.back().setParent(RTreeNodeIndex::null()); }
+	RTreeBoolean(CuboidSet set) : RTreeBoolean() { insert(set); };
 	void beforeJsonLoad();
 	void insert(const auto& shape) { assert(!query(shape)); maybeInsert(shape); }
 	void remove(const auto& shape) { assert(query(shape)); maybeRemove(shape); }

@@ -13,7 +13,7 @@ UnequipItemObjective::UnequipItemObjective(const Json& data, DeserializationMemo
 {
 	m_item.load(data["item"], area.getItems().m_referenceData);
 }
-void UnequipItemObjective::execute(Area& area, const ActorIndex actor)
+void UnequipItemObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(!actors.isAdjacentToLocation(actor, m_point))
@@ -39,8 +39,8 @@ void UnequipItemObjective::execute(Area& area, const ActorIndex actor)
 			actors.objective_canNotCompleteObjective(actor, *this);
 	}
 }
-void UnequipItemObjective::cancel(Area& area, const ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }
-void UnequipItemObjective::reset(Area& area, const ActorIndex actor) { cancel(area, actor); }
+void UnequipItemObjective::cancel(Area& area, ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }
+void UnequipItemObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }
 Json UnequipItemObjective::toJson() const
 {
 	Json output = static_cast<const Objective&>(*this).toJson();

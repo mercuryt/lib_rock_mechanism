@@ -33,7 +33,7 @@ void MistakeAtWorkDramaArc::schedule()
 	Step duration = Step::create(random.getInRange((5u * Config::stepsPerDay.get()), (15u * Config::stepsPerDay.get())));
 	m_scheduledEvent.schedule(duration, *this, m_area->m_simulation);
 }
-std::pair<ActorReference, std::string> MistakeAtWorkDramaArc::doSwitchMaybeReturnVictim(const MistakeAtWorkType mistakeType, Project& project, const ActorIndex perpetrator)
+std::pair<ActorReference, std::string> MistakeAtWorkDramaArc::doSwitchMaybeReturnVictim(const MistakeAtWorkType mistakeType, Project& project, ActorIndex perpetrator)
 {
 	ActorReference victim;
 	std::string description;
@@ -55,7 +55,7 @@ std::pair<ActorReference, std::string> MistakeAtWorkDramaArc::doSwitchMaybeRetur
 			if(items.getQuantity(item) > 1)
 				items.removeQuantity(item, {1});
 			else
-				items.destroy(item);
+				items.remove(item);
 			description += "destruction of a " + ItemType::getName(items.getItemType(item));
 			break;
 		}
@@ -69,7 +69,7 @@ std::pair<ActorReference, std::string> MistakeAtWorkDramaArc::doSwitchMaybeRetur
 			const Percent wear = items.getWear(item);
 			if(wear + Config::Drama::percentWearToAddForMistakeAtWork > 100)
 			{
-				items.destroy(item);
+				items.remove(item);
 				description += "destruction of a " + ItemType::getName(items.getItemType(item));
 			}
 			else
@@ -83,7 +83,7 @@ std::pair<ActorReference, std::string> MistakeAtWorkDramaArc::doSwitchMaybeRetur
 		{
 			const auto& actorRefAndProjectWorker = m_area->m_simulation.m_random.getInVector(project.getWorkers().m_data);
 			victim = actorRefAndProjectWorker.first;
-			const ActorIndex victimIndex = victim.getIndex(actors.m_referenceData);
+			ActorIndex victimIndex = victim.getIndex(actors.m_referenceData);
 			const ItemIndex tool = project.getRandomUnconsumedItem();
 			const Force hitForce = Force::create(actors.getStrength(perpetrator).get() * Config::unitsOfAttackForcePerUnitOfStrength);
 			// TODO: Higher skill selects more important body parts to hit.
@@ -118,7 +118,7 @@ void MistakeAtWorkDramaArc::callback()
 			continue;
 		Project& project = *projectPtr;
 		std::string description;
-		const ActorIndex perpetrator = m_area->m_simulation.m_random.getInVector(project.getWorkers().m_data).first.getIndex(actors.m_referenceData);
+		ActorIndex perpetrator = m_area->m_simulation.m_random.getInVector(project.getWorkers().m_data).first.getIndex(actors.m_referenceData);
 		description += actors.getName(perpetrator) + " made a mistake while working on " + project.description() + " resulting in ";
 		MistakeAtWorkType mistakeType = m_area->m_simulation.m_random.getInEnum<MistakeAtWorkType>();
 		// Make a copy before maybe reseting the project.
@@ -151,7 +151,7 @@ void MistakeAtWorkDramaArc::callback()
 		// Maybe find someone to chastise perpetrator later.
 		ActorIndex chastiser;
 		// Start by searching coworkers, if no one suitable is found search canBeSeenBy.
-		auto castingCall = [&](const ActorIndex candidate) -> float
+		auto castingCall = [&](ActorIndex candidate) -> float
 		{
 			if(actors.objective_getCurrent<Objective>(candidate).m_priority >= Config::Social::socialPriorityHigh)
 				return FLT_MIN;
@@ -171,10 +171,10 @@ void MistakeAtWorkDramaArc::callback()
 		};
 		auto castingCallRef = [&](const ActorReference ref) -> float
 		{
-			const ActorIndex candidate = ref.getIndex(actors.m_referenceData);
+			ActorIndex candidate = ref.getIndex(actors.m_referenceData);
 			return castingCall(candidate);
 		};
-		const ActorIndex bestCoworkerCandidate = *std::ranges::max_element(coworkers.m_data, {}, castingCall);
+		ActorIndex bestCoworkerCandidate = *std::ranges::max_element(coworkers.m_data, {}, castingCall);
 		if(castingCall(bestCoworkerCandidate) >= Config::Social::minimumCastingScoreForChastiseMistakeAtWork)
 			chastiser = bestCoworkerCandidate;
 		else

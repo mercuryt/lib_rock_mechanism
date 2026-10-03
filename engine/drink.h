@@ -25,8 +25,8 @@ class MustDrink final
 	[[nodiscard]] CollisionVolume volumeFluidForBodyMass() const;
 
 public:
-	MustDrink(Area& area, const ActorIndex a);
-	MustDrink(Area& area, const Json& data, const ActorIndex a, const AnimalSpeciesId species);
+	MustDrink(Area& area, ActorIndex a);
+	MustDrink(Area& area, const Json& data, ActorIndex a, const AnimalSpeciesId species);
 	void drink(Area& area, const CollisionVolume volume);
 	void notThirsty(Area& area);
 	void setNeedsFluid(Area& area);
@@ -34,6 +34,9 @@ public:
 	void scheduleDrinkEvent(Area& area);
 	void setFluidType(const FluidTypeId fluidType);
 	void setObjective(DrinkObjective& objective) { m_objective = &objective; }
+	void updateReference(ActorReference oldReference, ActorReference newReference, ActorReferenceData& dataStore);
+	void updateEventSchedule(EventSchedule& newSchedule) { m_thirstEvent.moveTo(newSchedule); }
+	void onMove(Area& newArea, ActorReference newReference);
 	[[nodiscard]] bool hasObjective() const { return m_objective != nullptr; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] CollisionVolume getVolumeFluidRequested() const { return m_volumeDrinkRequested; }
@@ -41,7 +44,7 @@ public:
 	[[nodiscard]] Step getStepsTillDead() const;
 	[[nodiscard]] FluidTypeId getFluidType() const { return m_fluidType; }
 	[[nodiscard]] bool needsFluid() const { return m_volumeDrinkRequested != 0; }
-	[[nodiscard]] static CollisionVolume drinkVolumeFor(Area& area, const ActorIndex actor);
+	[[nodiscard]] static CollisionVolume drinkVolumeFor(Area& area, ActorIndex actor);
 	friend class ThirstEvent;
 	friend class DrinkEvent;
 	friend class DrinkObjective;
@@ -55,8 +58,8 @@ class DrinkEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	ItemReference m_item;
 public:
-	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, const ActorIndex actor, const Step start = Step::null());
-	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, const ActorIndex actor, const ItemIndex i, const Step start = Step::null());
+	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, const Step start = Step::null());
+	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, const ItemIndex i, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -64,7 +67,7 @@ class ThirstEvent final : public ScheduledEvent
 {
 	ActorIndex m_actor;
 public:
-	ThirstEvent(Area& area, const Step delay, const ActorIndex a, const Step start = Step::null());
+	ThirstEvent(Area& area, const Step delay, ActorIndex a, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

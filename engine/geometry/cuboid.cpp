@@ -165,7 +165,7 @@ Point3D Cuboid::intersectionPointForFace(const ParamaterizedLine& line, const Fa
 		{
 			Offset plane = Offset::create(m_high.z().get());
 			Offset delta = plane - Offset::create(line.begin.z().get());
-			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			auto offsetData = (line.slope * delta.get()).cast<OffsetWidth>();
 			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
 			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
 			if(
@@ -180,7 +180,7 @@ Point3D Cuboid::intersectionPointForFace(const ParamaterizedLine& line, const Fa
 		{
 			Offset plane = Offset::create(m_high.y().get());
 			Offset delta = plane - Offset::create(line.begin.y().get());
-			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			auto offsetData = (line.slope * delta.get()).cast<OffsetWidth>();
 			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
 			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
 			if(
@@ -195,7 +195,7 @@ Point3D Cuboid::intersectionPointForFace(const ParamaterizedLine& line, const Fa
 		{
 			Offset plane = Offset::create(m_high.x().get());
 			Offset delta = plane - Offset::create(line.begin.x().get());
-			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			auto offsetData = (line.slope * delta.get()).cast<OffsetWidth>();
 			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
 			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
 			if(
@@ -210,7 +210,7 @@ Point3D Cuboid::intersectionPointForFace(const ParamaterizedLine& line, const Fa
 		{
 			Offset plane = Offset::create(m_low.z().get());
 			Offset delta = plane - Offset::create(line.begin.z().get());
-			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			auto offsetData = (line.slope * delta.get()).cast<OffsetWidth>();
 			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
 			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
 			if(
@@ -225,7 +225,7 @@ Point3D Cuboid::intersectionPointForFace(const ParamaterizedLine& line, const Fa
 		{
 			Offset plane = Offset::create(m_low.y().get());
 			Offset delta = plane - Offset::create(line.begin.y().get());
-			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			auto offsetData = (line.slope * delta.get()).cast<OffsetWidth>();
 			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
 			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
 			if(
@@ -240,7 +240,7 @@ Point3D Cuboid::intersectionPointForFace(const ParamaterizedLine& line, const Fa
 		{
 			Offset plane = Offset::create(m_low.x().get());
 			Offset delta = plane - Offset::create(line.begin.x().get());
-			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			auto offsetData = (line.slope * delta.get()).cast<OffsetWidth>();
 			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
 			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
 			if(
@@ -896,7 +896,7 @@ void CuboidSurfaceView::Iterator::setFace()
 	{
 		face = view.cuboid.getFace(facing);
 		Offset3D faceLow = face.m_low.toOffset();
-		faceLow = faceLow.moveInDirection(facing, Distance::create(1));
+		faceLow = faceLow.shift(facing, Distance::create(1));
 		// Skip any face with a low dimension less then zero.
 		// Since we don't have Area here we can't skip faces where a high dimension is too high.
 		if((faceLow.data >= 0).all())

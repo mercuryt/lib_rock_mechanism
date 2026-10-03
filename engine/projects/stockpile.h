@@ -56,7 +56,7 @@ public:
 	StockPileProject(const FactionId faction, Area& area, const Point3D point, const ItemIndex item, const Quantity quantity, const Quantity maxWorkers);
 	StockPileProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] bool canAddWorker(const ActorIndex actor) const;
+	[[nodiscard]] bool canAddWorker(ActorIndex actor) const;
 	// Don't recruit more workers then are needed for hauling.
 	[[nodiscard]] bool canRecruitHaulingWorkersOnly() const { return true; }
 	friend class AreaHasStockPilesForFaction;

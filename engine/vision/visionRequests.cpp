@@ -113,7 +113,7 @@ void VisionRequests::writeStep()
 		for(const ActorReference ref : noLongerCanSee)
 		{
 			// Actor looses sight of ref.
-			const ActorIndex other = ref.getIndex(actors.m_referenceData);
+			ActorIndex other = ref.getIndex(actors.m_referenceData);
 			actors.vision_setNoLongerCanBeSeenBy(other, request.actor);
 		}
 		const FactionId& faction = actors.getFaction(index);
@@ -126,7 +126,7 @@ void VisionRequests::writeStep()
 		for(const ActorReference ref : canNowSee)
 		{
 			// Ref enters actor's line of sight.
-			const ActorIndex other = ref.getIndex(actors.m_referenceData);
+			ActorIndex other = ref.getIndex(actors.m_referenceData);
 			actors.vision_setCanBeSeenBy(other, request.actor);
 			if(isNotFleeingAndIsNotSoldier && enemyFactions.contains(actors.getFaction(other)))
 				actors.combat_flee(index);
@@ -134,13 +134,13 @@ void VisionRequests::writeStep()
 		for(const ActorReference ref : noLongerCanBeSeenBy)
 		{
 			// Ref looses sight of actor.
-			const ActorIndex other = ref.getIndex(actors.m_referenceData);
+			ActorIndex other = ref.getIndex(actors.m_referenceData);
 			actors.vision_setNoLongerCanBeSeenBy(other, request.actor);
 		}
 		for(const ActorReference ref : canNowBeSeenBy)
 		{
 			// Actor enter's ref's line of sight.
-			const ActorIndex other = ref.getIndex(actors.m_referenceData);
+			ActorIndex other = ref.getIndex(actors.m_referenceData);
 			actors.vision_setCanBeSeenBy(other, request.actor);
 		}
 		// -OnSight.
@@ -150,7 +150,7 @@ void VisionRequests::writeStep()
 		// Iterate this twice to be sure that all canSee/canBeSeen relationships are updated before any callbacks are run.
 		for(const ActorReference ref : canNowBeSeenBy)
 		{
-			const ActorIndex other = ref.getIndex(actors.m_referenceData);
+			ActorIndex other = ref.getIndex(actors.m_referenceData);
 			actors.onSight_get(other).execute(m_area, ref, request.actor);
 			const FactionId& otherFaction = actors.getFaction(other);
 			m_area.m_hasOnSight.maybeExecute(otherFaction, m_area, ref, request.actor);

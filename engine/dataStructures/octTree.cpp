@@ -11,7 +11,7 @@ ActorOctTree::ActorOctTree(const Cuboid cuboid)
 void ActorOctTree::record(Area& area, const ActorReference actor)
 {
 	Actors& actors = area.getActors();
-	const ActorIndex index = actor.getIndex(actors.m_referenceData);
+	ActorIndex index = actor.getIndex(actors.m_referenceData);
 	const DistanceSquared visionRangeSquared = actors.vision_getRangeSquared(index);
 	const Facing4& facing = actors.getFacing(index);
 	for(const Point3D coordinates : Point3DSet::fromCuboidSet(actors.getOccupied(index)))
@@ -37,7 +37,7 @@ void ActorOctTree::record(Area& area, const ActorReference actor)
 void ActorOctTree::erase(Area& area, const ActorReference actor)
 {
 	Actors& actors = area.getActors();
-	const ActorIndex index = actor.getIndex(actors.m_referenceData);
+	ActorIndex index = actor.getIndex(actors.m_referenceData);
 	for(const Cuboid cuboid : actors.getOccupied(index))
 		for(const Point3D coordinates : cuboid)
 		{

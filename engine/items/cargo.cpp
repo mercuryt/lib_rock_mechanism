@@ -7,7 +7,7 @@
 #include "../portables.h"
 #include "../actors/actors.h"
 #include <regex>
-void Items::cargo_addActor(const ItemIndex index, const ActorIndex actor)
+void Items::cargo_addActor(const ItemIndex index, ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	assert(ItemType::getInternalVolume(m_itemType[index]).exists());
@@ -63,7 +63,7 @@ void Items::cargo_addFluid(const ItemIndex index, const FluidTypeId fluidType, c
 		m_hasCargo[index] = std::make_unique<ItemHasCargo>(m_itemType[index]);
 	m_hasCargo[index]->addFluid(fluidType, volume);
 }
-void Items::cargo_loadActor(const ItemIndex index, const ActorIndex actor)
+void Items::cargo_loadActor(const ItemIndex index, ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	assert(actors.hasLocation(actor));
@@ -110,7 +110,7 @@ void Items::cargo_remove(const ItemIndex index, const ActorOrItemIndex actorOrIt
 	else
 		cargo_removeItem(index, actorOrItem.getItem());
 }
-void Items::cargo_removeActor(const ItemIndex index, const ActorIndex actor)
+void Items::cargo_removeActor(const ItemIndex index, ActorIndex actor)
 {
 	assert(m_hasCargo[index]);
 	ItemHasCargo& hasCargo = *m_hasCargo[index];
@@ -149,7 +149,7 @@ void Items::cargo_removeFluid(const ItemIndex index, const CollisionVolume volum
 	if(hasCargo.empty())
 		m_hasCargo[index] = nullptr;
 }
-void Items::cargo_unloadActorToLocation(const ItemIndex index, const ActorIndex actor, const Point3D location)
+void Items::cargo_unloadActorToLocation(const ItemIndex index, ActorIndex actor, const Point3D location)
 {
 	assert(m_hasCargo[index]);
 	assert(cargo_containsActor(index, actor));
@@ -171,7 +171,7 @@ void Items::cargo_updateItemIndex(const ItemIndex index, const ItemIndex oldInde
 {
 	m_hasCargo[index]->m_items.update(oldIndex, newIndex);
 }
-void Items::cargo_updateActorIndex(const ItemIndex index, const ActorIndex oldIndex, const ActorIndex newIndex)
+void Items::cargo_updateActorIndex(const ItemIndex index, ActorIndex oldIndex, ActorIndex newIndex)
 {
 	m_hasCargo[index]->m_actors.update(oldIndex, newIndex);
 }
@@ -213,7 +213,7 @@ void Items::cargo_unloadFluidToLocation(const ItemIndex index, const CollisionVo
 	m_area.getSpace().fluid_add(CuboidSet::create(location), volume.get(), fluidType);
 }
 bool Items::cargo_exists(const ItemIndex index) const { return m_hasCargo[index] != nullptr; }
-bool Items::cargo_containsActor(const ItemIndex index, const ActorIndex actor) const
+bool Items::cargo_containsActor(const ItemIndex index, ActorIndex actor) const
 {
 	if(m_hasCargo[index] == nullptr)
 		return false;
@@ -260,7 +260,7 @@ FluidTypeId Items::cargo_getFluidType(const ItemIndex index) const
 {
 	return m_hasCargo[index]->getFluidType();
 }
-bool Items::cargo_canAddActor(const ItemIndex index, const ActorIndex actor) const
+bool Items::cargo_canAddActor(const ItemIndex index, ActorIndex actor) const
 {
 	if(m_hasCargo[index] != nullptr)
 		return m_hasCargo[index]->canAddActor(m_area, actor);

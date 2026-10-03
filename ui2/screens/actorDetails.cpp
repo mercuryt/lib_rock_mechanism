@@ -9,12 +9,16 @@
 #include "../../engine/equipment.h"
 #include "../../engine/definitions/bodyType.h"
 
-void screens::actorDetails(Window& window, const ActorReference actorRef)
+void screens::actorDetails(Window& window, ActorReference actorRef)
+{
+	ActorIndex actor = actorRef.getIndex(actors.m_referenceData);
+	actorDetails(window, actor);
+}
+void screens::actorDetails(Window& window, ActorIndex actor)
 {
 	window.m_paused = true;
 	Actors& actors = window.m_area->getActors();
 	Items& items = window.m_area->getItems();
-	const ActorIndex actor = actorRef.getIndex(actors.m_referenceData);
 	begin(window, "Actor Details");
 	ImGuiText(("name: " + actors.getName(actor)));
 	ImGuiText(("age : " + std::to_string(actors.getAgeInYears(actor).get())));

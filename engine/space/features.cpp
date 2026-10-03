@@ -126,7 +126,7 @@ void Space::pointFeature_hew(const Point3D point, PointFeatureTypeId pointFeatur
 	// TODO: There is no support for hewing hatches or flaps. This is ok because those things can't be hewn. Could be fixed anyway?
 	const Point3D above = point.above();
 	auto actorsCopy = actor_getAll(above);
-	for(const ActorIndex actor : actorsCopy)
+	for(ActorIndex actor : actorsCopy)
 		m_area.getActors().tryToMoveSoAsNotOccuping(actor, above);
 	solid_setNot(point);
 	m_area.m_opacityFacade.update(m_area, point);

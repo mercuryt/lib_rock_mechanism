@@ -60,7 +60,7 @@ const ObjectivePriority& ObjectiveTypePrioritySet::getById(const ObjectiveTypeId
 {
 	return const_cast<ObjectiveTypePrioritySet*>(this)->getById(objectiveTypeId);
 }
-void ObjectiveTypePrioritySet::setPriority(Area& area, const ActorIndex actor, const ObjectiveTypeId objectiveTypeId, const Priority priority)
+void ObjectiveTypePrioritySet::setPriority(Area& area, ActorIndex actor, const ObjectiveTypeId objectiveTypeId, const Priority priority)
 {
 	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& x) { return x.objectiveType == objectiveTypeId; });
 	if(found == m_data.end())
@@ -74,7 +74,7 @@ void ObjectiveTypePrioritySet::remove(const ObjectiveTypeId objectiveType)
 {
 	std::erase_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType == objectiveType; });
 }
-void ObjectiveTypePrioritySet::setObjectiveFor(Area& area, const ActorIndex actor)
+void ObjectiveTypePrioritySet::setObjectiveFor(Area& area, ActorIndex actor)
 {
 	assert(!area.getActors().objective_exists(actor));
 	Step currentStep = area.m_simulation.m_step;
@@ -224,7 +224,7 @@ void CannotCompleteObjectiveDishonorCallback::execute(const Quantity, const Quan
 	Actors& actors = m_area.getActors();
 	actors.objective_canNotCompleteSubobjective(m_actor.getIndex(actors.m_referenceData)); }
 // HasObjectives.
-void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const ActorIndex actor)
+void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor)
 {
 	for(const Json& objective : data["needsQueue"])
 	{

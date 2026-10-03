@@ -57,9 +57,7 @@ Area& SimulationHasAreas::createArea(int x, int y, int z, bool createDrama)
 }
 Area& SimulationHasAreas::loadArea(const AreaId id, std::string name, const Distance x, const Distance y, const Distance z)
 {
-	Area& area = m_areas.emplace(id, id, name, m_simulation, x, y, z);
-	m_areasById.insert(id, &area);
-	return area;
+	return m_areas.emplace(id, id, name, m_simulation, x, y, z);
 }
 void SimulationHasAreas::destroyArea(Area& area)
 {
@@ -67,7 +65,6 @@ void SimulationHasAreas::destroyArea(Area& area)
 	Actors& actors = area.getActors();
 	for(ActorIndex actor : actors.getAll())
 		actors.location_clear(actor);
-	m_areasById.erase(area.m_id);
 	m_areas.erase(area.m_id);
 }
 Area& SimulationHasAreas::loadAreaFromJson(const Json& data, DeserializationMemo& deserializationMemo)
@@ -86,10 +83,6 @@ void SimulationHasAreas::clearAll()
 	for(auto& pair : m_areas)
 		pair.second->clearReservations();
 	m_areas.clear();
-}
-void SimulationHasAreas::recordId(Area& area)
-{
-	m_areasById.insert(area.m_id, &area);
 }
 Step SimulationHasAreas::getNextEventStep() const
 {

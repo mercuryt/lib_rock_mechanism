@@ -20,7 +20,7 @@ struct PsycologyCallback
 {
 	PsycologyWeight threshold;
 	virtual PsycologyEventType eventType() const = 0;
-	virtual void action(const ActorIndex actor, Area& area, Psycology& psycology, const PsycologyWeight level) = 0;
+	virtual void action(ActorIndex actor, Area& area, Psycology& psycology, const PsycologyWeight level) = 0;
 	[[nodiscard]] virtual PsycologyCallbackType getType() const = 0;
 	[[nodiscard]] virtual Json toJson() const;
 	[[nodiscard]] static std::unique_ptr<PsycologyCallback> load(const Json& data, Simulation& simulation);
@@ -70,13 +70,13 @@ class Psycology final
 	SmallSetStable<HasScheduledEvent<PsycologyEventExpiresScheduledEvent>> m_expirationEvents;
 	SmallMap<PsycologyEventType, Step> m_cooldowns;
 	// Possibly trigger callbacks.
-	void checkThreasholds(Area& area, const ActorIndex actor);
+	void checkThreasholds(Area& area, ActorIndex actor);
 	void setExpiration(const Step duration, Simulation& simulation, const ActorId actor, const PsycologyEventType& eventType, const PsycologyData& eventDeltas);
 public:
 	void initialize();
 	// Record callbacks, modify current, check threasholds.
-	void apply(PsycologyEvent& event, Area& area, const ActorIndex actor, const Step duration = Step::null(), const Step cooldown = Step::null());
-	void remove(const PsycologyEventType& eventType, const PsycologyData& deltas, Area& area, const ActorIndex actor);
+	void apply(PsycologyEvent& event, Area& area, ActorIndex actor, const Step duration = Step::null(), const Step cooldown = Step::null());
+	void remove(const PsycologyEventType& eventType, const PsycologyData& deltas, Area& area, ActorIndex actor);
 	void registerHighCallback(const PsycologyAttribute& attribute, std::unique_ptr<PsycologyCallback>&& callback);
 	void registerLowCallback(const PsycologyAttribute& attribute, std::unique_ptr<PsycologyCallback>&& callback);
 	void unregisterHighCallback(const PsycologyAttribute& attribute, PsycologyCallback& callback);

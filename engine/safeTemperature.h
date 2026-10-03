@@ -10,12 +10,15 @@ class ActorNeedsSafeTemperature
 	HasScheduledEvent<UnsafeTemperatureEvent> m_event; // 2
 	ActorReference m_actor;
 public:
-	ActorNeedsSafeTemperature(Area& area, const ActorIndex a);
-	ActorNeedsSafeTemperature(const Json& data, const ActorIndex a, Area& area);
+	ActorNeedsSafeTemperature(Area& area, ActorIndex a);
+	ActorNeedsSafeTemperature(const Json& data, ActorIndex a, Area& area);
 	void dieFromTemperature(Area& area);
 	void unschedule();
 	void onChange(Area& area);
 	void setTemperature(Area& area, Temperature temperature);
+	void updateReference(ActorReference oldReference, ActorReference newReference, ActorReferenceData& dataStore);
+	void updateEventSchedule(EventSchedule& newSchedule) { m_event.moveTo(newSchedule); }
+	void onMove(Area& other, ActorReference newReference);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isSafe(Area& area, const Temperature temperature) const;
 	[[nodiscard]] bool isSafeAtCurrentLocation(Area& area) const;
@@ -29,7 +32,7 @@ class UnsafeTemperatureEvent final : public ScheduledEvent
 {
 	ActorNeedsSafeTemperature& m_needsSafeTemperature;
 public:
-	UnsafeTemperatureEvent(Area& area, const ActorIndex actor, const Step start = Step::null());
+	UnsafeTemperatureEvent(Area& area, ActorIndex actor, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

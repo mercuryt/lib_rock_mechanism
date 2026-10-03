@@ -10,7 +10,7 @@ ConfrontationObjective::ConfrontationObjective(const std::string& reason, const 
 	m_reason(reason),
 	m_target(target)
 { }
-ConfrontationObjective::ConfrontationObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo) :
+ConfrontationObjective::ConfrontationObjective(const Json& data, Area& area, ActorIndex actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo)
 {
 	data["target"].get_to(m_target);
@@ -51,7 +51,7 @@ Json ConfrontationObjective::toJson() const
 	};
 	return output;
 }
-void ConfrontationObjective::execute(Area& area, const ActorIndex actor)
+void ConfrontationObjective::execute(Area& area, ActorIndex actor)
 {
 	const auto& [actorsAtTargetArea, targetIndex] = area.m_simulation.m_actors.getDataLocation(m_target);
 	Actors& actors = area.getActors();
@@ -164,19 +164,19 @@ void ConfrontationObjective::execute(Area& area, const ActorIndex actor)
 		actors.objective_canNotFulfillNeed(actor, *this);
 	}
 }
-void ConfrontationObjective::cancel(Area& area, const ActorIndex actor)
+void ConfrontationObjective::cancel(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	if(m_targetHasBeenCast)
 	{
-		const ActorIndex target = area.m_simulation.m_actors.getIndexForId(m_target);
+		ActorIndex target = area.m_simulation.m_actors.getIndexForId(m_target);
 		actors.objective_complete(target, actors.objective_getCurrent<FollowScriptSubObjective>(target));
 	}
 }
-void ConfrontationObjective::delay(Area& area, const ActorIndex actor) { cancel(area, actor); }
-void ConfrontationObjective::reset(Area& area, const ActorIndex actor) { cancel(area, actor); }
-void ConfrontationObjective::onCoolDown(const ActorReference actorRef, const ActorIndex thisActor, Area& area)
+void ConfrontationObjective::delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+void ConfrontationObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }
+void ConfrontationObjective::onCoolDown(const ActorReference actorRef, ActorIndex thisActor, Area& area)
 {
 	const auto& [actorsPtr, target] = area.m_simulation.m_actors.getDataLocation(m_target);
 	if(actorsPtr != &area.getActors())
@@ -185,7 +185,7 @@ void ConfrontationObjective::onCoolDown(const ActorReference actorRef, const Act
 		reset(area, thisActor);
 	}
 	Actors& actors = *actorsPtr;
-	const ActorIndex actor = actorRef.getIndex(actors.m_referenceData);
+	ActorIndex actor = actorRef.getIndex(actors.m_referenceData);
 	// Stop if someone is unconcious or dead.
 	if(
 		!actors.isAlive(target) || !actors.sleep_isAwake(target) ||
@@ -255,7 +255,7 @@ void ConfrontationObjective::onTargetCoolDown(const ActorReference actor, Area& 
 	onCoolDown(actor, target, area);
 	bool finished = false;
 	Actors& actors = *actorsPtr;
-	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(!actors.isAlive(actorIndex))
 	{
 		m_targetIsWinner = true;
@@ -271,7 +271,7 @@ void ConfrontationObjective::onTargetCoolDown(const ActorReference actor, Area& 
 	if(finished)
 		finalize(area, actorIndex);
 }
-void ConfrontationObjective::finalize(Area& area, const ActorIndex actor)
+void ConfrontationObjective::finalize(Area& area, ActorIndex actor)
 {
 	m_phaseEvent.maybeUnschedule();
 	m_actorCoolDownEvent.maybeUnschedule();
@@ -314,11 +314,11 @@ void ConfrontationObjective::finalize(Area& area, const ActorIndex actor)
 	actors.objective_complete(target, actors.objective_getCurrent<FollowScriptSubObjective>(target));
 	actors.objective_complete(actor, *this);
 }
-void ConfrontationObjective::actorGoesOffScript(Area& area, const ActorIndex owningActor, const ActorIndex)
+void ConfrontationObjective::actorGoesOffScript(Area& area, ActorIndex owningActor, const ActorIndex)
 {
 	area.getActors().objective_canNotFulfillNeed(owningActor, *this);
 }
-bool ConfrontationObjective::targetYields(Area& area, const ActorIndex actor) const
+bool ConfrontationObjective::targetYields(Area& area, ActorIndex actor) const
 {
 	const auto& [actorsAtTargetArea, targetIndex] = area.m_simulation.m_actors.getDataLocation(m_target);
 	assert(actorsAtTargetArea->getArea().m_id == area.m_id);
@@ -329,7 +329,7 @@ bool ConfrontationObjective::targetYields(Area& area, const ActorIndex actor) co
 	const PsycologyWeight pain = actorsAtTargetArea->body_getPain(targetIndex);
 	return psycology.getValueFor(PsycologyAttribute::Courage) + psycology.getValueFor(PsycologyAttribute::Anger) > pain;
 }
-bool ConfrontationObjective::actorYields(Area& area, const ActorIndex actor) const
+bool ConfrontationObjective::actorYields(Area& area, ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	const Psycology& psycology = actors.psycology_getConst(actor);

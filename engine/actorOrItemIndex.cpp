@@ -7,7 +7,7 @@
 #include "items/items.h"
 #include "portables.h"
 #include <compare>
-void ActorOrItemIndex::followActor(Area& area, const ActorIndex actor) const
+void ActorOrItemIndex::followActor(Area& area, ActorIndex actor) const
 {
 	if(isActor())
 		area.getActors().followActor(m_index.toActor(), actor);
@@ -103,7 +103,7 @@ void ActorOrItemIndex::maybeSetStatic(Area& area) const
 {
 	if(isActor())
 	{
-		const ActorIndex index = m_index.toActor();
+		ActorIndex index = m_index.toActor();
 		Actors& actors = area.getActors();
 		if(!actors.isStatic(index))
 			actors.setStatic(index);
@@ -123,6 +123,37 @@ void ActorOrItemIndex::setStatic(Area& area) const
 	else
 		area.getItems().setStatic(m_index.toItem());
 }
+void ActorOrItemIndex::setCarrier(Area& area, ActorOrItemIndex carrier) const
+{
+	if(isActor())
+		area.getActors().setCarrier(m_index.toActor(), carrier);
+	else
+		area.getItems().setCarrier(m_index.toItem(), carrier);
+}
+void ActorOrItemIndex::setPilot(Area& area, ActorIndex pilot) const
+{
+	assert(area.getActors().mount_isPilot(pilot));
+	if(isActor())
+	{
+		// Do nothing, mount gets it's pilot on demand.
+	}
+	else
+		area.getItems().pilot_set(m_index.toItem(), pilot);
+}
+void ActorOrItemIndex::setOnDeck(Area& area, ActorOrItemIndex onDeckOf) const
+{
+	if(isActor())
+		area.getActors().onDeck_set(getActor(), onDeckOf);
+	else
+		area.getItems().onDeck_set(getItem(), onDeckOf);
+}
+ActorOrItemIndex ActorOrItemIndex::moveTo(Area& oldArea, Area& newArea) const
+{
+	if(isActor())
+		return ActorOrItemIndex::create(oldArea.getActors().moveTo(newArea.getActors(), m_index.toActor()));
+	else
+		return ActorOrItemIndex::create(oldArea.getItems().moveTo(newArea.getItems(), m_index.toItem()));
+}
 std::string ActorOrItemIndex::toS() const
 {
 	if(empty())
@@ -138,69 +169,111 @@ ActorOrItemReference ActorOrItemIndex::toReference(Area& area) const
 		output.setItem(area.getItems().m_referenceData.getReference(m_index.toItem()));
 	return output;
 }
-bool ActorOrItemIndex::isStatic(Area& area) const
+bool ActorOrItemIndex::isStatic(const Area& area) const
 {
 	if(isActor())
 		return area.getActors().isStatic(m_index.toActor());
 	else
 		return area.getItems().isStatic(m_index.toItem());
 }
-bool ActorOrItemIndex::isFollowing(Area& area) const
+bool ActorOrItemIndex::isFollowing(const Area& area) const
 {
 	if(isActor())
 		return area.getActors().isFollowing(m_index.toActor());
 	else
 		return area.getItems().isFollowing(m_index.toItem());
 }
-bool ActorOrItemIndex::isLeading(Area& area) const
+bool ActorOrItemIndex::isLeading(const Area& area) const
 {
 	if(isActor())
 		return area.getActors().isLeading(m_index.toActor());
 	else
 		return area.getItems().isLeading(m_index.toItem());
 }
-ActorOrItemIndex ActorOrItemIndex::getFollower(Area& area) const
+bool ActorOrItemIndex::hasPilot(const Area& area) const
+{
+	if(isActor())
+		return area.getActors().mount_hasPilot(m_index.toActor());
+	else
+		return area.getItems().pilot_exists(m_index.toItem());
+}
+ActorIndex ActorOrItemIndex::getPilot(const Area& area) const
+{
+	if(isActor())
+		return area.getActors().mount_getPilot(m_index.toActor());
+	else
+		return area.getItems().pilot_get(m_index.toItem());
+}
+bool ActorOrItemIndex::isPilot(const Area& area) const
+{
+	if(isActor())
+		return area.getActors().mount_isPilot(m_index.toActor());
+	else
+		return false;
+}
+const SmallSet<ActorOrItemIndex>& ActorOrItemIndex::getOnDeck(const Area& area) const
+{
+	if(isActor())
+		return area.getActors().onDeck_get(m_index.toActor());
+	else
+		return area.getItems().onDeck_get(m_index.toItem());
+}
+bool ActorOrItemIndex::deckHasContent(const Area& area) const
+{
+	if(isActor())
+		return area.getActors().onDeck_hasAnyContent(m_index.toActor());
+	else
+		return area.getItems().onDeck_hasAnyContent(m_index.toItem());
+}
+bool ActorOrItemIndex::isOnDeck(const Area& area) const
+{
+	if(isActor())
+		return area.getActors().onDeck_isOnDeck(m_index.toActor());
+	else
+		return area.getItems().onDeck_isOnDeck(m_index.toItem());
+}
+ActorOrItemIndex ActorOrItemIndex::getFollower(const Area& area) const
 {
 	if(isActor())
 		return area.getActors().getFollower(m_index.toActor());
 	else
 		return area.getItems().getFollower(m_index.toItem());
 }
-ActorOrItemIndex ActorOrItemIndex::getLeader(Area& area) const
+ActorOrItemIndex ActorOrItemIndex::getLeader(const Area& area) const
 {
 	if(isActor())
 		return area.getActors().getLeader(m_index.toActor());
 	else
 		return area.getItems().getLeader(m_index.toItem());
 }
-bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, const Point3D destination, const Point3D origin) const
+bool ActorOrItemIndex::canEnterCurrentlyFrom(const Area& area, Point3D destination, Point3D origin) const
 {
 	if(isActor())
 	{
-		Actors& actors = area.getActors();
+		const Actors& actors = area.getActors();
 		ShapeId shape = actors.getShape(m_index.toActor());
-		auto& occupied = actors.getOccupied(m_index.toActor());
+		const auto& occupied = actors.getOccupied(m_index.toActor());
 		return area.getSpace().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 	else
 	{
-		Items& items = area.getItems();
+		const Items& items = area.getItems();
 		ShapeId shape = items.getShape(m_index.toItem());
-		auto& occupied = items.getOccupied(m_index.toItem());
+		const auto& occupied = items.getOccupied(m_index.toItem());
 		return area.getSpace().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 }
-bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const Point3D destination, const Point3D origin, const CuboidSet& occupied) const
+bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(const Area& area, Point3D destination, Point3D origin, const CuboidSet& occupied) const
 {
 	if(isActor())
 	{
-		Actors& actors = area.getActors();
+		const Actors& actors = area.getActors();
 		ShapeId shape = actors.getShape(m_index.toActor());
 		return area.getSpace().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 	else
 	{
-		Items& items = area.getItems();
+		const Items& items = area.getItems();
 		ShapeId shape = items.getShape(m_index.toItem());
 		return area.getSpace().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
@@ -218,7 +291,7 @@ bool ActorOrItemIndex::isAdjacent(const Area& area, const ActorOrItemIndex other
 	const CuboidSet& otherOccupied = other.getOccupied(const_cast<Area&>(area));
 	return isActor() ? area.getActors().isAdjacentToAnyCuboid(m_index.toActor(), otherOccupied) : area.getItems().isAdjacentToAnyCuboid(m_index.toItem(), otherOccupied);
 }
-bool ActorOrItemIndex::isIntersectingOrAdjacentTo(const Area& area, const ActorIndex other) const
+bool ActorOrItemIndex::isIntersectingOrAdjacentTo(const Area& area, ActorIndex other) const
 {
 	return isActor() ? area.getActors().isIntersectingOrAdjacentTo(m_index.toActor(), other) : area.getItems().isIntersectingOrAdjacentTo(m_index.toItem(), other);
 }
@@ -226,7 +299,7 @@ bool ActorOrItemIndex::isIntersectingOrAdjacentTo(const Area& area, const ItemIn
 {
 	return isActor() ? area.getActors().isIntersectingOrAdjacentTo(m_index.toActor(), item) : area.getItems().isIntersectingOrAdjacentTo(m_index.toItem(), item);
 }
-bool ActorOrItemIndex::isAdjacentToActor(const Area& area, const ActorIndex other) const
+bool ActorOrItemIndex::isAdjacentToActor(const Area& area, ActorIndex other) const
 {
 	return isActor() ? area.getActors().isAdjacentToActor(m_index.toActor(), other) : area.getItems().isAdjacentToActor(m_index.toItem(), other);
 }
@@ -252,6 +325,18 @@ Quantity ActorOrItemIndex::getQuantity(const Area& area) const { return isActor(
 Mass ActorOrItemIndex::getSingleUnitMass(const Area& area) const { return isActor() ? area.getActors().getMass(m_index.toActor()) : area.getItems().getSingleUnitMass(m_index.toItem()); }
 FullDisplacement ActorOrItemIndex::getVolume(const Area& area) const { return isActor() ? area.getActors().getVolume(m_index.toActor()) : area.getItems().getVolume(m_index.toItem()); }
 bool ActorOrItemIndex::isGeneric(const Area& area) const {return isActor() ? false : area.getItems().isGeneric(m_index.toItem()); }
+ActorOrItemId ActorOrItemIndex::getId(const Area& area) const
+{
+	return isActor() ?
+		ActorOrItemId::create(area.getActors().getId(m_index.toActor())) :
+		ActorOrItemId::create(area.getItems().getId(m_index.toItem()));
+}
+ActorOrItemReference ActorOrItemIndex::getReference(const Area& area) const
+{
+	return isActor() ?
+		ActorOrItemReference::create(area.getActors().getReference(m_index.toActor())) :
+		ActorOrItemReference::create(area.getItems().getReference(m_index.toItem()));
+}
 std::strong_ordering ActorOrItemIndex::operator<=>(const ActorOrItemIndex other) const
 {
 	if(isActor())

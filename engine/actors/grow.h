@@ -10,8 +10,8 @@ class CanGrow final
 	ActorReference m_actor;
 	Percent m_percentGrown;
 public:
-	CanGrow(Area& area, const ActorIndex actor, const Percent pg);
-	CanGrow(Area& area, const Json& data, const ActorIndex actor);
+	CanGrow(Area& area, ActorIndex actor, const Percent pg);
+	CanGrow(Area& area, const Json& data, ActorIndex actor);
 	[[nodiscard]] Json toJson() const;
 	void updateGrowingStatus(Area& area);
 	void setGrowthPercent(Area& area, const Percent percent);
@@ -21,6 +21,7 @@ public:
 	void maybeStart(Area& area);
 	void increment(Area& area);
 	void unschedule();
+	void onMove(Area& newArea, ActorReference newReference);
 	[[nodiscard]] bool canGrowCurrently(Area& area) const;
 	[[nodiscard]] Percent growthPercent() const;
 	[[nodiscard]] Percent& growthPercentReference();

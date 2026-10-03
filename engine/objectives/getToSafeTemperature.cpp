@@ -5,7 +5,7 @@
 #include "../path/pathRequest.h"
 #include "../path/areaHasPaths.hpp"
 //TODO: Detour locked to true for emergency moves.
-GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& objective, const ActorIndex actorIndex) :
+GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& objective, ActorIndex actorIndex) :
 	m_objective(objective)
 {
 	Actors& actors = area.getActors();
@@ -87,7 +87,7 @@ Json GetToSafeTemperatureObjective::toJson() const
 	data["noWhereSafeFound"] = m_noWhereWithSafeTemperatureFound;
 	return data;
 }
-void GetToSafeTemperatureObjective::execute(Area& area, const ActorIndex actor)
+void GetToSafeTemperatureObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(m_noWhereWithSafeTemperatureFound)
@@ -106,8 +106,8 @@ void GetToSafeTemperatureObjective::execute(Area& area, const ActorIndex actor)
 	else
 		actors.move_pathRequestRecord(actor, std::make_unique<GetToSafeTemperaturePathRequest>(area, *this, actor));
 }
-void GetToSafeTemperatureObjective::cancel(Area& area, const ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
-void GetToSafeTemperatureObjective::reset(Area& area, const ActorIndex actor)
+void GetToSafeTemperatureObjective::cancel(Area& area, ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
+void GetToSafeTemperatureObjective::reset(Area& area, ActorIndex actor)
 {
 	cancel(area, actor);
 	m_noWhereWithSafeTemperatureFound = false;

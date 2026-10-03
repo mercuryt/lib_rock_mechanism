@@ -25,15 +25,15 @@ void drawInfoPopUp::begin(const std::string& title)
 void drawInfoPopUp::end(Window& window)
 {
 	if(ImGui::Button("close"))
-		window.m_gameOverlay.m_infoPopUp = InfoPopUpId::Null;
+		window.m_areaOverlay.m_infoPopUp = InfoPopUpId::Null;
 	ImGui::End();
 }
 void drawInfoPopUp::actor(Window& window)
 {
 	Actors& actors = window.m_area->getActors();
 	Items& items = window.m_area->getItems();
-	const ActorReference actorRef = window.m_gameOverlay.m_detailActor;
-	const ActorIndex actor = actorRef.getIndex(actors.m_referenceData);
+	const ActorReference actorRef = window.m_areaOverlay.m_detailActor;
+	ActorIndex actor = actorRef.getIndex(actors.m_referenceData);
 	begin(actors.getName(actor));
 	ImGui::BeginTable("basic", 2);
 	ImGuiText("species");
@@ -51,7 +51,7 @@ void drawInfoPopUp::actor(Window& window)
 	{
 		const ItemIndex item = itemRef.getIndex(items.m_referenceData);
 		if(ImGuiButton(items.description(item)))
-			window.m_gameOverlay.showInfoPopUpForItem(itemRef);
+			window.m_areaOverlay.showInfoPopUpForItem(itemRef);
 	}
 	if(ImGui::Button("Priorities"))
 		window.showObjectivePriorities(actorRef);
@@ -77,13 +77,13 @@ void drawInfoPopUp::actor(Window& window)
 	if(ImGui::Button("details"))
 	{
 		window.m_panel = PanelId::ActorDetails;
-		window.m_gameOverlay.m_infoPopUp = InfoPopUpId::Null;
+		window.m_areaOverlay.m_infoPopUp = InfoPopUpId::Null;
 	}
 	if(window.m_editMode)
 		if(ImGui::Button("edit"))
 		{
 			window.m_panel = PanelId::EditActor;
-			window.m_gameOverlay.m_infoPopUp = InfoPopUpId::Null;
+			window.m_areaOverlay.m_infoPopUp = InfoPopUpId::Null;
 		}
 	end(window);
 }
@@ -91,7 +91,7 @@ void drawInfoPopUp::item(Window& window)
 {
 	Items& items = window.m_area->getItems();
 	Actors& actors = window.m_area->getActors();
-	const ItemReference itemRef = window.m_gameOverlay.m_detailItem;
+	const ItemReference itemRef = window.m_areaOverlay.m_detailItem;
 	const ItemIndex item = itemRef.getIndex(items.m_referenceData);
 	std::string title = MaterialType::getName(items.getMaterialType(item)) + ItemType::getName(items.getItemType(item));
 	drawInfoPopUp::begin(title);
@@ -124,7 +124,7 @@ void drawInfoPopUp::item(Window& window)
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
 			if(ImGuiButton(items.description(cargoItem)))
-				window.m_gameOverlay.showInfoPopUpForItem(items.getReference(cargoItem));
+				window.m_areaOverlay.showInfoPopUpForItem(items.getReference(cargoItem));
 			if(window.m_editMode)
 			{
 				ImGui::TableNextColumn();
@@ -136,10 +136,10 @@ void drawInfoPopUp::item(Window& window)
 			}
 		}
 		ImGui::EndTable();
-		for(const ActorIndex actor : items.cargo_getActors(item))
+		for(ActorIndex actor : items.cargo_getActors(item))
 		{
 			if(ImGuiButton(actors.getName(actor)))
-				window.m_gameOverlay.showInfoPopUpForActor(actors.getReference(actor));
+				window.m_areaOverlay.showInfoPopUpForActor(actors.getReference(actor));
 		}
 	}
 	end(window);
@@ -148,7 +148,7 @@ void drawInfoPopUp::point(Window& window)
 {
 	Items& items = window.m_area->getItems();
 	Actors& actors = window.m_area->getActors();
-	Point3D point = window.m_gameOverlay.m_detailPoint;
+	Point3D point = window.m_areaOverlay.m_detailPoint;
 	Space& space = window.m_area->getSpace();
 	std::string coordinates = point.x().toS() + "," + point.y().toS() + "," + point.z().toS();
 	drawInfoPopUp::begin(coordinates);
@@ -177,18 +177,18 @@ void drawInfoPopUp::point(Window& window)
 				ImGuiText((name + " " + MaterialType::getName(pointFeature.materialType)));
 			}
 		}
-		for(const ActorIndex actor : space.actor_getAll(point))
+		for(ActorIndex actor : space.actor_getAll(point))
 			if(ImGuiButton(actors.getName(actor)))
-				window.m_gameOverlay.showInfoPopUpForActor(actors.getReference(actor));
+				window.m_areaOverlay.showInfoPopUpForActor(actors.getReference(actor));
 		for(const ItemIndex item : space.item_getAll(point))
 			if(ImGuiButton(items.description(item)))
-				window.m_gameOverlay.showInfoPopUpForItem(items.getReference(item));
+				window.m_areaOverlay.showInfoPopUpForItem(items.getReference(item));
 		if(space.plant_exists(point))
 		{
 			const PlantIndex plant = space.plant_get(point);
 			const Plants& plants = window.m_area->getPlants();
 			if(ImGuiButton(PlantSpecies::getName(plants.getSpecies(plant))))
-				window.m_gameOverlay.showInfoPopUpPlant(point);
+				window.m_areaOverlay.showInfoPopUpPlant(point);
 		}
 		ImGui::BeginTable("fluid", 2);
 		for(const FluidData& fluidData : space.fluid_getAll(point))
@@ -210,7 +210,7 @@ void drawInfoPopUp::point(Window& window)
 			const FarmField& field = *space.farm_get(point, window.m_faction);
 			ImGuiText(((field.m_plantSpecies.exists() ? PlantSpecies::getName(field.m_plantSpecies) + " " : "") + "field"));
 		}
-		if(space.isExposedToSky(window.m_gameOverlay.m_detailPoint))
+		if(space.isExposedToSky(window.m_areaOverlay.m_detailPoint))
 			ImGuiText("exposed to sky");
 	}
 	ImGuiText(("temperature: " + displayData::formatTemperature(space.temperature_get(point))));
@@ -218,7 +218,7 @@ void drawInfoPopUp::point(Window& window)
 }
 void drawInfoPopUp::plant(Window& window)
 {
-	Point3D point = window.m_gameOverlay.m_detailPoint;
+	Point3D point = window.m_areaOverlay.m_detailPoint;
 	Plants& plants = window.m_area->getPlants();
 	Space& space = window.m_area->getSpace();
 	PlantIndex plant = space.plant_get(point);

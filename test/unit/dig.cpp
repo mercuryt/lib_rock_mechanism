@@ -378,7 +378,7 @@ TEST_CASE("dig")
 		// Another step to path to the pick.
 		simulation.doStep();
 		// Destroying the pick triggers a dishonor callback which resets the project.
-		items.destroy(pick);
+		items.remove(pick);
 		CHECK(project.getWorkers().empty());
 		CHECK(!project.reservationsComplete());
 		CHECK(!project.hasCandidate(dwarf1));

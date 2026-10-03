@@ -72,7 +72,7 @@ void PointsExposedToSky::maybeSetCuboid(Area& area, const Cuboid cuboid)
 	area.m_hasTemperature.markToUpdate(exposed);
 	// Mark actors and items as being on surface.
 	Actors& actors = area.getActors();
-	space.actor_queryForEach(exposed, [&](const ActorIndex actor){
+	space.actor_queryForEach(exposed, [&](ActorIndex actor){
 		actors.setOnSurface(actor, true);
 	});
 	Items& items = area.getItems();
@@ -114,7 +114,7 @@ void PointsExposedToSky::maybeUnsetBeneathTopLayer(Area& area, const Cuboid cubo
 	});
 	// unmark actors and items as being on surface.
 	Actors& actors = area.getActors();
-	space.actor_queryForEach(shadow, [&](const ActorIndex actor){
+	space.actor_queryForEach(shadow, [&](ActorIndex actor){
 		actors.setOnSurface(actor, false);
 	});
 	Items& items = area.getItems();

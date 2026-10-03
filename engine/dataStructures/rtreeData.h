@@ -38,6 +38,7 @@ class RTreeData
 	static constexpr RTreeDataConfig config = config_;
 	using BitSet = BitSet64;
 	using OpenList = ThreadStripedWatermarkingStack<RTreeNodeIndex>;
+	using OpenListMaybeRecursive = SmallSet<RTreeNodeIndex>;
 
 	union DataOrChild { T::Primitive data; RTreeNodeIndex::Primitive child; };
 	class Node
@@ -101,8 +102,8 @@ class RTreeData
 	void clearAllContainedWithValueRecursive(Node& parent, const Cuboid cuboid, const T& value);
 	void addToNodeRecursive(const RTreeNodeIndex index, const Cuboid cuboid, const T& value);
 	// Removes intersecting leaves and contained branches. Intersecting branches are added to openList.
-	void removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, OpenList& openList);
-	void removeFromNodeWithValue(const RTreeNodeIndex index, const Cuboid cuboid, OpenList& openList, const T& value);
+	void removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, auto& openList);
+	void removeFromNodeWithValue(const RTreeNodeIndex index, const Cuboid cuboid, auto& openList, const T& value);
 	void removeFromNodeByMask(Node& node, const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
 	void removeFromNodeByMask(Node& node, BitSet mask);
 	void updateBoundriesMaybe(const SmallSet<RTreeNodeIndex>& indices);
@@ -115,13 +116,13 @@ class RTreeData
 	void defragment();
 	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
 	void sort();
-	static void addIntersectedChildrenToOpenList(const Node& node, const BitSet intersecting, OpenList& openList);
+	static void addIntersectedChildrenToOpenList(const Node& node, const BitSet intersecting, auto& openList);
 	[[nodiscard]] bool canOverlap(const T&, const T&) const { return true; }
 	[[nodiscard]] bool canMerge(const Cuboid, const Cuboid) const { return true; }
 public:
 	RTreeData();
 	void beforeJsonLoad();
-	void maybeInsert(const Cuboid cuboid, const T& value);
+	void maybeInsert(Cuboid cuboid, const T& value);
 	void maybeRemove(const Cuboid cuboid, const T& value);
 	void maybeRemove(const Cuboid cuboid);
 	void maybeInsert(const CuboidSet& cuboids, const T& value);
@@ -160,6 +161,7 @@ public:
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] CuboidSet getLeafCuboids() const;
 	[[nodiscard]] Distance distanceWithCondition(Point3D point, Distance maxRange, auto&& condition) const;
+	GDB_CALLABLE std::vector<int> getUniqueHighZ() const;
 	[[nodiscard]] SmallSet<T> getAllWithCondition(auto&& condition) const
 	{
 		SmallSet<T> output;
@@ -221,7 +223,7 @@ public:
 	template<UpdateActionConfig queryConfig>
 	void updateActionWithCondition(const auto& shape, auto&& action, const auto& condition)
 	{
-		OpenList openList;
+		OpenListMaybeRecursive openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		bool found = false;
 		// Track space which was not updated. If queryConfig.create is true then fill this space in at the end with the result of action(T::create(nullPrimitive)).
@@ -372,6 +374,11 @@ public:
 		constexpr UpdateActionConfig queryConfig{.allowNotFound = true};
 		updateAction<queryConfig>(shape, action);
 	}
+	void updateActionOne(const auto& shape, auto&& action)
+	{
+		constexpr UpdateActionConfig queryConfig{.stopAfterOne = true};
+		updateAction<queryConfig>(shape, action);
+	}
 	void updateOrCreateActionOne(const auto& shape, auto&& action)
 	{
 		constexpr UpdateActionConfig queryConfig{.create = true, .stopAfterOne = true};
@@ -480,9 +487,32 @@ public:
 		}
 		return false;
 	}
-	[[nodiscard]] bool queryAnyWithCondition(const auto& shape, const auto& condition) const
+	[[nodiscard]] bool queryAnyNot(const auto& shape) const
 	{
 		OpenList openList;
+		openList.insert(RTreeNodeIndex::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			if(leafCount != 0 && intersectMask.head(leafCount).any())
+				return false;
+			if(node.hasChildren())
+			{
+				BitSet intersectBitSet = BitSet::create(intersectMask);
+				intersectBitSet.clearAllBefore(leafCount);
+				addIntersectedChildrenToOpenList(node, intersectBitSet, openList);
+			}
+		}
+		return true;
+	}
+	[[nodiscard]] bool queryAnyWithCondition(const auto& shape, const auto& condition) const
+	{
+		OpenListMaybeRecursive openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
@@ -593,7 +623,7 @@ public:
 	}
 	[[nodiscard]] std::pair<T, Cuboid> queryGetOneWithCuboidAndCondition(const auto& shape, const auto& condition) const
 	{
-		OpenList openList;
+		OpenListMaybeRecursive openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
@@ -681,7 +711,7 @@ public:
 	}
 	void queryForEachWithCuboids(const auto& shape, auto&& action) const
 	{
-		OpenList openList;
+		OpenListMaybeRecursive openList;
 		SmallSet<T> output;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
@@ -1073,7 +1103,7 @@ public:
 	}
 	[[nodiscard]] T queryNearestWithCondition(const auto& shape, const Point3D location, auto&& condition) const
 	{
-		OpenList openList;
+		OpenListMaybeRecursive openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		Distance closestDistance = Distance::max();
 		T output;

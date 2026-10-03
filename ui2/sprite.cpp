@@ -39,16 +39,16 @@ Sprite::Sprite(const std::string& name)
 	u1 = (float)(source.x + source.w) / sheetWidth;
 	v1 = (float)(source.y + source.h) / sheetHeight;
 }
-void Sprite::draw(Window& window, const SDL_Rect& destination) const
+void Sprite::drawArea(Window& window, const SDL_Rect& destination) const
 {
 	assert(initalized());
 	window.m_renderBuffer.add(*this, destination);
 }
-void Sprite::draw(Window& window, const Point3D point) const
+void Sprite::drawArea(Window& window, const Point3D point) const
 {
 	const auto& scale = displayData::defaultScale;
 	SDL_Rect destination{point.x().get() * scale, window.invertY(point.y()).get() * scale, source.w, source.h};
-	draw(window, destination);
+	drawArea(window, destination);
 }
 void Sprite::drawRotated90CWAndTinted(Window& window, const Point3D point, const SDL_Color color) const
 {
@@ -96,6 +96,18 @@ void Sprite::drawTintedAndRightAlignedAndOffsetNorthAndEast(Window& window, cons
 	SDL_Rect destination{(point.x().get() * scale) + alignmentOffset + offset, (window.invertY(point.y()).get() * scale) - offset, source.w, source.h};
 	drawTinted(window, destination, color);
 }
+void Sprite::drawTintedAndRightAlignedAndOffsetSouthWest(Window& window, const Point3D point, const SDL_Color color, const int offset) const
+{
+	const auto& scale = displayData::defaultScale;
+	int alignmentOffset = scale - source.w;
+	SDL_Rect destination{
+		(point.x().get() * scale) + alignmentOffset - offset,
+		(window.invertY(point.y()).get() * scale) + offset,
+		source.w,
+		source.h
+	};
+	drawTinted(window, destination, color);
+}
 void Sprite::drawRepeated(Window& window, const Cuboid cuboid) const
 {
 	drawRepeatedAndTinted(window, cuboid, SDL_Color{255,255,255,255});
@@ -130,6 +142,21 @@ void Sprite::drawRepeatedAndTintedAndOffsetNorth(Window& window, const Cuboid cu
 	assert(initalized());
 	window.m_renderBuffer.addTiled(*this, destination, w, h, color);
 }
+void Sprite::drawRepeatedAndTintedAndOffsetSouthWest(Window& window, const Cuboid cuboid, const SDL_Color color, const int offset) const
+{
+	const auto& scale = displayData::defaultScale;
+	int w = cuboid.sizeX().get();
+	int h = cuboid.sizeY().get();
+	SDL_Rect destination
+	{
+		(cuboid.m_low.x().get() * scale) - offset,
+		(window.invertY(cuboid.m_high.y()).get() * scale) + offset,
+		w * source.w,
+		h * source.h
+	};
+	assert(initalized());
+	window.m_renderBuffer.addTiled(*this, destination, w, h, color);
+}
 void Sprite::drawRepeatedVerticallyAndTintedAndRightAligned(Window& window, const Cuboid cuboid, const SDL_Color color) const
 {
 	const auto& scale = displayData::defaultScale;
@@ -154,6 +181,21 @@ void Sprite::drawRepeatedVerticallyAndTintedAndRightAlignedAndOffsetEast(Window&
 	{
 		(cuboid.m_low.x().get() * scale) + offset + alignmentOffset,
 		window.invertY(cuboid.m_high.y()).get() * scale,
+		source.w,
+		h * source.h
+	};
+	assert(initalized());
+	window.m_renderBuffer.addTiled(*this, destination, 1, h, color);
+}
+void Sprite::drawRepeatedVerticallyAndTintedAndRightAlignedAndOffsetSouthWest(Window& window, const Cuboid cuboid, const SDL_Color color, const int offset) const
+{
+	const auto& scale = displayData::defaultScale;
+	int h = cuboid.sizeY().get();
+	int alignmentOffset = scale - source.w;
+	SDL_Rect destination
+	{
+		(cuboid.m_low.x().get() * scale) + alignmentOffset - offset,
+		window.invertY(cuboid.m_high.y()).get() * scale + offset,
 		source.w,
 		h * source.h
 	};
@@ -224,6 +266,22 @@ void Sprite::drawScaledAndTinted(Window& window, const Point3D point, const floa
 	destination.x = destination.x + (scale / 2) - (destination.w / 2);
 	destination.y = destination.y + (scale / 2) - (destination.h / 2);
 	drawTinted(window, destination, color);
+}
+void Sprite::drawScaledAndOffsetSouthWest(Window& window, const Point3D point, float scale, int offset) const
+{
+	const auto& baseScale = displayData::defaultScale;
+	int w = (float)baseScale * scale;
+	int h = w;
+	SDL_Rect destination{point.x().get() * baseScale, window.invertY(point.y()).get()  * baseScale, w, h};
+	destination.x = destination.x + (scale / 2) - (destination.w / 2) - offset;
+	destination.y = destination.y + (scale / 2) - (destination.h / 2) + offset;
+	drawArea(window, destination);
+}
+void Sprite::drawRepeatedAndScaledAndOffsetSouthWest(Window& window, const CuboidSet& cuboids, float scale, int offset) const
+{
+	for(Cuboid cuboid : cuboids)
+		for(Point3D point : cuboid)
+			drawScaledAndOffsetSouthWest(window, point, scale, offset);
 }
 bool Sprite::initalized() const
 {

@@ -42,7 +42,7 @@ public:
 	void setOffsetOfActorInCurrentFormation(const ActorId actor, const Offset3D offset);
 	void setName(const std::string& name);
 	void createFormationWithCurrentPositions(const std::string& name, Area& area);
-	void updateActorIndex(const ActorIndex oldIndex, const ActorIndex newIndex);
+	void updateActorIndex(ActorIndex oldIndex, ActorIndex newIndex);
 	void setCurrentArea(const Area& area);
 	[[nodiscard]] const std::string& getName() const;
 	[[nodiscard]] ActorId& getCommander();

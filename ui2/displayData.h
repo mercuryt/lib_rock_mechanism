@@ -82,6 +82,7 @@ namespace displayData
 	inline constexpr SDL_Color areaOutlineColor{255,255,255,255}; // White
 	inline constexpr SDL_Color allowedColor{0,255,0,255}; // Green
 	inline constexpr SDL_Color notAllowedColor{255,0,0,255}; // Red
+	inline constexpr SDL_Color roadColor{97,42,7,255}; // Dark Brown
 	inline constexpr int areaOutlineWidth(4);
 	inline constexpr int progressBarThickness(10);
 	inline constexpr int progressBarOutlineThickness(1);
@@ -94,8 +95,13 @@ namespace displayData
 	inline constexpr int selectThickness(2);
 	inline constexpr int textSpacing(2);
 	inline constexpr int textSize(16);
+	inline constexpr int offsetToTheSouthWestInPixelsPerZLevelDrawDistance(2);
+	inline constexpr int unitsOfFlowRatePerRiverDisplayThickness(100);
+	inline constexpr int roadThickness(5);
+	inline constexpr int minimumNumberOfTreesToDisplayOnMapAs100Percent(2000);
 
 	std::string localizeNumber(double number);
 	std::string formatTemperature(Temperature temperature);
+	SDL_Color darkenColor(SDL_Color base, float factor);
 	void load();
 }

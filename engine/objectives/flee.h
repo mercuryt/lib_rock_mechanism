@@ -21,10 +21,10 @@ class FleeObjective final : public Objective
 public:
 	FleeObjective() : Objective(Config::fleePriority) { }
 	FleeObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex actor);
-	void cancel(Area& area, const ActorIndex actor);
-	void delay(Area& area, const ActorIndex actor) { cancel(area, actor); }
-	void reset(Area& area, const ActorIndex actor);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor);
 	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("flee").getId(); }
 	[[nodiscard]] Json toJson() const { return Objective::toJson(); }
 	[[nodiscard]] std::string name() const { return "flee"; }
@@ -35,7 +35,7 @@ class FleePathRequest final : public PathRequest
 {
 	FleeObjective& m_objective;
 public:
-	FleePathRequest(Area& area, FleeObjective& objective, const ActorIndex actorIndex);
+	FleePathRequest(Area& area, FleeObjective& objective, ActorIndex actorIndex);
 	FleePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
 	void writeStep(Area& area, bool useCurrentLocation) override;

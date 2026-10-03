@@ -41,6 +41,14 @@ std::string displayData::formatTemperature(Temperature temperature)
 			std::unreachable();
 	}
 }
+SDL_Color displayData::darkenColor(SDL_Color base, float factor)
+{
+	auto output = base;
+	output.r *= factor;
+	output.b *= factor;
+	output.g *= factor;
+	return output;
+}
 void displayData::load()
 {
 	std::filesystem::path path = definitions::path/"display";

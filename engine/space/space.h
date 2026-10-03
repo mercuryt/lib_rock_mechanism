@@ -557,11 +557,14 @@ public:
 	// -Movement and pathing.
 	// TODO: Some methods from shape probably belong here instead.
 	void move_removeUnenterableFrom(CuboidSet& cuboids) const;
+	void move_removeUnenterableFrom(CuboidSet& cuboids, MoveTypeId moveType) const;
 	[[nodiscard]] SmallSet<Cuboid> move_splitCuboidByPartitions(Cuboid cuboid) const;
 	[[nodiscard]] CuboidSet move_queryPathable(Cuboid cuboid, MoveTypeId moveType) const;
 	[[nodiscard]] bool move_cuboidCanBeEnteredFrom(Cuboid from, Cuboid to, MoveTypeId moveType) const;
 	[[nodiscard]] bool move_partitionExistsBetween(Cuboid a, Cuboid b) const;
 	[[nodiscard]] bool move_canSwimInAny(Cuboid cuboid, MoveTypeId moveType) const;
+	[[nodiscard]] bool move_containsUnenterable(Cuboid cuboid) const;
+	[[nodiscard]] bool move_containsUnenterableForMoveType(Cuboid cuboid, MoveTypeId moveType) const;
 	// -FarmField
 	void farm_insert(const auto& shape, FactionId  faction, FarmField& farmField) { m_farmFields.getOrCreate(faction).insert(shape, RTreeDataWrapper<FarmField*, nullptr>(&farmField)); }
 	template<typename ShapeT>

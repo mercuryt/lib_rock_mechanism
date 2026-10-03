@@ -26,7 +26,7 @@ SmallSet<Point3D> LinePath::toPoints() const
 			output.insert(point);
 			if(point == line.end)
 				break;
-			accumulator += line.sloap;
+			accumulator += line.slope;
 			for(i = 0; i != 3; ++i)
 			{
 				if(accumulator[i] >= 1.f)

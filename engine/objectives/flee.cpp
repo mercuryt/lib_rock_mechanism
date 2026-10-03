@@ -6,7 +6,7 @@
 
 // Objective.
 FleeObjective::FleeObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo) {}
-void FleeObjective::execute(Area& area, const ActorIndex actor)
+void FleeObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(actors.vision_canSeeEnemy(actor))
@@ -15,11 +15,11 @@ void FleeObjective::execute(Area& area, const ActorIndex actor)
 		// Actor has fled far enough.
 		actors.objective_complete(actor, *this);
 }
-void FleeObjective::cancel(Area& area, const ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
-void FleeObjective::reset(Area& area, const ActorIndex actor) { cancel(area, actor); }
+void FleeObjective::cancel(Area& area, ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
+void FleeObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }
 // Path Request.
 //TODO: Detour locked to true for emergency moves.
-FleePathRequest::FleePathRequest(Area& area, FleeObjective& objective, const ActorIndex actorIndex) :
+FleePathRequest::FleePathRequest(Area& area, FleeObjective& objective, ActorIndex actorIndex) :
 	m_objective(objective)
 {
 	Actors& actors = area.getActors();

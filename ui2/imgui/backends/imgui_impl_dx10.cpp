@@ -16,11 +16,11 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
-//  2026-01-19: DirectX11: Added 'SamplerNearest' in ImGui_ImplDX11_RenderState. Renamed 'SamplerDefault' to 'SamplerLinear'. 
+//  2026-01-19: DirectX11: Added 'SamplerNearest' in ImGui_ImplDX11_RenderState. Renamed 'SamplerDefault' to 'SamplerLinear'.
 //  2025-09-18: Call platform_io.ClearRendererHandlers() on shutdown.
 //  2025-06-11: DirectX10: Added support for ImGuiBackendFlags_RendererHasTextures, for dynamic font atlas.
 //  2025-05-07: DirectX10: Honor draw_data->FramebufferScale to allow for custom backends and experiment using it (consistently with other renderer backends, even though in normal condition it is not set under Windows).
-//  2025-01-06: DirectX10: Expose selected render state in ImGui_ImplDX10_RenderState, which you can access in 'void* platform_io.Renderer_RenderState' during draw callbacks.
+//  2025-01-06: DirectX10: Expose selected render state in ImGui_ImplDX10_RenderState, which you can access in 'void* platform_io.Renderer_RenderState' during drawArea callbacks.
 //  2024-10-07: DirectX10: Changed default texture sampler to Clamp instead of Repeat/Wrap.
 //  2022-10-11: Using 'nullptr' instead of 'NULL' as per our switch to C++11.
 //  2021-06-29: Reorganized backend to pull data from a single structure to facilitate usage with multiple-contexts (all g_XXXX access changed to bd->XXXX).

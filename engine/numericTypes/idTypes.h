@@ -213,3 +213,10 @@ public:
 	struct Hash { [[nodiscard]] size_t operator()(const SettlementId index) const { return index.get(); } };
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SettlementId, data);
 };
+using ExpeditionIdWidth = int32_t;
+class ExpeditionId : public StrongInteger<ExpeditionId, ExpeditionIdWidth, INT32_MAX, 0>
+{
+public:
+	struct Hash { [[nodiscard]] size_t operator()(const ExpeditionId index) const { return index.get(); } };
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ExpeditionId, data);
+};

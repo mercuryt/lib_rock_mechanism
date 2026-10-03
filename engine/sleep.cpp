@@ -19,7 +19,7 @@ TiredEvent::TiredEvent(Simulation& simulation, const Step step, MustSleep& ns, c
 void TiredEvent::execute(Simulation&, Area* area){ m_needsSleep.tired(*area); }
 void TiredEvent::clearReferences(Simulation&, Area*){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Needs Sleep.
-MustSleep::MustSleep(Area& area, const ActorIndex actor) :
+MustSleep::MustSleep(Area& area, ActorIndex actor) :
 	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule)
 {
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
@@ -30,7 +30,7 @@ void MustSleep::scheduleTiredEvent(Area& area)
 	Step frequency = AnimalSpecies::getStepsSleepFrequency(area.getActors().getSpecies(m_actor.getIndex(actors.m_referenceData)));
 	m_tiredEvent.schedule(area.m_simulation, frequency, *this);
 }
-MustSleep::MustSleep(Area& area, const Json& data, const ActorIndex actor) :
+MustSleep::MustSleep(Area& area, const Json& data, ActorIndex actor) :
 	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule),
 	m_location(data.contains("location") ? data["location"].get<Point3D>() : Point3D::null()),
 	m_needsSleep(data["needsSleep"].get<bool>()), m_isAwake(data["isAwake"].get<bool>())
@@ -162,4 +162,16 @@ void MustSleep::setLocation(const Point3D point)
 void MustSleep::unschedule()
 {
 	m_tiredEvent.maybeUnschedule();
+}
+void MustSleep::updateReference(ActorReference oldReference, ActorReference newReference, ActorReferenceData& dataStore)
+{
+	m_actor.moveAndUpdate(oldReference.getReferenceIndex(), newReference.getReferenceIndex(), dataStore);
+}
+void MustSleep::onMove(Area& newArea, ActorReference newReference)
+{
+	m_actor.moveAndUpdate(m_actor.getReferenceIndex(), newReference.getReferenceIndex(), newArea.getActors().m_referenceData);
+	m_tiredEvent.moveTo(newArea.m_eventSchedule);
+	m_sleepEvent.moveTo(newArea.m_eventSchedule);
+	if(newArea.hasSpace())
+		scheduleTiredEvent(newArea);
 }

@@ -4,7 +4,7 @@
 #include "area/area.h"
 #include "items/items.h"
 #include "onDestroy.h"
-GiveItemObjective::GiveItemObjective(Area& area, const ItemIndex item, const ActorIndex recipient) :
+GiveItemObjective::GiveItemObjective(Area& area, const ItemIndex item, ActorIndex recipient) :
 	Objective(Config::equipPriority)
 {
 
@@ -23,7 +23,7 @@ Json GiveItemObjective::toJson() const
 {
 	return {{"item", m_item}, {"recipient", m_recipient}};
 }
-void GiveItemObjective::execute(Area& area, const ActorIndex actor)
+void GiveItemObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
@@ -45,9 +45,9 @@ void GiveItemObjective::execute(Area& area, const ActorIndex actor)
 			actors.objective_canNotCompleteObjective(actor, *this);
 	}
 }
-void GiveItemObjective::cancel(Area& area, const ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }
-void GiveItemObjective::reset(Area& area, const ActorIndex actor) { cancel(area, actor); }
-void GiveItemObjective::createOnDestroyCallbacks(Area& area, const ActorIndex actor)
+void GiveItemObjective::cancel(Area& area, ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }
+void GiveItemObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }
+void GiveItemObjective::createOnDestroyCallbacks(Area& area, ActorIndex actor)
 {
 	Items& items = area.getItems();
 	ActorReference actorRef = area.getActors().m_referenceData.getReference(actor);

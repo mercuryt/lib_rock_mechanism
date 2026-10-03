@@ -63,7 +63,7 @@ DeckRotationData DeckRotationData::recordAndClearDependentPositions(Area& area, 
 	CuboidSet cuboidsContainingFluid;
 	if(actorOrItem.isActor())
 	{
-		const ActorIndex actor = actorOrItem.getActor();
+		ActorIndex actor = actorOrItem.getActor();
 		actorsOrItemsOnDeck = actors.onDeck_get(actor);
 	}
 	else
@@ -123,7 +123,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D pre
 	{
 		if(onDeck.isActor())
 		{
-			const ActorIndex actor = onDeck.getActor();
+			ActorIndex actor = onDeck.getActor();
 			// Update location.
 			const Offset3D location = data.location.translate(previousPivot, newPivot, previousFacing, newFacing);
 			assert(boundry.contains(location));
@@ -185,7 +185,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D pre
 		space.fluid_add(CuboidSet::create(Cuboid::create(newCuboid)), pair.second, pair.first);
 	}
 	// If an actor cannot reserve the rotated positions they must reset their objective.
-	for(const ActorIndex actor : actorsWhichCannotReserveRotatedPosition)
+	for(ActorIndex actor : actorsWhichCannotReserveRotatedPosition)
 		actors.objective_canNotCompleteSubobjective(actor);
 	// If a project cannot reserve the rotated positions it must reset if it can or otherwise cancel.
 	// Resetable projects are typically those created directly by the player, so they should not be cancled.
@@ -209,7 +209,7 @@ SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Ar
 		const DeckRotationDataSingle& data = iter->second;
 		if(onDeck.isActor())
 		{
-			const ActorIndex actor = onDeck.getActor();
+			ActorIndex actor = onDeck.getActor();
 			// Update location.
 			// If setting location fails then we rollback all locations set thus far and return the failing status.
 			const Offset3D offset = data.location.translate(previousPivot, newPivot, previousFacing, newFacing);
@@ -287,7 +287,7 @@ SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Ar
 		space.fluid_add(CuboidSet::create(newCuboid), pair.second, pair.first);
 	}
 	// If an actor cannot reserve the rotated positions they must reset their objective.
-	for(const ActorIndex actor : actorsWhichCannotReserveRotatedPosition)
+	for(ActorIndex actor : actorsWhichCannotReserveRotatedPosition)
 		actors.objective_canNotCompleteSubobjective(actor);
 	// If a project cannot reserve the rotated positions it must reset if it can or otherwise cancel.
 	// Resetable projects are typically those created directly by the player, so they should not be cancled.

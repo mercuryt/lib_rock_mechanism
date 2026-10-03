@@ -153,15 +153,15 @@ struct StrongInteger
 		return Derived::create(data * other);
 	}
 	[[nodiscard]] constexpr Derived operator-() const { assert(exists()); return create(-data); }
-	[[nodiscard]] constexpr Derived operator/(const This other) const { return (*this) / other.data; }
-	[[nodiscard]] constexpr Derived operator%(const This other) const { return (*this) % other.data; }
+	[[nodiscard]] constexpr Derived operator/(This other) const { return (*this) / other.data; }
+	[[nodiscard]] constexpr Derived operator%(This other) const { return (*this) % other.data; }
 	template<Numeric Other>
-	[[nodiscard]] constexpr Derived operator/(const Other other) const { assert(exists()); return Derived::create(data / other); }
+	[[nodiscard]] constexpr Derived operator/(Other other) const { assert(exists()); return Derived::create(data / other); }
 	template<Numeric Other>
-	[[nodiscard]] constexpr Derived operator%(const Other other) const { assert(exists()); return Derived::create(data % other); }
-	[[nodiscard]] constexpr Derived subtractWithMinimum(const This other) const { assert(other.exists()); return subtractWithMinimum(other.data); }
+	[[nodiscard]] constexpr Derived operator%(Other other) const { assert(exists()); return Derived::create(data % other); }
+	[[nodiscard]] constexpr Derived subtractWithMinimum(This other) const { assert(other.exists()); return subtractWithMinimum(other.data); }
 	template<Numeric Other>
-	[[nodiscard]] constexpr Derived subtractWithMinimum(const Other other) const
+	[[nodiscard]] constexpr Derived subtractWithMinimum(Other other) const
 	{
 		assert(exists());
 		if(other < 0)
@@ -169,9 +169,16 @@ struct StrongInteger
 		int result = (int)data - (int)other;
 		return Derived::create(result < (int)MIN_VALUE ? MIN_VALUE : result);
 	}
-	[[nodiscard]] constexpr Derived addWithMaximum(const This other) const { assert(other.exists()); return addWithMaximum(other.data); }
 	template<Numeric Other>
-	[[nodiscard]] constexpr Derived addWithMaximum(const Other other) const
+	[[nodiscard]] constexpr Derived subtractWithMinimum(Other other, Derived minValue) const
+	{
+		assert(exists());
+		int result = (int)data - (int)other;
+		return result > (int64_t)minValue.get() ? minValue : Derived::create(result);
+	}
+	[[nodiscard]] constexpr Derived addWithMaximum(This other) const { assert(other.exists()); return addWithMaximum(other.data); }
+	template<Numeric Other>
+	[[nodiscard]] constexpr Derived addWithMaximum(Other other) const
 	{
 		assert(exists());
 		if(other < 0)
@@ -179,6 +186,14 @@ struct StrongInteger
 		static_assert(MAX_VALUE < INT64_MAX);
 		int64_t result = (int64_t)data + (int64_t)other;
 		return Derived::create(result > (int64_t)MAX_VALUE ? MAX_VALUE : result);
+	}
+	template<Numeric Other>
+	[[nodiscard]] constexpr Derived addWithMaximum(Other other, Derived maxValue) const
+	{
+		assert(exists());
+		static_assert(maxValue < INT64_MAX);
+		int64_t result = (int64_t)data + (int64_t)other;
+		return result > (int64_t)maxValue.get() ? maxValue : Derived::create(result);
 	}
 	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const This index) const { return index.get(); } };
 };

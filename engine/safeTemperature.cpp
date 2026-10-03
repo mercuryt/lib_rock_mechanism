@@ -3,17 +3,17 @@
 #include "area/area.h"
 #include "definitions/animalSpecies.h"
 #include "objectives/getToSafeTemperature.h"
-UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, const ActorIndex a, const Step start) :
+UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, ActorIndex a, const Step start) :
 	ScheduledEvent(area.m_simulation, AnimalSpecies::getStepsTillDieInUnsafeTemperature(area.getActors().getSpecies(a)), start),
 	m_needsSafeTemperature(*area.getActors().m_needsSafeTemperature[a].get()) { }
 void UnsafeTemperatureEvent::execute(Simulation&, Area* area) { m_needsSafeTemperature.dieFromTemperature(*area); }
 void UnsafeTemperatureEvent::clearReferences(Simulation&, Area*) { m_needsSafeTemperature.m_event.clearPointer(); }
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, const ActorIndex a) :
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, ActorIndex a) :
 	m_event(area.m_eventSchedule)
 {
 	m_actor.setIndex(a, area.getActors().m_referenceData);
 }
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, const ActorIndex actor, Area& area) :
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, ActorIndex actor, Area& area) :
 	m_event(area.m_eventSchedule)
 {
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
@@ -53,9 +53,8 @@ void ActorNeedsSafeTemperature::dieFromTemperature(Area& area)
 }
 void ActorNeedsSafeTemperature::unschedule()
 {
-	m_event.unschedule();
+	m_event.maybeUnschedule();
 }
-
 void ActorNeedsSafeTemperature::setTemperature(Area& area, Temperature temperature)
 {
 	Actors& actors = area.getActors();
@@ -74,6 +73,15 @@ void ActorNeedsSafeTemperature::setTemperature(Area& area, Temperature temperatu
 	}
 	else
 		m_event.maybeUnschedule();
+}
+void ActorNeedsSafeTemperature::updateReference(ActorReference oldReference, ActorReference newReference, ActorReferenceData& dataStore)
+{
+	m_actor.moveAndUpdate(oldReference.getReferenceIndex(), newReference.getReferenceIndex(), dataStore);
+}
+void ActorNeedsSafeTemperature::onMove(Area& newArea, ActorReference newReference)
+{
+	m_actor.moveAndUpdate(m_actor.getReferenceIndex(), newReference.getReferenceIndex(), newArea.getActors().m_referenceData);
+	m_event.moveTo(newArea.m_eventSchedule);
 }
 bool ActorNeedsSafeTemperature::isSafe(Area& area, const Temperature temperature) const
 {

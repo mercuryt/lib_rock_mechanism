@@ -13,5 +13,6 @@ struct MakeRivers
 	MakeRivers(BuildWorld& buildWorld);
 	void makeHeadwaters();
 	void makeRivers();
+	void recordConnections();
 	[[nodiscard]] std::vector<Point3D> pathToRiverOrOcean(Point3D headwaters) const;
 };

@@ -15,15 +15,15 @@ protected:
 	std::string m_subject;
 	ActorReference m_recipient;
 public:
-	ConversationObjective(Area& area, const ActorIndex receipient, std::string&& subject = "chat", const Priority priority = Config::Social::socialPriorityLow);
-	ConversationObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex actor) override;
-	void cancel(Area& area, const ActorIndex actor) override;
-	void delay(Area& area, const ActorIndex actor) override;
-	void reset(Area& area, const ActorIndex actor) override;
-	void callback(Area& area, const ActorIndex actor);
-	void createOnDestroyCallback(Area& area, const ActorIndex actor);
-	void actorGoesOffScript(Area& area, const ActorIndex owningActor, const ActorIndex offScriptActor) override;
+	ConversationObjective(Area& area, ActorIndex receipient, std::string&& subject = "chat", const Priority priority = Config::Social::socialPriorityLow);
+	ConversationObjective(const Json& data, Area& area, ActorIndex actor, DeserializationMemo& deserializationMemo);
+	void execute(Area& area, ActorIndex actor) override;
+	void cancel(Area& area, ActorIndex actor) override;
+	void delay(Area& area, ActorIndex actor) override;
+	void reset(Area& area, ActorIndex actor) override;
+	void callback(Area& area, ActorIndex actor);
+	void createOnDestroyCallback(Area& area, ActorIndex actor);
+	void actorGoesOffScript(Area& area, ActorIndex owningActor, ActorIndex offScriptActor) override;
 	[[nodiscard]] constexpr std::string name() const override { return "conversation"; }
 	[[nodiscard]] Json toJson() const override;
 	[[nodiscard]] virtual constexpr Step getDuration() const { return Config::Social::conversationDurationSteps; }

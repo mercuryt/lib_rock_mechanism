@@ -20,10 +20,11 @@ class SimulationHasActors final
 	std::unordered_map<ActorId, ActorDataLocation, ActorId::Hash> m_actors;
 public:
 	[[nodiscard]] ActorId getNextId() { return ++m_nextId; }
-	void registerActor(const ActorId id, Actors& store, const ActorIndex index);
-	void removeActor(const ActorId id);
-	[[nodiscard]] const ActorIndex getIndexForId(const ActorId id) const;
-	[[nodiscard]] Area& getAreaForId(const ActorId id) const;
-	[[nodiscard]] const ActorDataLocation& getDataLocation(const ActorId id) const;
+	void registerActor(ActorId id, Actors& store, ActorIndex index);
+	void removeActor(ActorId id);
+	void update(ActorId id, Actors& store, ActorIndex index);
+	[[nodiscard]] ActorIndex getIndexForId(ActorId id) const;
+	[[nodiscard]] Area& getAreaForId(ActorId id) const;
+	[[nodiscard]] const ActorDataLocation& getDataLocation(ActorId id) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasActors, m_nextId);
 };

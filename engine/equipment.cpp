@@ -94,7 +94,7 @@ void EquipmentSet::removeGeneric(Area& area, const ItemTypeId itemType, const Ma
 	if(quantity == items.getQuantity(item))
 	{
 		m_equipments.erase(iter);
-		items.destroy(item);
+		items.remove(item);
 		m_wearableIsSorted = false;
 	}
 	else
@@ -197,7 +197,7 @@ Step EquipmentSet::getLongestMeleeWeaponCoolDown(Area& area) const
 	assert(output != 0);
 	return output;
 }
-bool EquipmentSet::canEquipCurrently(Area& area, const ActorIndex actor, const ItemIndex equipment) const
+bool EquipmentSet::canEquipCurrently(Area& area, ActorIndex actor, const ItemIndex equipment) const
 {
 	Items& items = area.getItems();
 	const ItemReference equipmentRef = items.m_referenceData.getReference(equipment);
@@ -249,7 +249,7 @@ ItemIndex EquipmentSet::getAmmoForRangedWeapon(Area& area, const ItemIndex weapo
 	}
 	return ItemIndex::null();
 }
-bool EquipmentSet::hasAnyEquipmentWithReservations(Area& area, const ActorIndex actor) const
+bool EquipmentSet::hasAnyEquipmentWithReservations(Area& area, ActorIndex actor) const
 {
 	FactionId faction = area.getActors().getFaction(actor);
 	Items& items = area.getItems();
@@ -264,6 +264,17 @@ void EquipmentSet::updateCarrierIndexForContents(Area& area, const ItemIndex new
 	Items& items = area.getItems();
 	for(const ItemReference item : m_equipments)
 		items.updateCarrierIndex(item.getIndex(items.m_referenceData), newIndex);
+}
+void EquipmentSet::moveContentsFromTo(Items& fromItems, Items& toItems, ActorIndex carrier)
+{
+	for(ItemReference& ref : m_equipments)
+	{
+		ItemIndex item = ref.getIndex(fromItems.m_referenceData);
+		ItemIndex newIndex = fromItems.moveTo(toItems, item);
+		ItemReference newReference = toItems.getReference(newIndex);
+		ref.moveAndUpdate(ref.getReferenceIndex(), newReference.getReferenceIndex(), toItems.m_referenceData);
+		toItems.setCarrier(newIndex, ActorOrItemIndex::create(carrier));
+	}
 }
 ItemIndex EquipmentSet::getFirstItemWithType(const Area& area, const ItemTypeId type) const
 {

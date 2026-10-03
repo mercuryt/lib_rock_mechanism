@@ -20,11 +20,11 @@ void contextMenu::controlls::woodcutting(Window& window)
 	{
 		Space& space = window.m_area->getSpace();
 		Plants& plants = window.m_area->getPlants();
-		ControllsState& state = window.m_gameOverlay.m_controllsState;
+		ControllsState& state = window.m_areaOverlay.m_controllsState;
 		SmallSet<PlantIndex> selected;
 		bool anyAreDesignatedForCutting = false;
-		if(window.m_gameOverlay.m_selectMode == SelectMode::Plants || window.m_gameOverlay.m_selectMode == SelectMode::Space)
-			space.plant_queryForEach(window.m_gameOverlay.m_selectedArea, [&](const PlantIndex& plant){
+		if(window.m_areaOverlay.m_selectMode == SelectMode::Plants || window.m_areaOverlay.m_selectMode == SelectMode::Space)
+			space.plant_queryForEach(window.m_areaOverlay.m_selectedArea, [&](const PlantIndex& plant){
 				if(plantIsValid(window, plant))
 				{
 					selected.insert(plant);

@@ -4,7 +4,7 @@
 #include "../area/area.h"
 #include "../actors/actors.h"
 #include "../fluidType.h"
-void Items::pilot_set(const ItemIndex item, const ActorIndex pilot)
+void Items::pilot_set(const ItemIndex item, ActorIndex pilot)
 {
 	assert(m_pilot[item].empty());
 	assert(m_onDeck[item].contains(ActorOrItemIndex::createForActor(pilot)));

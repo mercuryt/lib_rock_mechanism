@@ -267,7 +267,7 @@ CODE
    It is recommended you build and statically link the .cpp files as part of your project and NOT as a shared library (DLL).
  - You can later customize the imconfig.h file to tweak some compile-time behavior, such as integrating Dear ImGui types with your own maths types.
  - When using Dear ImGui, your programming IDE is your friend: follow the declaration of variables, functions and types to find comments about them.
- - Dear ImGui never touches or knows about your GPU state. The only function that knows about GPU is the draw function that you provide.
+ - Dear ImGui never touches or knows about your GPU state. The only function that knows about GPU is the drawArea function that you provide.
    Effectively it means you can create widgets at any time in your code, regardless of considerations of being in "update" vs "render"
    phases of your own application. All rendering information is stored into command-lists that you will retrieve after calling ImGui::Render().
  - Refer to the backends and demo applications in the examples/ folder for instruction on how to setup your code.
@@ -999,7 +999,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
  - 2016/09/25 (1.50) - style.WindowTitleAlign is now a ImVec2 (ImGuiAlign enum was removed). set to (0.5f,0.5f) for horizontal+vertical centering, (0.0f,0.0f) for upper-left, etc.
  - 2016/07/30 (1.50) - SameLine(x) with x>0.0f is now relative to left of column/group if any, and not always to left of window. This was sort of always the intent and hopefully, breakage should be minimal.
  - 2016/05/12 (1.49) - title bar (using ImGuiCol_TitleBg/ImGuiCol_TitleBgActive colors) isn't rendered over a window background (ImGuiCol_WindowBg color) anymore.
-                       If your TitleBg/TitleBgActive alpha was 1.0f or you are using the default theme it will not affect you, otherwise if <1.0f you need to tweak your custom theme to readjust for the fact that we don't draw a WindowBg background behind the title bar.
+                       If your TitleBg/TitleBgActive alpha was 1.0f or you are using the default theme it will not affect you, otherwise if <1.0f you need to tweak your custom theme to readjust for the fact that we don't drawArea a WindowBg background behind the title bar.
                        This helper function will convert an old TitleBg/TitleBgActive color into a new one with the same visual output, given the OLD color and the OLD WindowBg color:
                        ImVec4 ConvertTitleBgCol(const ImVec4& win_bg_col, const ImVec4& title_bg_col) { float new_a = 1.0f - ((1.0f - win_bg_col.w) * (1.0f - title_bg_col.w)), k = title_bg_col.w / new_a; return ImVec4((win_bg_col.x * win_bg_col.w + title_bg_col.x) * k, (win_bg_col.y * win_bg_col.w + title_bg_col.y) * k, (win_bg_col.z * win_bg_col.w + title_bg_col.z) * k, new_a); }
                        If this is confusing, pick the RGB value from title bar from an old screenshot and apply this as TitleBg/TitleBgActive. Or you may just create TitleBgActive from a tweaked TitleBg color.
@@ -5140,7 +5140,7 @@ int ImGui::GetFrameCount()
 
 static ImDrawList* GetViewportBgFgDrawList(ImGuiViewportP* viewport, size_t drawlist_no, const char* drawlist_name)
 {
-    // Create the draw list on demand, because they are not frequently used for all viewports
+    // Create the drawArea list on demand, because they are not frequently used for all viewports
     ImGuiContext& g = *GImGui;
     IM_ASSERT(drawlist_no < IM_COUNTOF(viewport->BgFgDrawLists));
     ImDrawList* draw_list = viewport->BgFgDrawLists[drawlist_no];
@@ -5482,7 +5482,7 @@ void ImGui::NewFrame()
     // Update texture list (collect destroyed textures, etc.)
     UpdateTexturesNewFrame();
 
-    // Setup current font and draw list shared data
+    // Setup current font and drawArea list shared data
     SetupDrawListSharedData();
     UpdateFontsNewFrame();
 
@@ -5842,10 +5842,10 @@ static void ImGui::RenderDimmedBackgroundBehindWindow(ImGuiWindow* window, ImU32
     ImGuiViewportP* viewport = (ImGuiViewportP*)GetMainViewport();
     ImRect viewport_rect = viewport->GetMainRect();
 
-    // Draw behind window by moving the draw command at the FRONT of the draw list
+    // Draw behind window by moving the drawArea command at the FRONT of the drawArea list
     {
         // We've already called AddWindowToDrawData() which called DrawList->ChannelsMerge() on DockNodeHost windows,
-        // and draw list have been trimmed already, hence the explicit recreation of a draw command if missing.
+        // and drawArea list have been trimmed already, hence the explicit recreation of a drawArea command if missing.
         // FIXME: This is creating complication, might be simpler if we could inject a drawlist in drawdata at a given position and not attempt to manipulate ImDrawCmd order.
         ImDrawList* draw_list = window->RootWindow->DrawList;
         if (draw_list->CmdBuffer.Size == 0)
@@ -5891,7 +5891,7 @@ static void ImGui::RenderDimmedBackgrounds()
 
     if (dim_bg_for_modal)
     {
-        // Draw dimming behind modal or a begin stack child, whichever comes first in draw order.
+        // Draw dimming behind modal or a begin stack child, whichever comes first in drawArea order.
         ImGuiWindow* dim_behind_window = FindBottomMostVisibleWindowWithinBeginStack(modal_window);
         RenderDimmedBackgroundBehindWindow(dim_behind_window, GetColorU32(modal_window->DC.ModalDimBgColor, g.DimBgRatio));
     }
@@ -7069,7 +7069,7 @@ static void ImGui::RenderWindowOuterBorders(ImGuiWindow* window)
         window->DrawList->AddRect(window->Pos, window->Pos + window->Size, border_col, window->WindowRounding, 0, window->WindowBorderSize);
     else if (border_size > 0.0f)
     {
-        if (window->ChildFlags & ImGuiChildFlags_ResizeX) // Similar code as 'resize_border_mask' computation in UpdateWindowManualResize() but we specifically only always draw explicit child resize border.
+        if (window->ChildFlags & ImGuiChildFlags_ResizeX) // Similar code as 'resize_border_mask' computation in UpdateWindowManualResize() but we specifically only always drawArea explicit child resize border.
             RenderWindowOuterSingleBorder(window, 1, border_col, border_size);
         if (window->ChildFlags & ImGuiChildFlags_ResizeY)
             RenderWindowOuterSingleBorder(window, 3, border_col, border_size);
@@ -7884,12 +7884,12 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
 
         // DRAWING
 
-        // Setup draw list and outer clipping rectangle
+        // Setup drawArea list and outer clipping rectangle
         IM_ASSERT(window->DrawList->CmdBuffer.Size == 1 && window->DrawList->CmdBuffer[0].ElemCount == 0);
         window->DrawList->PushTexture(g.Font->OwnerAtlas->TexRef);
         PushClipRect(host_rect.Min, host_rect.Max, false);
 
-        // Child windows can render their decoration (bg color, border, scrollbars, etc.) within their parent to save a draw call (since 1.71)
+        // Child windows can render their decoration (bg color, border, scrollbars, etc.) within their parent to save a drawArea call (since 1.71)
         // When using overlapping child windows, this will break the assumption that child z-order is mapped to submission order.
         // FIXME: User code may rely on explicit sorting of overlapping child window and would need to disable this somehow. Please get in contact if you are affected (github #4493)
         {
@@ -17059,13 +17059,13 @@ void ImGui::DebugNodeDrawList(ImGuiWindow* window, ImGuiViewportP* viewport, con
     if (draw_list == GetWindowDrawList())
     {
         SameLine();
-        TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "CURRENTLY APPENDING"); // Can't display stats for active draw list! (we don't have the data double-buffered)
+        TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "CURRENTLY APPENDING"); // Can't display stats for active drawArea list! (we don't have the data double-buffered)
         if (node_open)
             TreePop();
         return;
     }
 
-    ImDrawList* fg_draw_list = GetForegroundDrawList(window); // Render additional visuals into the top-most draw list
+    ImDrawList* fg_draw_list = GetForegroundDrawList(window); // Render additional visuals into the top-most drawArea list
     if (window && IsItemHovered() && fg_draw_list)
         fg_draw_list->AddRect(window->Pos, window->Pos + window->Size, IM_COL32(255, 255, 0, 255));
     if (!node_open)

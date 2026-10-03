@@ -249,6 +249,7 @@ void Config::load()
 	data["woodCuttingSkillModifier"].get_to(woodCuttingSkillModifier);
 	data["woodCuttingStrengthModifier"].get_to(woodCuttingStrengthModifier);
 	yokeDelaySteps = Step::create(data["yokeDelaySeconds"].get<float>() * stepsPerSecond.get());
+	expeditionArriveInterval = Step::create(data["expeditionArriveIntervalSeconds"].get<float>() * stepsPerSecond.get());
 	Social::load();
 	Physics::load();
 	World::load();

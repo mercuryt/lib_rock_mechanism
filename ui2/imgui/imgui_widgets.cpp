@@ -7291,7 +7291,7 @@ bool ImGui::CollapsingHeader(const char* label, bool* p_visible, ImGuiTreeNodeFl
 // - Selectable()
 //-------------------------------------------------------------------------
 
-// Tip: pass a non-visible label (e.g. "##hello") then you can use the space to draw other text or image.
+// Tip: pass a non-visible label (e.g. "##hello") then you can use the space to drawArea other text or image.
 // But you need to make sure the ID is unique, e.g. enclose calls in PushID/PopID or use ##unique_id.
 // With this scheme, ImGuiSelectableFlags_SpanAllColumns and ImGuiSelectableFlags_AllowOverlap are also frequently used flags.
 // FIXME: Selectable() with (size.x == 0.0f) and (SelectableTextAlign.x > 0.0f) followed by SameLine() is currently not supported.
@@ -9688,7 +9688,7 @@ bool    ImGui::BeginTabBarEx(ImGuiTabBar* tab_bar, const ImRect& tab_bar_bb, ImG
     window->DC.CursorPos = ImVec2(tab_bar->BarRect.Min.x, tab_bar->BarRect.Max.y + tab_bar->ItemSpacingY);
 
     // Draw separator
-    // (it would be misleading to draw this in EndTabBar() suggesting that it may be drawn over tabs, as tab bar are appendable)
+    // (it would be misleading to drawArea this in EndTabBar() suggesting that it may be drawn over tabs, as tab bar are appendable)
     const ImU32 col = GetColorU32((flags & ImGuiTabBarFlags_IsFocused) ? ImGuiCol_TabSelected : ImGuiCol_TabDimmedSelected);
     if (g.Style.TabBarBorderSize > 0.0f)
     {
@@ -10527,7 +10527,7 @@ bool    ImGui::TabItemEx(ImGuiTabBar* tab_bar, const char* label, bool* p_open, 
     ImVec2 pos = window->DC.CursorPos;
     ImRect bb(pos, pos + size);
 
-    // We don't have CPU clipping primitives to clip the CloseButton (until it becomes a texture), so need to add an extra draw call (temporary in the case of vertical animation)
+    // We don't have CPU clipping primitives to clip the CloseButton (until it becomes a texture), so need to add an extra drawArea call (temporary in the case of vertical animation)
     const bool want_clip_rect = is_central_section && (bb.Min.x < tab_bar->ScrollingRectMinX || bb.Max.x > tab_bar->ScrollingRectMaxX);
     if (want_clip_rect)
         PushClipRect(ImVec2(ImMax(bb.Min.x, tab_bar->ScrollingRectMinX), bb.Min.y - 1), ImVec2(tab_bar->ScrollingRectMaxX, bb.Max.y), true);
@@ -10640,7 +10640,7 @@ bool    ImGui::TabItemEx(ImGuiTabBar* tab_bar, const char* label, bool* p_open, 
                 SetItemTooltip("%.*s", (int)(FindRenderedTextEnd(label) - label), label);
     }
 
-    // Restore main window position so user can draw there
+    // Restore main window position so user can drawArea there
     if (want_clip_rect)
         PopClipRect();
     window->DC.CursorPos = backup_main_cursor_pos;

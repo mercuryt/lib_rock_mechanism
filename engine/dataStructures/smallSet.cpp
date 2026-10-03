@@ -31,6 +31,8 @@ template struct std::vector<RTreeNodeIndex>;
 template struct std::vector<AnimalSpeciesId>;
 template struct std::vector<PlantSpeciesId>;
 template struct std::vector<MaterialTypeId>;
+template struct std::vector<MoveTypeId>;
+template struct std::vector<FluidTypeId>;
 
 template struct SmallSet<ActorIndex>;
 template struct SmallSet<ActorOrItemIndex>;
@@ -53,3 +55,5 @@ template struct SmallSet<RTreeArrayIndex>;
 template struct SmallSet<AnimalSpeciesId>;
 template struct SmallSet<PlantSpeciesId>;
 template struct SmallSet<MaterialTypeId>;
+template struct SmallSet<MoveTypeId>;
+template struct SmallSet<FluidTypeId>;

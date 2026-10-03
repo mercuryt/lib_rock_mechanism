@@ -208,7 +208,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area* ar
 	}
 }
 void ProjectTryToMakeHaulSubprojectThreadedTask::clearReferences(Simulation&, Area*) { m_project.m_tryToHaulThreadedTask.clearPointer(); }
-Point3D ProjectTryToMakeHaulSubprojectThreadedTask::containsDesiredItemOrActor(const Cuboid cuboid, const ActorIndex actor)
+Point3D ProjectTryToMakeHaulSubprojectThreadedTask::containsDesiredItemOrActor(const Cuboid cuboid, ActorIndex actor)
 {
 	auto& space = m_project.m_area.getSpace();
 	Actors& actors = m_project.m_area.getActors();
@@ -240,7 +240,7 @@ Point3D ProjectTryToMakeHaulSubprojectThreadedTask::containsDesiredItemOrActor(c
 				return cuboid.m_high;
 		}
 	}
-	for(const ActorIndex targetActor : space.actor_getAll(cuboid))
+	for(ActorIndex targetActor : space.actor_getAll(cuboid))
 	{
 		ActorReference actorRef = actors.getReference(targetActor);
 		if(m_project.m_actorsToPickup.contains(actorRef))
@@ -349,7 +349,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 					// TODO: project shoud be read only here, requires tracking reservationsComplete seperately for task.
 					m_project.addItemToPickup(item, counts, quantity);
 			};
-			auto recordActorOnGround = [&](const ActorIndex actor)
+			auto recordActorOnGround = [&](ActorIndex actor)
 			{
 				recordedActors.insert(actor);
 				ActorReference actorRef = actors.getReference(actor);
@@ -674,7 +674,7 @@ bool ProjectTryToAddWorkersThreadedTask::validate()
 	// Ensure all actors selected to be picked up are still reservable.
 	for(const ActorReference actor : m_project.m_actorsToPickup)
 	{
-		const ActorIndex index = actor.getIndex(actors.m_referenceData);
+		ActorIndex index = actor.getIndex(actors.m_referenceData);
 		if(actors.reservable_isFullyReserved(index, m_project.m_faction))
 			return false;
 	}
@@ -1003,7 +1003,7 @@ void Project::recordRequiredActorsAndItemsAndFluids()
 	for(const auto& [fluidType, volume] : getFluids())
 		m_requiredFluids.insert(fluidType, volume);
 }
-void Project::addWorker(const ActorIndex actor, Objective& objective)
+void Project::addWorker(ActorIndex actor, Objective& objective)
 {
 	assert(!m_workers.contains(m_area.getActors().getReference(actor)));
 	assert(m_area.getActors().isSentient(actor));
@@ -1013,7 +1013,7 @@ void Project::addWorker(const ActorIndex actor, Objective& objective)
 	m_workers.emplace(ref, objective);
 	commandWorker(actor);
 }
-void Project::addWorkerCandidate(const ActorIndex actor, Objective& objective)
+void Project::addWorkerCandidate(ActorIndex actor, Objective& objective)
 {
 	assert(!hasCandidate(actor));
 	assert(canAddWorker(actor));
@@ -1027,7 +1027,7 @@ void Project::addWorkerCandidate(const ActorIndex actor, Objective& objective)
 	if(!m_tryToAddWorkersThreadedTask.exists())
 		m_tryToAddWorkersThreadedTask.create(*this);
 }
-void Project::removeWorkerCandidate(const ActorIndex actor)
+void Project::removeWorkerCandidate(ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	ActorReference actorRef = actors.getReference(actor);
@@ -1036,7 +1036,7 @@ void Project::removeWorkerCandidate(const ActorIndex actor)
 	m_workerCandidatesAndTheirObjectives.erase(iter);
 }
 // To be called by Objective::execute.
-void Project::commandWorker(const ActorIndex actor)
+void Project::commandWorker(ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	ActorReference actorRef = actors.getReference(actor);
@@ -1104,7 +1104,7 @@ void Project::commandWorker(const ActorIndex actor)
 	}
 }
 // To be called by Objective::cancel, Objective::delay.
-void Project::removeWorker(const ActorIndex actor)
+void Project::removeWorker(ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	ActorReference actorRef = actors.getReference(actor);
@@ -1140,7 +1140,7 @@ void Project::removeWorker(const ActorIndex actor)
 			cancel();
 	}
 }
-void Project::addToMaking(const ActorIndex actor)
+void Project::addToMaking(ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	ActorReference actorRef = actors.getReference(actor);
@@ -1150,7 +1150,7 @@ void Project::addToMaking(const ActorIndex actor)
 	onAddToMaking(actor);
 	scheduleFinishEvent();
 }
-void Project::removeFromMaking(const ActorIndex actor)
+void Project::removeFromMaking(ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	ActorReference actorRef = actors.getReference(actor);
@@ -1300,7 +1300,7 @@ void Project::addItemToPickup(const ItemIndex item, ProjectRequirementCounts& co
 	else
 		m_itemsToPickup.emplace(ref, &counts, quantity);
 }
-void Project::addActorToPickup(const ActorIndex actor)
+void Project::addActorToPickup(ActorIndex actor)
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
 	m_actorsToPickup.insert(ref);
@@ -1350,7 +1350,7 @@ void Project::reset()
 		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
-bool Project::canAddWorker(const ActorIndex actor) const
+bool Project::canAddWorker(ActorIndex actor) const
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
 	assert(!m_making.contains(ref));
@@ -1426,12 +1426,12 @@ void Project::removeItemFromConsumed(const ItemReference item)
 		--found->second;
 }
 // For testing.
-bool Project::hasCandidate(const ActorIndex actor) const
+bool Project::hasCandidate(ActorIndex actor) const
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
 	return std::ranges::find(m_workerCandidatesAndTheirObjectives, ref, &std::pair<ActorReference, Objective*>::first) != m_workerCandidatesAndTheirObjectives.end();
 }
-bool Project::hasWorker(const ActorIndex actor) const
+bool Project::hasWorker(ActorIndex actor) const
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
 	return m_workers.contains(ref);

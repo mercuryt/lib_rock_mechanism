@@ -74,7 +74,7 @@ Step CraftStepProject::getDuration() const
 	return m_craftStepType.stepsDuration / totalScore;
 }
 // Static method.
-int CraftStepProject::getWorkerCraftScore(const ActorIndex actor) const
+int CraftStepProject::getWorkerCraftScore(ActorIndex actor) const
 {
 	return 1 + m_area.getActors().skill_getLevel(actor, m_craftStepType.skillType).get();
 }
@@ -84,7 +84,7 @@ void CraftStepProject::onComplete()
 	Objective& objective = *projectWorker.objective;
 	Area& area = m_area;
 	Actors& actors = m_area.getActors();
-	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	// This is destroyed here.
 	m_craftJob.hasCraftingLocationsAndJobs.stepComplete(m_craftJob, actorIndex);
 	area.getActors().objective_complete(actorIndex, objective);
@@ -106,7 +106,7 @@ void CraftStepProject::onCancel()
 		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
-void CraftStepProject::onAddToMaking(const ActorIndex actor)
+void CraftStepProject::onAddToMaking(ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	Facing4 facing = m_area.getSpace().shape_canEnterCurrentlyWithAnyFacingReturnFacing(m_location, actors.getShape(actor), actors.getOccupied(actor));
@@ -340,7 +340,7 @@ void HasCraftingLocationsAndJobsForFaction::removeJob(CraftJob& job)
 		job.craftStepProject->cancel();
 	m_jobs.remove(job);
 }
-void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, const ActorIndex actor)
+void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, ActorIndex actor)
 {
 	craftJob.totalSkillPoints += craftJob.craftStepProject->getWorkerCraftScore(actor);
 	Point3D location = craftJob.craftStepProject->getLocation();
@@ -410,7 +410,7 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, cons
 	{
 		product = space.item_addGeneric(location, productType, craftJob.materialType, CraftJobType::getProductQuantity(craftJob.craftJobType));
 		if(craftJob.workPiece.exists())
-			items.destroy(craftJob.workPiece.getIndex(items.m_referenceData));
+			items.remove(craftJob.workPiece.getIndex(items.m_referenceData));
 	}
 	else
 	{
@@ -440,7 +440,7 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, cons
 	m_area.m_hasStockPiles.getForFaction(m_faction).maybeAddItem(product);
 	m_jobs.remove(craftJob);
 }
-void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, const Point3D location, CraftObjective& objective, const ActorIndex actor)
+void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, const Point3D location, CraftObjective& objective, ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	craftJob.craftStepProject = std::make_unique<CraftStepProject>(actors.getFaction(actor), m_area, location, *craftJob.stepIterator, craftJob);
@@ -472,7 +472,7 @@ CraftStepTypeCategoryId HasCraftingLocationsAndJobsForFaction::getDisplayStepTyp
 	return *m_stepTypeCategoriesByLocation[location].begin();
 }
 // May return nullptr;
-std::pair<CraftJob*, Point3D> HasCraftingLocationsAndJobsForFaction::getJobForAt(const ActorIndex actor, const SkillTypeId skillType, const Cuboid cuboid, const SmallSet<CraftJob*>& excludeJobs) const
+std::pair<CraftJob*, Point3D> HasCraftingLocationsAndJobsForFaction::getJobForAt(ActorIndex actor, const SkillTypeId skillType, const Cuboid cuboid, const SmallSet<CraftJob*>& excludeJobs) const
 {
 	Actors& actors = m_area.getActors();
 	SmallSet<CraftStepTypeCategoryId> closedCategories;

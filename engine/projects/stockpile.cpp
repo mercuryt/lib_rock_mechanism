@@ -116,7 +116,7 @@ void StockPileProject::updateRequiredGenericReference(const ItemReference newRef
 		m_item = newRef;
 	}
 }
-bool StockPileProject::canAddWorker(const ActorIndex actor) const
+bool StockPileProject::canAddWorker(ActorIndex actor) const
 {
 	if(!Project::canAddWorker(actor))
 		return false;

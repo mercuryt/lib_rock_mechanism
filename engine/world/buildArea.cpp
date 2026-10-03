@@ -1,6 +1,7 @@
 #include "buildArea.h"
 #include "world.h"
 #include "makeAnimals.h"
+#include "climate.h"
 #include "../simulation/simulation.h"
 #include "../simulation/hasAreas.h"
 #include "../area/area.h"
@@ -62,75 +63,10 @@ void BuildArea::makeTerrestrialArea()
 }
 void BuildArea::makeClimate()
 {
-	m_area->m_hasRain.m_defaultRainFluidType = FluidType::byName("water");
-	Percent yearRoundHumidity = m_world.getHumidity(m_area->m_location);
-	Distance equator = m_world.m_boundry.sizeY() / 2;
-	bool northernHemisphere = m_area->m_location.y() >= equator;
-	Distance distanceFromEquator{(DistanceWidth)std::abs(m_area->m_location.y().get() - equator.get())};
-	float ratioDistanceFromEquator{(float)distanceFromEquator.get() / (float)equator.get()};
-	std::array<Percent, 4> humidityBySeason;
-	// Equatorial regions have high percepitation year round and two distinct wet seasons in spring and autumn.
-	if(ratioDistanceFromEquator < Config::World::tropicalBandStart)
-	{
-		m_area->m_hasRain.m_humidityBySeason = {
-			yearRoundHumidity * Config::World::equitorialRainModifierLow,
-			yearRoundHumidity * Config::World::equitorialRainModifierHigh,
-			yearRoundHumidity * Config::World::equitorialRainModifierLow,
-			yearRoundHumidity * Config::World::equitorialRainModifierHigh
-		};
-	}
-	// Tropical regions have a single distinct wet season, depending on hemisphere.
-	else if(ratioDistanceFromEquator < Config::World::subtropicalBandStart)
-	{
-		if(northernHemisphere)
-			m_area->m_hasRain.m_humidityBySeason = {
-				yearRoundHumidity * Config::World::tropicalRainModifierHigh,
-				yearRoundHumidity * Config::World::tropicalRainModifierHigh,
-				yearRoundHumidity * Config::World::tropicalRainModifierLow,
-				yearRoundHumidity * Config::World::tropicalRainModifierLow
-			};
-		else
-			m_area->m_hasRain.m_humidityBySeason = {
-				yearRoundHumidity * Config::World::tropicalRainModifierLow,
-				yearRoundHumidity * Config::World::tropicalRainModifierLow,
-				yearRoundHumidity * Config::World::tropicalRainModifierHigh,
-				yearRoundHumidity * Config::World::tropicalRainModifierHigh
-			};
-	}
-	// SubTropical regions are dry year round, but coastal areas are wet in the winter.
-	else if(ratioDistanceFromEquator < Config::World::midLatitudeBandStart)
-	{
-			m_area->m_hasRain.m_humidityBySeason = {
-				yearRoundHumidity * Config::World::subtropicalRainModifierLow,
-				yearRoundHumidity * Config::World::subtropicalRainModifierLow,
-				yearRoundHumidity * Config::World::subtropicalRainModifierLow,
-				yearRoundHumidity * Config::World::subtropicalRainModifierHigh
-			};
-	}
-	else if(ratioDistanceFromEquator < Config::World::polarBandStart)
-	// Midlatitude regions are moderate to high, with a focus on western coasts during winter and eastern / central regions durring summer.
-	{
-			m_area->m_hasRain.m_humidityBySeason = {
-				yearRoundHumidity * Config::World::midlatitudeRainModifierLow,
-				yearRoundHumidity * Config::World::midlatitudeRainModifierHigh,
-				yearRoundHumidity * Config::World::midlatitudeRainModifierLow,
-				yearRoundHumidity * Config::World::midlatitudeRainModifierLow
-			};
-	}
-	// Polar regions have low percpitation, with a small bump in the summer.
-	else
-	{
-			m_area->m_hasRain.m_humidityBySeason = {
-				yearRoundHumidity * Config::World::polarRainModifierLow,
-				yearRoundHumidity * Config::World::polarRainModifierHigh,
-				yearRoundHumidity * Config::World::polarRainModifierLow,
-				yearRoundHumidity * Config::World::polarRainModifierLow
-			};
-	}
-	// Temperatures.
-	Temperature baseTemperature = m_world.getAverageTemperature(m_area->m_location);
-	m_area->m_hasTemperature.m_maxAmbiant = baseTemperature + Config::World::maxAmbiantSwing / 2;
-	m_area->m_hasTemperature.m_minAmbiant = baseTemperature - Config::World::maxAmbiantSwing / 2;
+	m_area->m_hasRain.m_humidityBySeason = climate::humidityBySeason(m_world, m_area->m_location);
+	auto [min, max] = climate::temperatureMinAndMax(m_world, m_area->m_location);
+	m_area->m_hasTemperature.m_maxAmbiant = max;
+	m_area->m_hasTemperature.m_minAmbiant = min;
 }
 void BuildArea::makeAttractors()
 {
@@ -506,6 +442,10 @@ void BuildArea::maybeMakeRoads()
 	space.solid_removeAllFrom(roads);
 	if(!roads.empty())
 		space.solid_setAll(roads, m_sandOrSoilType, true);
+}
+void BuildArea::maybeMakeSettlements()
+{
+	// TODO
 }
 void BuildArea::smooth(float factor)
 {

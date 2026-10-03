@@ -27,7 +27,7 @@ struct MistakeAtWorkDramaArc final : public DramaArc
 	MistakeAtWorkDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
 	void callback();
 	void schedule();
-	[[nodiscard]] std::pair<ActorReference, std::string> doSwitchMaybeReturnVictim(const MistakeAtWorkType mistakeType, Project& project, const ActorIndex perpetrator);
+	[[nodiscard]] std::pair<ActorReference, std::string> doSwitchMaybeReturnVictim(const MistakeAtWorkType mistakeType, Project& project, ActorIndex perpetrator);
 	[[nodiscard]] Json toJson() const;
 };
 class MistakeAtWorkScheduledEvent final : public ScheduledEvent

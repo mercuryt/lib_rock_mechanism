@@ -29,3 +29,4 @@ template class RTreeData<SettlementId>;
 template class RTreeData<AreaId>;
 template class RTreeData<BitSet<uint8_t, 8u>>;
 template class RTreeData<Quantity>;
+template class RTreeData<ExpeditionId>;

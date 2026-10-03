@@ -28,7 +28,7 @@ void to_json(Json& data, const SquadFormationIndex& index) { data = index.get();
 void from_json(const Json& data, SquadFormationIndex& index) { index = SquadFormationIndex::create(data.get<int>()); }
 HasShapeIndex::HasShapeIndex(const PlantIndex index) { data = index.get(); }
 HasShapeIndex::HasShapeIndex(const ItemIndex index) { data = index.get(); }
-HasShapeIndex::HasShapeIndex(const ActorIndex index) { data = index.get(); }
+HasShapeIndex::HasShapeIndex(ActorIndex index) { data = index.get(); }
 ActorOrItemIndex ActorIndex::toActorOrItemIndex() const
 {
 	return ActorOrItemIndex::createForActor(ActorIndex::create(data));

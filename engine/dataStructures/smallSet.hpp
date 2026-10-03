@@ -184,6 +184,15 @@ bool SmallSet<T>::containsAny(const This& other) const
 	return false;
 }
 template<typename T>
+bool SmallSet<T>::containsAll(const This& other) const
+{
+	// TODO: can this be rewritten as a single pass?
+	for(const T& item : m_data)
+		if(!other.contains(item))
+			return false;
+	return true;
+}
+template<typename T>
 int SmallSet<T>::indexOf(const T& value) const { assert(contains(value)); return std::distance(m_data.begin(), std::ranges::find(m_data, value)); }
 template<typename T>
 T& SmallSet<T>::front() { return m_data.front(); }

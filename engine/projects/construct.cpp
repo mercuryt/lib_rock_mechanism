@@ -48,7 +48,7 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> ConstructProject::
 	return MaterialType::construction_getByproducts(m_solid);
 }
 SkillTypeId ConstructProject::getSkill() const { return MaterialType::construction_getSkill(m_solid); }
-int ConstructProject::getWorkerConstructScore(const ActorIndex actor) const
+int ConstructProject::getWorkerConstructScore(ActorIndex actor) const
 {
 	Actors& actors = m_area.getActors();
 	return (actors.getStrength(actor).get() * Config::constructStrengthModifier) +

@@ -20,6 +20,7 @@ struct MoveTypeParamaters
 	std::pair<FluidTypeId, Distance> floating;
 	SmallMap<FluidTypeId, CollisionVolume> swim = {};
 	SmallSet<FluidTypeId> breathableFluids = {};
+	[[nodiscard]] bool operator==(const MoveTypeParamaters& other) const;
 };
 class MoveType
 {
@@ -39,6 +40,7 @@ class MoveType
 	StrongVector<MoveTypeParamaters, MoveTypeId> m_paramaters;
 public:
 	static void create(const MoveTypeParamaters& paramaters);
+	[[nodiscard]] static MoveTypeId getOrCreate(const MoveTypeParamaters& paramaters);
 	[[nodiscard]] static MoveTypeId byName(const std::string& name);
 	[[nodiscard]] static std::string getName(const MoveTypeId id);
 	[[nodiscard]] static bool getSurface(const MoveTypeId id);
@@ -52,5 +54,6 @@ public:
 	[[nodiscard]] static SmallMap<FluidTypeId, CollisionVolume>& getSwim(const MoveTypeId id);
 	[[nodiscard]] static SmallSet<FluidTypeId>& getBreathableFluids(const MoveTypeId id);
 	[[nodiscard]] static MoveTypeId getOrCreateForFloat(FluidTypeId fluidType, Distance depth);
+	[[nodiscard]] static MoveTypeId reduce(const SmallSet<MoveTypeId>& moveTypes);
 };
 inline MoveType g_moveTypeData;

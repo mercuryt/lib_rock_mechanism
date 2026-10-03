@@ -694,7 +694,7 @@ void RTreeData<T, config_, nullPrimitive>::addToNodeRecursive(const RTreeNodeInd
 		parent.insertLeaf(cuboid, value);
 }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
-void RTreeData<T, config_, nullPrimitive>::removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, OpenList& openList)
+void RTreeData<T, config_, nullPrimitive>::removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, auto& openList)
 {
 	RTreeNodeIndex indexCopy = index;
 	// These node references are going to be invalidated by inserting fragments, which may generate a new node.
@@ -742,7 +742,7 @@ void RTreeData<T, config_, nullPrimitive>::removeFromNode(const RTreeNodeIndex i
 	m_toComb.maybeInsert(index);
 }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
-void RTreeData<T, config_, nullPrimitive>::removeFromNodeWithValue(const RTreeNodeIndex index, const Cuboid cuboid, OpenList& openList, const T& value)
+void RTreeData<T, config_, nullPrimitive>::removeFromNodeWithValue(const RTreeNodeIndex index, const Cuboid cuboid, auto& openList, const T& value)
 {
 	assert(value != T::create(nullPrimitive));
 	const RTreeNodeIndex indexCopy = index;
@@ -1005,7 +1005,7 @@ void RTreeData<T, config_, nullPrimitive>::sort()
 	m_nodes = std::move(sortedNodes);
 }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
-void RTreeData<T, config_, nullPrimitive>::addIntersectedChildrenToOpenList(const Node& node, BitSet interceptMask, OpenList& openList)
+void RTreeData<T, config_, nullPrimitive>::addIntersectedChildrenToOpenList(const Node& node, BitSet interceptMask, auto& openList)
 {
 	assert(interceptMask.getNext() >= node.offsetOfFirstChild());
 	const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
@@ -1024,16 +1024,15 @@ RTreeData<T, config_, nullPrimitive>::RTreeData()
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 void RTreeData<T, config_, nullPrimitive>::beforeJsonLoad() { m_nodes.clear(); }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
-void RTreeData<T, config_, nullPrimitive>::maybeInsert(const Cuboid cuboid, const T& value)
+void RTreeData<T, config_, nullPrimitive>::maybeInsert(Cuboid cuboid, const T& value)
 {
 	assert(value != T::create(nullPrimitive));
 	if constexpr(!config_.leavesCanOverlap)
-		assert(!queryAny(cuboid));
+		assert(!queryAnyEqual(cuboid, value));
 	else
 		for(const T& v : queryGetAll(cuboid))
 			assert(this->canOverlap(v, value));
 	constexpr RTreeNodeIndex zeroIndex{0};
-	[[maybe_unused]] bool breakIf = cuboid.volume() == 1 && cuboid.m_high == Point3D::create(20, 1, 1);
 	addToNodeRecursive(zeroIndex, cuboid, value);
 	validate();
 }
@@ -1347,7 +1346,7 @@ template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 Distance RTreeData<T, config_, nullPrimitive>::distanceWithCondition(Point3D point, Distance maxRange, auto&& condition) const
 {
 	Sphere shape{point, maxRange.toFloat()};
-	OpenList openList;
+	OpenListMaybeRecursive openList;
 	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{
@@ -1384,12 +1383,23 @@ Distance RTreeData<T, config_, nullPrimitive>::distanceWithCondition(Point3D poi
 				sphereIntersectMask = BitSet::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
 			}
 		}
-		const auto childCount{node.getChildCount()};
-		if(node.hasChildren() && sphereIntersect.tail(childCount).any())
+		if(node.hasChildren())
 		{
-			addIntersectedChildrenToOpenList(node, sphereIntersectMask, openList);
+			sphereIntersectMask.clearAllBefore(leafCount);
+			if(sphereIntersectMask.any())
+				addIntersectedChildrenToOpenList(node, sphereIntersectMask, openList);
 		}
 	}
 	// Radius is the shortest encountered distance.
 	return shape.radius.toInt();
+}
+template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
+std::vector<int> RTreeData<T, config_, nullPrimitive>::getUniqueHighZ() const
+{
+	SmallSet<int> output;
+	forEachCuboid([&output](Cuboid cuboid){
+		output.maybeInsert(cuboid.m_high.z().get());
+	});
+	output.sort();
+	return output.getVector();
 }

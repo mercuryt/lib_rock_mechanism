@@ -80,7 +80,7 @@ Breaking Changes:
     (and misdocumented). Post-rescale GlyphOffset is always rounded.
   - Fixed an issue where using PushFont() from the implicit/fallback "Debug" window when
     its recorded state is collapsed would incorrectly early out. This would break e.g. using
-    direct draw-list calls such as GetForegroundDrawList() with current font. (#9210, #8865)
+    direct drawArea-list calls such as GetForegroundDrawList() with current font. (#9210, #8865)
  - Popups: changed compile-time 'ImGuiPopupFlags popup_flags = 1' default value to be '= 0' for
    BeginPopupContextItem(), BeginPopupContextWindow(), BeginPopupContextVoid(), OpenPopupOnItemClick().
    The default value has same meaning before and after. (#9157, #9146)
@@ -193,7 +193,7 @@ Other Changes:
   - Fixed an UBSan warning when using in a ListClipper region . (#9160)
 - Scrollbar: fixed a codepath leading to a divide-by-zero (which would not be
   noticeable by user but detected by sanitizers). (#9089) [@judicaelclair]
-- InvisibleButton: allow calling with size (0,0) to fit to available content 
+- InvisibleButton: allow calling with size (0,0) to fit to available content
   size. (#9166, #7623)
 - Tooltips, Disabled: fixed EndDisabledOverrideReenable() assertion when
   nesting a tooltip in a disabled block. (#9180, #7640) [@RegimantasSimkus]
@@ -452,7 +452,7 @@ Other Changes:
   using ImGuiWindowFlags_UnsavedDocument/ImGuiTabItemFlags_UnsavedDocument. (#8983)
 - IO: added ImGuiPlatformIO::ClearPlatformHandlers(), ClearRendererHandlers()
   helpers to null all handlers. (#8945, #2769)
-- Tables: changed ImGuiTableFlags_NoBordersInBody behavior to not draw border in
+- Tables: changed ImGuiTableFlags_NoBordersInBody behavior to not drawArea border in
   body even when resizing. (#8893)
 - Inputs:
   - Shortcuts: added support for combining ImGuiInputFlags_RouteFocused
@@ -1114,7 +1114,7 @@ Other Changes:
   and automatic resize on the other axis. (#8690)
   e.g. neither ImGuiChildFlags_ResizeX | ImGuiChildFlags_AutoResizeY
             or ImGuiChildFlags_ResizeY | ImGuiChildFlags_AutoResizeX worked before.
-- TreeNode: added experimental flags to draw tree hierarchy outlines linking
+- TreeNode: added experimental flags to drawArea tree hierarchy outlines linking
   parent and tree nodes: (#2920)
   - ImGuiTreeNodeFlags_DrawLinesNone: No lines drawn (default value in style.TreeLinesFlags).
   - ImGuiTreeNodeFlags_DrawLinesFull: Horizontal lines to child nodes. Vertical line drawn down to TreePop() position: cover full contents.
@@ -1690,7 +1690,7 @@ Other changes:
 
 - IO: added 'void* platform_io.Renderer_RenderState' which is set during the
   ImGui_ImplXXXX_RenderDrawData() of standard backends to expose selected render
-  states to your draw callbacks. (#6969, #5834, #7468, #3590)
+  states to your drawArea callbacks. (#6969, #5834, #7468, #3590)
 - IO: io.WantCaptureKeyboard is never set when ImGuiConfigFlags_NoKeyboard is enabled. (#4921)
 - Error Handling: turned a few more functions into recoverable errors. (#1651)
 - Nav (Keyboard/Gamepad navigation):
@@ -1740,7 +1740,7 @@ Other changes:
   Providing headers/libraries for plutosvg + plutovg is up to you (see #7927 for help).
   (#7927, #7187, #6591, #6607) [@pthom]
 - Backends: DX11, DX12, SDLRenderer2/3. Vulkan, WGPU: expose selected state in
-  ImGui_ImplXXXX_RenderState structures during render loop user draw callbacks.
+  ImGui_ImplXXXX_RenderState structures during render loop user drawArea callbacks.
   (#6969, #5834, #7468, #3590)
 - Backends: DX9, DX10, DX11, DX12, OpenGL, Vulkan, WGPU: Changed default texture sampler
   to Clamp instead of Repeat/Wrap. (#7468, #7511, #5999, #5502, #7230)
@@ -2153,7 +2153,7 @@ Other changes:
 - Windows: BeginChild(): fixed a glitch when during a resize of a child window which is
   tightly close to the boundaries of its parent (e.g. with zero WindowPadding), the child
   position could have temporarily be moved around by erroneous padding application. (#7706)
-- TabBar, Style: added ImGuiTabBarFlags_DrawSelectedOverline option to draw a horizontal
+- TabBar, Style: added ImGuiTabBarFlags_DrawSelectedOverline option to drawArea a horizontal
   line over selected tabs to increase visibility. This is used by docking.
   Added corresponding ImGuiCol_TabSelectedOverline and ImGuiCol_TabDimmedSelectedOverline colors.
 - Tables: added TableGetHoveredColumn() to public API, as an alternative to testing for
@@ -2368,7 +2368,7 @@ Other changes:
 - Windows: Changed default ClipRect to extend to windows' left and right borders,
   instead of adding arbitrary WindowPadding.x * 0.5f space on left and right.
   That ClipRect half-padding was arbitrary/confusing and inconsistent with Y axis.
-  It also made it harder to draw items covering whole window without pushing an
+  It also made it harder to drawArea items covering whole window without pushing an
   extended ClipRect. Some items near windows left and right edge that used to be clipped
   may be partly more visible. (#3312, #7540, #3756, #6170, #6365)
 - Windows: Fixed subsequent Begin() append calls from setting last item information
@@ -2632,7 +2632,7 @@ Other changes:
   - ColorEdit: Layout tweaks for very small sizes. (#7120, #7121)
   - ColorPicker: Fixed saturation/value cursor radius not scaling properly.
 - Tabs: Added ImGuiTabItemFlags_NoAssumedClosure to enable app to react on closure attempt,
-  without having to draw an unsaved document marker (ImGuiTabItemFlags_UnsavedDocument sets
+  without having to drawArea an unsaved document marker (ImGuiTabItemFlags_UnsavedDocument sets
   _NoAssumedClosure automatically). (#7084)
 - Debug Tools:
   - Added io.ConfigDebugIsDebuggerPresent option. When enabled, this adds buttons in various
@@ -2759,7 +2759,7 @@ Other changes:
     - Combining this with also specifying ImGuiChildFlags_AlwaysAutoResize disables
       this optimization, meaning child contents will never be clipped (not recommended).
     - Please be considerate that child are full windows and carry significant overhead:
-      combining auto-resizing for both axes to create a non-scrolling child to merely draw
+      combining auto-resizing for both axes to create a non-scrolling child to merely drawArea
       a border would be better more optimally using BeginGroup(). (see #1496)
       (until we come up with new helpers for framed groups and work-rect adjustments).
   - BeginChild(): made it possible to use SetNextWindowSizeConstraints() rectangle, often
@@ -2815,7 +2815,7 @@ Other changes:
   - Fixed top-most outer border being drawn with both TableBorderLight and TableBorderStrong
     in some situations, causing the earlier to be visible underneath when alpha is not 1.0f.
   - Fixed right-clicking right-most section (past right-most column) from highlighting a column.
-  - Fixed an issue with ScrollX enabled where an extraneous draw command would be created.
+  - Fixed an issue with ScrollX enabled where an extraneous drawArea command would be created.
 - Menus:
   - Menus: Fixed a bug where activating an item in a child-menu and dragging mouse over the
     parent-menu would erroneously close the child-menu. (Regression from 1.88). (#6869)
@@ -2974,7 +2974,7 @@ Other changes:
   and providing headers/libraries for lunasvg. (#6591, #6607) [@sakiodre]
 - ImDrawData: CmdLists[] array is now an ImVector<> owned by ImDrawData rather
   than a pointer to internal state.
-  - This makes it easier for user to create their own or append to an existing draw data.
+  - This makes it easier for user to create their own or append to an existing drawArea data.
     Added a ImDrawData::AddDrawList() helper function to do that. (#6406, #4879, #1878)
   - This makes it easier to perform a deep-swap instead of a deep-copy, as array
     ownership is now clear. (#6597, #6475, #6167, #5776, #5109, #4763, #3515, #1860)
@@ -3768,8 +3768,8 @@ Other Changes:
 - Tables: Fixed incorrect border height used for logic when resizing one of several synchronized
   instance of a same table ID, when instances have a different height. (#3955).
 - Tables: Fixed incorrect auto-fit of parent windows when using non-resizable weighted columns. (#5276)
-- Tables: Fixed draw-call merging of last column. Depending on some unrelated settings (e.g. BorderH)
-  merging draw-call of the last column didn't always work (regression since 1.87). (#4843, #4844) [@rokups]
+- Tables: Fixed drawArea-call merging of last column. Depending on some unrelated settings (e.g. BorderH)
+  merging drawArea-call of the last column didn't always work (regression since 1.87). (#4843, #4844) [@rokups]
 - Inputs: Fixed IsMouseClicked() repeat mode rate being half of keyboard repeat rate.
 - ColorEdit: Fixed text baseline alignment after a SameLine() after a ColorEdit() with visible label.
 - Tabs: BeginTabItem() now reacts to SetNextItemWidth(). (#5262)
@@ -3914,7 +3914,7 @@ Other Changes:
 - IO: Unified key enums allow using key functions on key mods and gamepad values.
 - Fixed CTRL+Tab into an empty window causing artifacts on the highlight rectangle due to bad reordering on ImDrawCmd.
 - Fixed a situation where CTRL+Tab or Modal can occasionally lead to the creation of ImDrawCmd with zero triangles,
-  which would makes the draw operation of some backends assert (e.g. Metal with debugging). (#4857)
+  which would makes the drawArea operation of some backends assert (e.g. Metal with debugging). (#4857)
 - Popups: Fixed a regression crash when a new window is created after a modal on the same frame. (#4920) [@rokups]
 - Popups: Fixed an issue when reopening a same popup multiple times would offset them by 1 pixel on the right. (#4936)
 - Tables, ImDrawListSplitter: Fixed erroneously stripping trailing ImDrawList::AddCallback() when submitted in
@@ -3922,7 +3922,7 @@ Other Changes:
 - Tables: Fixed positioning of Sort icon on right-most column with some settings (not resizable + no borders). (#4918).
 - Nav: Fixed gamepad navigation in wrapping popups not wrapping all the way. (#4365)
 - Sliders, Drags: Fixed text input of values with a leading sign, common when using a format enforcing sign. (#4917)
-- Demo: draw a section of keyboard in "Inputs > Keyboard, Gamepad & Navigation state" to visualize keys. [@thedmd]
+- Demo: drawArea a section of keyboard in "Inputs > Keyboard, Gamepad & Navigation state" to visualize keys. [@thedmd]
 - Platform IME: changed io.ImeSetInputScreenPosFn() to io.SetPlatformImeDataFn() API,
   now taking a ImGuiPlatformImeData structure which we can more easily extend in the future.
 - Platform IME: moved io.ImeWindowHandle to GetMainViewport()->PlatformHandleRaw.
@@ -4256,7 +4256,7 @@ Other Changes:
 - Demo: Fixed requirement in 1.83 to link with imgui_demo.cpp if IMGUI_DISABLE_METRICS_WINDOW is not set. (#4171)
   Normally the right way to disable compiling the demo is to set IMGUI_DISABLE_DEMO_WINDOWS, but we want to avoid
   implying that the file is required.
-- Metrics: Fixed a crash when inspecting the individual draw command of a foreground drawlist. [@rokups]
+- Metrics: Fixed a crash when inspecting the individual drawArea command of a foreground drawlist. [@rokups]
 - Backends: Reorganized most backends (Win32, SDL, GLFW, OpenGL2/3, DX9/10/11/12, Vulkan, Allegro) to pull their
   data from a single structure stored inside the main Dear ImGui context. This facilitate/allow usage of standard
   backends with multiple-contexts BUT is only partially tested and not well supported. It is generally advised to
@@ -4745,7 +4745,7 @@ Other Changes:
 - Tabs: Keep tab item close button visible while dragging a tab (independent of hovering state).
 - Tabs: Fixed a small bug where closing a tab that is not selected would leave a tab hole for a frame.
 - Tabs: Fixed a small bug where scrolling buttons (with ImGuiTabBarFlags_FittingPolicyScroll) would
-  generate an unnecessary extra draw call.
+  generate an unnecessary extra drawArea call.
 - Tabs: Fixed a small bug where toggling a tab bar from Reorderable to not Reorderable would leave
   tabs reordered in the tab list popup. [@Xipiryon]
 - Columns: Fix inverted ClipRect being passed to renderer when using certain primitives inside of
@@ -4930,16 +4930,16 @@ Other Changes:
 - Columns: Lower overhead on column switches and switching to background channel.
   Benefits Columns but was primarily made with Tables in mind!
 - Fonts: Fix GetGlyphRangesKorean() end-range to end at 0xD7A3 (instead of 0xD79D). (#348, #3217) [@marukrap]
-- ImDrawList: Fixed an issue where draw command merging or primitive unreserve while crossing the
-  VtxOffset boundary would lead to draw commands with wrong VtxOffset. (#3129, #3163, #3232, #2591)
+- ImDrawList: Fixed an issue where drawArea command merging or primitive unreserve while crossing the
+  VtxOffset boundary would lead to drawArea commands with wrong VtxOffset. (#3129, #3163, #3232, #2591)
   [@thedmd, @Shironekoben, @sergeyn, @ocornut]
 - ImDrawList, ImDrawListSplitter, Columns: Fixed an issue where changing channels with different
-  TextureId, VtxOffset would incorrectly apply new settings to draw channels. (#3129, #3163)
+  TextureId, VtxOffset would incorrectly apply new settings to drawArea channels. (#3129, #3163)
   [@ocornut, @thedmd, @Shironekoben]
 - ImDrawList, ImDrawListSplitter, Columns: Fixed an issue where starting a split when current
-  VtxOffset was not zero would lead to draw commands with wrong VtxOffset. (#2591)
+  VtxOffset was not zero would lead to drawArea commands with wrong VtxOffset. (#2591)
 - ImDrawList, ImDrawListSplitter, Columns: Fixed an issue where starting a split right after
-  a callback draw command would incorrectly override the callback draw command.
+  a callback drawArea command would incorrectly override the callback drawArea command.
 - Misc, Freetype: Fix for rare case where FT_Get_Char_Index() succeeds but FT_Load_Glyph() fails.
 - Docs: Improved and moved font documentation to docs/FONTS.md so it can be readable on the web.
   Updated various links/wiki accordingly. Added FAQ entry about DPI. (#2861) [@ButternCream, @ocornut]
@@ -5254,7 +5254,7 @@ Other Changes:
   Otherwise we render ellipsis using '.' from the font from where we trim excessive spacing to make it as narrow
   as possible. (#2775) [@rokups]
 - ImDrawList: Clarified the name of many parameters so reading the code is a little easier. (#2740)
-- ImDrawListSplitter: Fixed merging channels if the last submitted draw command used a different texture. (#2506)
+- ImDrawListSplitter: Fixed merging channels if the last submitted drawArea command used a different texture. (#2506)
 - Using offsetof() when available in C++11. Avoids Clang sanitizer complaining about old-style macros. (#94)
 - ImVector: Added find(), find_erase(), find_erase_unsorted() helpers.
 - Added a mechanism to compact/free the larger allocations of unused windows (buffers are compacted when
@@ -5356,7 +5356,7 @@ Other Changes:
 - Debug Tools: Added "Metrics->Tools->Item Picker" tool which allow clicking on a widget to break in the
   debugger within the item code. The tool calls IM_DEBUG_BREAK() which can be redefined in imconfig.h.
 - ImDrawList: Fixed CloneOutput() helper crashing. (#1860) [@gviot]
-- ImDrawList::ChannelsSplit(), ImDrawListSplitter: Fixed an issue with merging draw commands between
+- ImDrawList::ChannelsSplit(), ImDrawListSplitter: Fixed an issue with merging drawArea commands between
   channel 0 and 1. (#2624)
 - ImDrawListSplitter: Fixed memory leak when using low-level split api (was not affecting ImDrawList api,
   also this type was added in 1.71 and not advertised as a public-facing feature).
@@ -5387,7 +5387,7 @@ Breaking Changes:
 - IO: changed AddInputCharacter(unsigned short c) signature to AddInputCharacter(unsigned int c).
 - Renamed SetNextTreeNodeOpen() to SetNextItemOpen(). Kept inline redirection function (will obsolete).
 - Window: rendering of child windows outer decorations (e.g. bg color, border, scrollbars) is now
-  performed as part of their parent window, avoiding the creation of an extraneous draw commands.
+  performed as part of their parent window, avoiding the creation of an extraneous drawArea commands.
   If you have overlapping child windows with decorations, and relied on their relative z-order to be
   mapped to submission their order, this will affect your rendering. The optimization is disabled
   if the parent window has no visual output because it appears to be the most common situation leading
@@ -5430,8 +5430,8 @@ Other Changes:
   loop with the horizontal contents size.
 - Columns: Fixed Columns() within a window with horizontal scrolling from not covering the full
   horizontal area (previously only worked with an explicit contents size). (#125)
-- Columns: Fixed Separator from creating an extraneous draw command. (#125)
-- Columns: Fixed Selectable with SpanAllColumns flag from creating an extraneous draw command. (#125)
+- Columns: Fixed Separator from creating an extraneous drawArea command. (#125)
+- Columns: Fixed Selectable with SpanAllColumns flag from creating an extraneous drawArea command. (#125)
 - Style: Added style.WindowMenuButtonPosition (left/right, defaults to ImGuiDir_Left) to move the
   collapsing/docking button to the other side of the title bar.
 - Style: Made window close button cross slightly smaller.
@@ -5441,10 +5441,10 @@ Other Changes:
   this, and honor the ImDrawCmd::VtxOffset field. Otherwise the value will always be zero. (#2591)
   This has the advantage of preserving smaller index buffers and allowing to execute on hardware that do not
   support 32-bit indices. Most examples backends have been modified to support the VtxOffset field.
-- ImDrawList: Added ImDrawCmd::IdxOffset value, equivalent to summing element count for each draw command.
+- ImDrawList: Added ImDrawCmd::IdxOffset value, equivalent to summing element count for each drawArea command.
   This is provided for convenience and consistency with VtxOffset. (#2591)
 - ImDrawCallback: Allow to override the signature of ImDrawCallback by #define-ing it. This is meant to
-  facilitate custom rendering backends passing local render-specific data to the draw callback.
+  facilitate custom rendering backends passing local render-specific data to the drawArea callback.
 - ImFontAtlas: FreeType: Added RasterizerFlags::Monochrome flag to disable font anti-aliasing. Combine
   with RasterizerFlags::MonoHinting for best results. (#2545) [@HolyBlackCat]
 - ImFontGlyphRangesBuilder: Fixed unnecessarily over-sized buffer, which incidentally was also not
@@ -5834,7 +5834,7 @@ Other Changes:
 - Drag and Drop: Added GetDragDropPayload() to peek directly into the payload (if any) from anywhere. (#143)
 - ImGuiTextBuffer: Avoid heap allocation when empty.
 - ImDrawList: Fixed AddConvexPolyFilled() undefined behavior when passing points_count smaller than 3,
-  in particular, points_count==0 could lead to a memory stomp if the draw list was previously empty.
+  in particular, points_count==0 could lead to a memory stomp if the drawArea list was previously empty.
 - Examples: DirectX10, DirectX11: Removed seemingly unnecessary calls to invalidate and recreate device objects
   in the WM_SIZE handler. (#2088) [@ice1000]
 - Examples: GLFW: User previously installed GLFW callbacks are now saved and chain-called by the default callbacks. (#1759)
@@ -6009,7 +6009,7 @@ Other Changes:
 
 - Examples backends have been refactored to separate the platform code (e.g. Win32, Glfw, SDL2) from the renderer code (e.g. DirectX11, OpenGL3, Vulkan).
   The "Platform" backends are in charge of: mouse/keyboard/gamepad inputs, cursor shape, timing, etc.
-  The "Renderer" backends are in charge of: creating the main font texture, rendering imgui draw data.
+  The "Renderer" backends are in charge of: creating the main font texture, rendering imgui drawArea data.
       before: imgui_impl_dx11.cpp        --> after: imgui_impl_win32.cpp + imgui_impl_dx11.cpp
       before: imgui_impl_dx12.cpp        --> after: imgui_impl_win32.cpp + imgui_impl_dx12.cpp
       before: imgui_impl_glfw_gl3.cpp    --> after: imgui_impl_glfw.cpp + imgui_impl_opengl2.cpp
@@ -6607,9 +6607,9 @@ Other Changes:
 - MenuItem: Made tick mark thicker (thick mark?).
 - MenuItem: Tweaks to be usable inside a menu bar (nb: it looks like a regular menu and thus is misleading,
   prefer using Button() and regular widgets in menu bar if you need to). (#1387)
-- ImDrawList: Fixed a rare draw call merging bug which could lead to undisplayed triangles. (#1172, #1368)
+- ImDrawList: Fixed a rare drawArea call merging bug which could lead to undisplayed triangles. (#1172, #1368)
 - ImDrawList: Fixed a rare bug in `ChannelsMerge()` when all contents has been clipped, leading to
-  an extraneous draw call being created. (#1172, #1368)
+  an extraneous drawArea call being created. (#1172, #1368)
 - ImFont: Added `AddGlyph()` building helper for use by custom atlas builders.
 - ImFontAtlas: Added support for CustomRect API to submit custom rectangles to be packed into the atlas.
   You can map them as font glyphs, or use them for custom purposes.
@@ -6638,7 +6638,7 @@ Other Changes:
   handler unclosed on failure. [@pdoane]
 - Style: Added `ImGuiStyle::ScaleAllSizes(float)` helper to make it easier to have application
   transition e.g. from low to high DPI with a matching style.
-- Metrics: Draw window bounding boxes when hovering Pos/Size; List all draw layers; Trimming empty commands like Render() does.
+- Metrics: Draw window bounding boxes when hovering Pos/Size; List all drawArea layers; Trimming empty commands like Render() does.
 - Examples: OpenGL3: Save and restore sampler state. (#1145) [@nlguillemot]
 - Examples: OpenGL2, OpenGL3: Save and restore polygon mode. (#1307) [@JJscott]
 - Examples: DirectX11: Allow creating device with feature level 10 since we don't really need much for that example. (#1333)
@@ -6908,7 +6908,7 @@ Breaking Changes:
 - Title bar (using ImGuiCol_TitleBg/ImGuiCol_TitleBgActive colors) isn't rendered over a window background
   (ImGuiCol_WindowBg color) anymore (see #655). If your TitleBg/TitleBgActive alpha was 1.0f or you are using
   the default theme it will not affect you. However if your TitleBg/TitleBgActive alpha was <1.0f you need to
-  tweak your custom theme to readjust for the fact that we don't draw a WindowBg background behind the title bar.
+  tweak your custom theme to readjust for the fact that we don't drawArea a WindowBg background behind the title bar.
   This helper function will convert an old TitleBg/TitleBgActive color into a new one with the same visual output,
   given the OLD color and the OLD WindowBg color. (Or If this is confusing, just pick the RGB value from
   title bar from an old screenshot and apply this as TitleBg/TitleBgActive. Or you may just create
@@ -7049,7 +7049,7 @@ Other Changes:
 - BeginPopupContextItem(), BeginPopupContextWindow(): added early out optimization.
 - CaptureKeyboardFromApp() / CaptureMouseFromApp(): added argument to allow clearing the capture flag. (#533)
 - ImDrawList: Fixed index-overflow check broken by AddText() casting current index back to ImDrawIdx. (#514)
-- ImDrawList: Fixed incorrect removal of trailing draw command if it is a callback command.
+- ImDrawList: Fixed incorrect removal of trailing drawArea command if it is a callback command.
 - ImDrawList: Allow windows with only a callback only to be functional. (#524)
 - ImDrawList: Fixed ImDrawList::AddRect() which used to render a rectangle 1 px too large on each axis. (#457)
 - ImDrawList: Fixed ImDrawList::AddCircle() to fit precisely within bounding box like AddCircleFilled() and AddRectFilled(). (#457)
@@ -7059,8 +7059,8 @@ Other Changes:
 - ImDrawList: Allow AddText(ImFont\* font, float font_size, ...) variant to take NULL/0.0f as default.
 - ImFontAtlas: heuristic increase default texture width up for large number of glyphs. (#491)
 - ImTextBuffer: Fixed empty() helper which was utterly broken.
-- Metrics: allow to inspect individual triangles in draw calls.
-- Demo: added more draw primitives in the Custom Rendering example. (#457)
+- Metrics: allow to inspect individual triangles in drawArea calls.
+- Demo: added more drawArea primitives in the Custom Rendering example. (#457)
 - Demo: extra comments and example for PushItemWidth(-1) patterns.
 - Demo: InputText password demo filters out blanks. (#515)
 - Demo: Fixed malloc/free mismatch and leak when destructing demo console, if it has been used. (@fungos) (#536)
@@ -7092,9 +7092,9 @@ Changes:
 - InputText(): Added ImGuiInputTextFlags_Password mode: hide display, disable logging/copying to clipboard. (#237, #363, #374)
 - Added GetColorU32() helper to retrieve color given enum with global alpha and extra applied.
 - Added ImGuiIO::ClearInputCharacters() superfluous helper.
-- Fixed ImDrawList draw command merging bug where using PopClipRect() along with PushTextureID()/PopTextureID() functions
+- Fixed ImDrawList drawArea command merging bug where using PopClipRect() along with PushTextureID()/PopTextureID() functions
   would occasionally restore an incorrect clipping rectangle.
-- Fixed ImDrawList draw command merging so PushTextureID(XXX)/PopTextureID()/PushTextureID(XXX) sequence are now properly merged.
+- Fixed ImDrawList drawArea command merging so PushTextureID(XXX)/PopTextureID()/PushTextureID(XXX) sequence are now properly merged.
 - Fixed large popups positioning issues when their contents on either axis is larger than DisplaySize,
   and WindowPadding < DisplaySafeAreaPadding.
 - Fixed border rendering in various situations when using non-pixel aligned glyphs.
@@ -7115,7 +7115,7 @@ Changes:
 - Columns: Removed one unnecessary allocation when columns are not used by a window. (#125)
 - ImFontAtlas: Tweaked GetGlyphRangesJapanese() so it is easier to modify.
 - ImFontAtlas: Updated stb_rect_pack.h to 0.08.
-- Metrics: Fixed computing ImDrawCmd bounding box when the draw buffer have been unindexed.
+- Metrics: Fixed computing ImDrawCmd bounding box when the drawArea buffer have been unindexed.
 - Demo: Added a simple "Property Editor" demo applet. (#125, #414)
 - Demo: Fixed assertion in "Custom Rendering" demo when holding both mouse buttons. (#393)
 - Demo: Lots of extra comments, fixes.
@@ -7219,7 +7219,7 @@ Other Changes:
 - ImDrawList: Added AddBezierCurve(), PathBezierCurveTo() API for cubic bezier curves (#311).
 - ImDrawList: Allow to override ImDrawIdx type (#292).
 - ImDrawList: Added an assert on overflowing index value (#292).
-- ImDrawList: Fixed issues with channels split/merge. Now functional without manually adding a draw cmd. Added comments.
+- ImDrawList: Fixed issues with channels split/merge. Now functional without manually adding a drawArea cmd. Added comments.
 - ImDrawData: Added ScaleClipRects() helper useful when rendering scaled. (#287).
 - Fixed Bullet() inconsistent layout behavior when clipped.
 - Fixed IsWindowHovered() not taking account of window hoverability (may be disabled because of a popup).
@@ -7338,8 +7338,8 @@ Other Changes:
 - ImDrawList: Added AddRectFilledMultiColor() helper.
 - ImDrawList: Added multi-channel rendering so out of order elements can be rendered in separate channels and then merged
   back together (used by columns).
-- ImDrawList: Fixed merging draw commands when equal clip rectangles are in the two first commands.
-- ImDrawList: Fixed window draw lists not destructed properly on Shutdown().
+- ImDrawList: Fixed merging drawArea commands when equal clip rectangles are in the two first commands.
+- ImDrawList: Fixed window drawArea lists not destructed properly on Shutdown().
 - ImDrawData: Added DeIndexAllBuffers() helper.
 - Added lots of new font options ImFontAtlas::AddFont() and the new ImFontConfig structure.
   - Added support for oversampling (ImFontConfig: OversampleH, OversampleV) and sub-pixel positioning (ImFontConfig: PixelSnapH).
@@ -7352,14 +7352,14 @@ Other Changes:
 - InputText: Added ImGuiInputTextFlags_AlwaysInsertMode flag.
 - InputText: Added HasSelection() helper in ImGuiTextEditCallbackData as a clarification.
 - InputText: Fix for using END key on a multi-line text editor (#275)
-- Columns: Dispatch render of each column in a sub-draw list and merge on closure, saving a lot of draw calls! (#125)
+- Columns: Dispatch render of each column in a sub-drawArea list and merge on closure, saving a lot of drawArea calls! (#125)
 - Popups: Fixed Combo boxes inside menus. (#272)
 - Style: Added GrabRounding setting to make the sliders etc. grabs rounded.
 - Changed SameLine() parameters from int to float.
 - Fixed incorrect assert triggering when code stole ActiveID from user moving a window by calling e.g. SetKeyboardFocusHere().
 - Fixed CollapsingHeader() label rendering outside its frame in columns context where ClipRect max isn't aligned with the
   right-side of the header.
-- Metrics window: calculate bounding box of actual vertices when hovering a draw list.
+- Metrics window: calculate bounding box of actual vertices when hovering a drawArea list.
 - Examples: Showing more information in the Fonts section.
 - Examples: Added a gratuitous About window.
 - Examples: Updated all examples code (OpenGL/DX9/DX11/SDL/Allegro/iOS) to use indexed rendering.
@@ -7409,7 +7409,7 @@ Other Changes:
   Allowed us to clean up and optimize lots of code. Yeah! (#262)
 - ImDrawList: store pointer to their owner name for easier auditing/debugging.
 - Examples: added scroll tracking example with SetScrollFromCursorPos().
-- Examples: metrics windows render clip rectangle when hovering over a draw call.
+- Examples: metrics windows render clip rectangle when hovering over a drawArea call.
 - Lots of small optimization (particularly to run faster on unoptimized builds) and tidying up.
 - Added font links in extra_fonts/ + instructions for using compressed fonts in C array.
 
@@ -7541,7 +7541,7 @@ Other Changes:
 - ImVector: tweak growth strategy, matches vector from VS2010.
 - ImFontAtlas: Added ClearFonts(), making the different clear funcs more explicit. (#224)
 - ImFontAtlas: Fixed appending new fonts without clearing existing fonts. Clearing input data left to application. (#224)
-- ImDrawList: Merge draw command better, cases of multiple Begin/End gets merged properly.
+- ImDrawList: Merge drawArea command better, cases of multiple Begin/End gets merged properly.
 - Store common stacked settings contiguously in memory to avoid heap allocation for unused features, and reduce cache misses.
 - Shutdown() tests for g.IO.Fonts not being NULL to ease use of multiple ImGui contexts. (#207)
 - Added IMGUI_DISABLE_OBSOLETE_FUNCTIONS define to disable the functions that are meant to be removed.
@@ -7653,8 +7653,8 @@ Other Changes:
 - Fixed assignment order in Begin() making auto-fit size effectively lag by one frame. Also disabling
   "clamp into view" while windows are auto-fitting so that auto-fitting window in corners don't get pushed away.
 - Fixed MouseClickedPos not updated on double-click update (#167)
-- Fixed MouseDrawCursor feature submitting an empty trailing command in the draw list.
- Fixed unmerged draw calls for software mouse cursor.
+- Fixed MouseDrawCursor feature submitting an empty trailing command in the drawArea list.
+ Fixed unmerged drawArea calls for software mouse cursor.
 - Fixed double-clicking on resize grip keeping the grip active if mouse button is kept held.
 - Bounding box tests exclude higher bound, so touching items (zero spacing) don't report double hover when cursor is on edge.
 - Setting io.LogFilename to NULL disable default LogToFile() (part of #175)
@@ -7852,7 +7852,7 @@ Other Changes:
 - Renamed GetTextLineSpacing() to GetTextLineHeightWithSpacing().
 - Combo box always appears above other child windows of a same parent.
 - Combo/Label: label is properly clipped inside the frame (#23).
-- Added cpu-side text clipping functions which are used in some instances to avoid extra draw calls.
+- Added cpu-side text clipping functions which are used in some instances to avoid extra drawArea calls.
 - InputText: Filtering private Unicode range 0xE000-0xF8FF.
 - Fixed holding button over scrollbar creating a small feedback loop with calculation of contents size.
 - Calling SetCursorPos() automatically extends the contents size.
@@ -7892,7 +7892,7 @@ Other Changes:
 - We still embed a compressed pixel-perfect TTF version of ProggyClean for convenience.
 - Runtime font rendering is a little faster than previously.
 - You can load multiple fonts with multiple size inside the font atlas. Rendering with multiple
-  fonts are still merged into a single draw call whenever possible.
+  fonts are still merged into a single drawArea call whenever possible.
 - The system handles UTF-8 and provide ranges to easily load e.g. characters for Japanese display.
 - Added PushFont() / PopFont().
 - Added Image() and ImageButton() to display your own texture data.
@@ -7914,7 +7914,7 @@ Other Changes:
 - Added Set/GetVoidPtr in ImGuiStorage.
 - Added ColorConvertHSVtoRGB, ColorConvertRGBtoHSV, ColorConvertFloat4ToU32 helpers.
 - Added ImColor() inline helper to easily convert colors to packed 4x1 byte or 4x1 float formats.
-- Added io.MouseDrawCursor option to draw a mouse cursor for now (on systems that don't have one)
+- Added io.MouseDrawCursor option to drawArea a mouse cursor for now (on systems that don't have one)
 - Examples: Added custom drawing app example for using ImDrawList api.
 - Lots of others fixes, tweaks and comments!
 

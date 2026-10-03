@@ -30,22 +30,22 @@ class ConfrontationObjective final : public Objective
 	bool m_fatal = false;
 	bool m_violent = false;
 	// ThisActor is the one with the cooldown. The other actor is the one confronting target. They may be the same actor.
-	void onCoolDown(const ActorReference actor, const ActorIndex thisActor, Area& area);
+	void onCoolDown(const ActorReference actor, ActorIndex thisActor, Area& area);
 public:
 	ConfrontationObjective(const std::string& reason, const ActorId target);
-	ConfrontationObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo);
+	ConfrontationObjective(const Json& data, Area& area, ActorIndex actor, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void execute(Area& area, const ActorIndex actor) override;
-	void cancel(Area& area, const ActorIndex actor) override;
-	void delay(Area& area, const ActorIndex actor) override;
-	void reset(Area& area, const ActorIndex actor) override;
+	void execute(Area& area, ActorIndex actor) override;
+	void cancel(Area& area, ActorIndex actor) override;
+	void delay(Area& area, ActorIndex actor) override;
+	void reset(Area& area, ActorIndex actor) override;
 	void onActorCoolDown(const ActorReference actor, Area& area);
 	void onTargetCoolDown(const ActorReference actor, Area& area);
 	// Set changes to psycology and possibly spawn a new DramaArc like AccidentalHomicide or Reconciliation.
-	void finalize(Area& area, const ActorIndex actor);
-	void actorGoesOffScript(Area& area, const ActorIndex owningActor, const ActorIndex offScriptActor) override;
-	[[nodiscard]] bool targetYields(Area& area, const ActorIndex actor) const;
-	[[nodiscard]] bool actorYields(Area& area, const ActorIndex actor) const;
+	void finalize(Area& area, ActorIndex actor);
+	void actorGoesOffScript(Area& area, ActorIndex owningActor, ActorIndex offScriptActor) override;
+	[[nodiscard]] bool targetYields(Area& area, ActorIndex actor) const;
+	[[nodiscard]] bool actorYields(Area& area, ActorIndex actor) const;
 	[[nodiscard]] std::string name() const override { return "confront"; }
 	friend class ConfrontationPhaseScheduledEvent;
 	friend class ConfrontationCoolDownActorScheduledEvent;

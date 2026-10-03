@@ -14,7 +14,7 @@
 #include "plants.h"
 #include "items/items.h"
 #include "space/space.h"
-HungerEvent::HungerEvent(Area& area, const Step delay, const ActorIndex a, const Step start) :
+HungerEvent::HungerEvent(Area& area, const Step delay, ActorIndex a, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(a) { }
 void HungerEvent::execute(Simulation&, Area* area)
 {
@@ -24,7 +24,7 @@ void HungerEvent::clearReferences(Simulation&, Area* area)
 {
 	area->getActors().m_mustEat[m_actor].get()->m_hungerEvent.clearPointer();
 }
-MustEat::MustEat(Area& area, const ActorIndex a) :
+MustEat::MustEat(Area& area, ActorIndex a) :
 	m_hungerEvent(area.m_eventSchedule)
 {
 	m_actor.setIndex(a, area.getActors().m_referenceData);
@@ -35,7 +35,7 @@ void MustEat::scheduleHungerEvent(Area& area)
 	Step eatFrequency = AnimalSpecies::getStepsEatFrequency(area.getActors().getSpecies(m_actor.getIndex(referenceData)));
 	m_hungerEvent.schedule(area, eatFrequency, m_actor.getIndex(referenceData));
 }
-MustEat::MustEat(Area& area, const Json& data, const ActorIndex actor, AnimalSpeciesId species) :
+MustEat::MustEat(Area& area, const Json& data, ActorIndex actor, AnimalSpeciesId species) :
 	m_hungerEvent(area.m_eventSchedule), m_massFoodRequested(data["massFoodRequested"].get<Mass>())
 {
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
@@ -56,7 +56,7 @@ Json MustEat::toJson() const
 	data["hungerEventStart"] = m_hungerEvent.getStartStep();
 	return data;
 }
-bool MustEat::canEatActor(Area& area, const ActorIndex actor) const
+bool MustEat::canEatActor(Area& area, ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	if(actors.isAlive(actor))
@@ -143,6 +143,13 @@ void MustEat::unschedule()
 }
 void MustEat::setObjective(EatObjective& objective) { assert(m_eatObjective == nullptr); m_eatObjective = &objective; }
 bool MustEat::needsFood() const { return m_massFoodRequested != 0; }
+void MustEat::onMove(Area& newArea, ActorReference newReference)
+{
+	m_actor.moveAndUpdate(m_actor.getReferenceIndex(), newReference.getReferenceIndex(), newArea.getActors().m_referenceData);
+	m_hungerEvent.moveTo(newArea.m_eventSchedule);
+	if(newArea.hasSpace())
+		scheduleHungerEvent(newArea);
+}
 Mass MustEat::massFoodForBodyMass(Area& area) const
 {
 	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
@@ -162,7 +169,7 @@ std::pair<Point3D, int> MustEat::getDesireToEatSomethingAt(Area& area, const Cub
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
 	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
-	const ActorIndex actor = m_actor.getIndex(referenceData);
+	ActorIndex actor = m_actor.getIndex(referenceData);
 	assert(actors.isAlive(actor));
 	const AnimalSpeciesId species = actors.getSpecies(actor);
 	const FluidTypeId fluidType = AnimalSpecies::getFluidType(species);
@@ -228,4 +235,9 @@ Point3D MustEat::getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesi
 		}
 	};
 	return output;
+}
+
+void MustEat::updateReference(ActorReference oldReference, ActorReference newReference, ActorReferenceData& dataStore)
+{
+	m_actor.moveAndUpdate(oldReference.getReferenceIndex(), newReference.getReferenceIndex(), dataStore);
 }

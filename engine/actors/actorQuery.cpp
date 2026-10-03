@@ -5,7 +5,7 @@
 #include "area/area.h"
 #include "actors.h"
 // ActorQuery, to be used to search for actors.
-bool ActorQuery::query(Area& area, const ActorIndex other) const
+bool ActorQuery::query(Area& area, ActorIndex other) const
 {
 	Actors& actors = area.getActors();
 	if(actor.exists())

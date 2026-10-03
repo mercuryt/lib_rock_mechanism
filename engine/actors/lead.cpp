@@ -3,13 +3,13 @@
 #include "../space/space.h"
 #include "../numericTypes/index.h"
 #include "../geometry/setOfPointsHelper.h"
-const SmallSet<Point3D>& Actors::lineLead_getPath(const ActorIndex index) const
+const SmallSet<Point3D>& Actors::lineLead_getPath(ActorIndex index) const
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
 	return m_leadFollowPath[index];
 }
-ShapeId Actors::lineLead_getLargestShape(const ActorIndex index) const
+ShapeId Actors::lineLead_getLargestShape(ActorIndex index) const
 {
 	ShapeId output = m_shape[index];
 	ActorOrItemIndex follower = index.toActorOrItemIndex();
@@ -22,13 +22,13 @@ ShapeId Actors::lineLead_getLargestShape(const ActorIndex index) const
 	}
 	return output;
 }
-MoveTypeId Actors::lineLead_getMoveType(const ActorIndex index) const
+MoveTypeId Actors::lineLead_getMoveType(ActorIndex index) const
 {
 	//TODO: iterate line and find most restrictive move type
 	MoveTypeId output = m_moveType[index];
 	return output;
 }
-Speed Actors::lineLead_getSpeedWithAddedMass(const ActorIndex index, const Mass mass) const
+Speed Actors::lineLead_getSpeedWithAddedMass(ActorIndex index, const Mass mass) const
 {
 	auto actorsAndItems = lineLead_getAll(index);
 	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(m_area, actorsAndItems, Mass::create(0), Mass::create(0), mass);
@@ -37,11 +37,11 @@ Speed Actors::lineLead_getSpeedWithAddedMass(const SmallSet<ActorIndex>& indices
 {
 	std::vector<ActorOrItemIndex> vector;
 	vector.resize(indices.size());
-	for(const ActorIndex index : indices)
+	for(ActorIndex index : indices)
 		vector.push_back(ActorOrItemIndex::createForActor(index));
 	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(m_area, vector, Mass::create(0), Mass::create(0), mass);
 }
-std::vector<ActorOrItemIndex> Actors::lineLead_getAll(const ActorIndex index) const
+std::vector<ActorOrItemIndex> Actors::lineLead_getAll(ActorIndex index) const
 {
 	std::vector<ActorOrItemIndex> output;
 	ActorOrItemIndex current = ActorOrItemIndex::createForActor(index);
@@ -138,7 +138,7 @@ std::pair<Point3D, Facing4> Actors::lineLead_followerGetNextStep(const ActorOrIt
 	}
 	return {Point3D::null(), Facing4::Null};
 }
-bool Actors::lineLead_followersCanMoveEver(const ActorIndex index) const
+bool Actors::lineLead_followersCanMoveEver(ActorIndex index) const
 {
 	assert(isLeading(index));
 	assert(!isFollowing(index));
@@ -159,7 +159,7 @@ bool Actors::lineLead_followersCanMoveEver(const ActorIndex index) const
 	}
 	return true;
 }
-bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex index) const
+bool Actors::lineLead_followersCanMoveCurrently(ActorIndex index) const
 {
 	assert(isLeading(index));
 	assert(!isFollowing(index));
@@ -188,7 +188,7 @@ bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex index) const
 	}
 	return true;
 }
-CuboidSet Actors::lineLead_getOccupiedCuboids(const ActorIndex index) const
+CuboidSet Actors::lineLead_getOccupiedCuboids(ActorIndex index) const
 {
 	CuboidSet output;
 	assert(isLeading(index));
@@ -201,20 +201,35 @@ CuboidSet Actors::lineLead_getOccupiedCuboids(const ActorIndex index) const
 	}
 	return output;
 }
-bool Actors::lineLead_pathEmpty(const ActorIndex index) const
+bool Actors::lineLead_pathEmpty(ActorIndex index) const
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
 	return m_leadFollowPath[index].empty();
 }
-void Actors::lineLead_pushFront(const ActorIndex index, const Point3D point)
+OffsetCuboid Actors::lineLead_getHypotheticalStraightLineBoundry(ActorIndex index, Facing4 facing) const
+{
+	OffsetCuboid output = Shape::getBoundry(m_shape[index]);
+	Distance offsetBack = Shape::getDistanceFromBack(m_shape[index]);
+	ActorOrItemIndex next = m_follower[index];
+	while(next.exists())
+	{
+		OffsetCuboid nextCuboid = Shape::getBoundry(next.getShape(m_area));
+		nextCuboid.shift(Facing6::South, offsetBack);
+		output.maybeExpand(nextCuboid);
+		offsetBack += nextCuboid.sizeY().get();
+	}
+	output.rotate2D(facing);
+	return output;
+}
+void Actors::lineLead_pushFront(ActorIndex index, const Point3D point)
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
 	assert(m_location[index] == point);
 	m_leadFollowPath[index].insertFrontNonunique(point);
 }
-void Actors::lineLead_popBackUnlessOccupiedByFollower(const ActorIndex index)
+void Actors::lineLead_popBackUnlessOccupiedByFollower(ActorIndex index)
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
@@ -224,11 +239,11 @@ void Actors::lineLead_popBackUnlessOccupiedByFollower(const ActorIndex index)
 	if(m_leadFollowPath[index].size() > 1 && follower.getLocation(m_area) == *(m_leadFollowPath[index].end() - 2))
 		m_leadFollowPath[index].popBack();
 }
-void Actors::lineLead_clearPath(const ActorIndex index)
+void Actors::lineLead_clearPath(ActorIndex index)
 {
 	m_leadFollowPath[index].clear();
 }
-void Actors::lineLead_appendToPath(const ActorIndex index, const Point3D point, const Facing4 facing)
+void Actors::lineLead_appendToPath(ActorIndex index, const Point3D point, const Facing4 facing)
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
@@ -265,7 +280,7 @@ void Actors::lineLead_appendToPath(const ActorIndex index, const Point3D point, 
 	}
 }
 // TODO: very redundant with can move.
-void Actors::lineLead_moveFollowers(const ActorIndex index)
+void Actors::lineLead_moveFollowers(ActorIndex index)
 {
 	assert(isLeading(index));
 	assert(!isFollowing(index));

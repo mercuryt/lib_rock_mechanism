@@ -90,7 +90,7 @@ void SuccessAtWorkDramaArc::callback()
 			continue;
 		std::string description;
 		Project& project = *m_area->m_simulation.m_random.getInVector(projects.m_data).get();
-		const ActorIndex worker = m_area->m_simulation.m_random.getInVector(project.getWorkers().m_data).first.getIndex(actors.m_referenceData);
+		ActorIndex worker = m_area->m_simulation.m_random.getInVector(project.getWorkers().m_data).first.getIndex(actors.m_referenceData);
 		description += actors.getName(worker) + " made a success while working on " + project.description() + " resulting in ";
 		SuccessAtWorkType successType = m_area->m_simulation.m_random.getInEnum<SuccessAtWorkType>();
 		// Make a copy before maybe completing the project.
@@ -106,7 +106,7 @@ void SuccessAtWorkDramaArc::callback()
 		// Maybe find someone to praise worker later.
 		ActorIndex praiser;
 		// Start by searching coworkers, if no one suitable is found search canBeSeenBy.
-		auto castingCall = [&](const ActorIndex index) -> float
+		auto castingCall = [&](ActorIndex index) -> float
 		{
 			if(actors.objective_getCurrent<Objective>(index).m_priority >= Config::Social::socialPriorityHigh)
 				return FLT_MIN;
@@ -120,10 +120,10 @@ void SuccessAtWorkDramaArc::callback()
 		};
 		auto castingCallRef = [&](const ActorReference ref) -> float
 		{
-			const ActorIndex candidate = ref.getIndex(actors.m_referenceData);
+			ActorIndex candidate = ref.getIndex(actors.m_referenceData);
 			return castingCall(candidate);
 		};
-		const ActorIndex bestCoworkerCandidate = *std::ranges::max_element(coworkers.m_data, {}, castingCall);
+		ActorIndex bestCoworkerCandidate = *std::ranges::max_element(coworkers.m_data, {}, castingCall);
 		if(castingCall(bestCoworkerCandidate) >= Config::Social::minimumCastingScoreForPraiseSuccessAtWork)
 			praiser = bestCoworkerCandidate;
 		else

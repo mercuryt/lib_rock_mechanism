@@ -64,7 +64,7 @@ Window::Window() :
 	m_dpiScaleX = (float)drawableW / (float)m_screenWidth;
 	m_dpiScaleY = (float)drawableH / (float)m_screenHeight;
 	updateSimulationList();
-	m_gameOverlay.m_controllsState.initalize();
+	m_areaOverlay.m_controllsState.initalize();
 }
 void Window::startLoop()
 {
@@ -137,17 +137,18 @@ void Window::render()
 		case PanelId::MainMenu:				screens::mainMenu(*this); break;
 		case PanelId::Load:					screens::load(*this); break;
 		case PanelId::GameView:				screens::gameView(*this); break;
-		case PanelId::ActorDetails:			screens::actorDetails(*this, m_gameOverlay.m_detailActor); break;
-		case PanelId::ObjectivePriorities:	screens::objectivePriorities(*this, m_gameOverlay.m_detailActor); break;
-		case PanelId::EditUniform:			screens::editUniform(*this, m_gameOverlay.m_uniformToEdit); break;
+		case PanelId::ActorDetails:			screens::actorDetails(*this, m_areaOverlay.m_detailActor); break;
+		case PanelId::ObjectivePriorities:	screens::objectivePriorities(*this, m_areaOverlay.m_detailActor); break;
+		case PanelId::EditUniform:			screens::editUniform(*this, m_areaOverlay.m_uniformToEdit); break;
 		case PanelId::Production:			screens::production(*this); break;
+		case PanelId::ExpeditionDetails:	screens::expeditionDetails(*this, m_mapOverlay.m_selectedExpedition); break;
 		// Edit mode.
 		case PanelId::CreateSimulation:		screens::createSimulation(*this); break;
 		case PanelId::CreateArea:			screens::createArea(*this); break;
 		case PanelId::Edit:					screens::editSimulation(*this); break;
 		case PanelId::SelectFactionToEdit:	screens::selectFactionToEdit(*this); break;
-		case PanelId::EditFaction:			screens::editFaction(*this, m_gameOverlay.m_factionToEdit); break;
-		case PanelId::EditActor:			screens::editActor(*this, m_gameOverlay.m_detailActor); break;
+		case PanelId::EditFaction:			screens::editFaction(*this, m_areaOverlay.m_factionToEdit); break;
+		case PanelId::EditActor:			screens::editActor(*this, m_areaOverlay.m_detailActor); break;
 		case PanelId::EditDrama:			screens::editDrama(*this, *m_area); break;
 		default: std::unreachable();
 	}
@@ -200,15 +201,16 @@ void Window::processEvents()
 				switch (event.key.keysym.sym)
 				{
 					case SDLK_ESCAPE:
-						if(m_gameOverlay.m_infoPopUp != InfoPopUpId::Null)
-							m_gameOverlay.m_infoPopUp = InfoPopUpId::Null;
+						if(m_areaOverlay.m_infoPopUp != InfoPopUpId::Null)
+							m_areaOverlay.m_infoPopUp = InfoPopUpId::Null;
 						else if(std::ranges::find(overlayPanels, m_panel) != std::end(overlayPanels))
+							//TODO: What is this for?
 							m_panel = PanelId::GameView;
 						else
 						{
 							// Opening the menu pauses the game.
 							m_paused = true;
-							m_gameOverlay.m_gameMenuIsOpen = !m_gameOverlay.m_gameMenuIsOpen;
+							m_areaOverlay.m_gameMenuIsOpen = !m_areaOverlay.m_gameMenuIsOpen;
 						}
 						break;
 					/*
@@ -222,18 +224,18 @@ void Window::processEvents()
 					*/
 					case ' ':
 						// Don't allow user to unpause while menu is open.
-						if(!m_gameOverlay.m_gameMenuIsOpen)
+						if(!m_areaOverlay.m_gameMenuIsOpen)
 							m_paused.toggle();
 						break;
 					case '.':
 						m_simulation->doStep(1);
 						break;
 					case 'z':
-						if(m_gameOverlay.m_selectMode == SelectMode::Plants)
-							m_gameOverlay.m_selectMode = SelectMode::Space;
+						if(m_areaOverlay.m_selectMode == SelectMode::Plants)
+							m_areaOverlay.m_selectMode = SelectMode::Space;
 						else
-							m_gameOverlay.m_selectMode = (SelectMode)(((int)m_gameOverlay.m_selectMode + 1) % 4);
-						m_gameOverlay.deselectAll();
+							m_areaOverlay.m_selectMode = (SelectMode)(((int)m_areaOverlay.m_selectMode + 1) % 4);
+						m_areaOverlay.deselectAll();
 						break;
 					case SDLK_INSERT:
 						zoom(1.f + displayData::zoomIncrement);
@@ -254,7 +256,7 @@ void Window::processEvents()
 						pan(displayData::panSpeed / m_pov->zoom, 0);
 						break;
 					case SDLK_PAGEUP:
-						if(m_pov->z != m_area->getSpace().m_sizeZ - 1)
+						if(m_pov->z != boundry().m_high.z() - 1)
 							++m_pov->z;
 						break;
 					case SDLK_PAGEDOWN:
@@ -268,17 +270,17 @@ void Window::processEvents()
 				// Right button is handled by ImGui, maybe left should be as well.
 				if(event.button.button == SDL_BUTTON_LEFT)
 				{
-					m_gameOverlay.m_mouseIsDown = true;
-					m_gameOverlay.m_mouseDragStartCoordinates = m_mousePosition;
-					m_gameOverlay.m_mouseDragStartPoint = getBlockAtScreenPosition(m_mousePosition);
+					m_areaOverlay.m_mouseIsDown = true;
+					m_areaOverlay.m_mouseDragStartCoordinates = m_mousePosition;
+					m_areaOverlay.m_mouseDragStartPoint = getBlockAtScreenPosition(m_mousePosition);
 				}
 				break;
 			case SDL_MOUSEBUTTONUP:
 				if(event.button.button == SDL_BUTTON_LEFT)
 				{
-					m_gameOverlay.m_mouseIsDown = false;
-					Cuboid cuboid = Cuboid::create(getBlockAtScreenPosition(m_mousePosition), m_gameOverlay.m_mouseDragStartPoint);
-					m_gameOverlay.updateSelect(*this, cuboid);
+					m_areaOverlay.m_mouseIsDown = false;
+					Cuboid cuboid = Cuboid::create(getBlockAtScreenPosition(m_mousePosition), m_areaOverlay.m_mouseDragStartPoint);
+					m_areaOverlay.updateSelect(*this, cuboid);
 				}
 				break;
 			case SDL_QUIT:
@@ -312,12 +314,12 @@ void Window::showEdit()
 }
 void Window::showActorDetails(const ActorReference actor)
 {
-	m_gameOverlay.m_detailActor = actor;
+	m_areaOverlay.m_detailActor = actor;
 	m_panel = PanelId::ActorDetails;
 }
 void Window::showObjectivePriorities(const ActorReference actor)
 {
-	m_gameOverlay.m_detailActor = actor;
+	m_areaOverlay.m_detailActor = actor;
 	m_panel = PanelId::ObjectivePriorities;
 }
 void Window::showSelectFactionToEdit()
@@ -326,17 +328,17 @@ void Window::showSelectFactionToEdit()
 }
 void Window::showEditFaction(const FactionId faction)
 {
-	m_gameOverlay.m_factionToEdit = faction;
+	m_areaOverlay.m_factionToEdit = faction;
 	m_panel = PanelId::EditFaction;
 }
 void Window::showEditUniform(Uniform* uniform)
 {
-	m_gameOverlay.m_uniformToEdit = uniform;
+	m_areaOverlay.m_uniformToEdit = uniform;
 	m_panel = PanelId::EditUniform;
 }
 void Window::showEditActor(const ActorReference actor)
 {
-	m_gameOverlay.m_detailActor = actor;
+	m_areaOverlay.m_detailActor = actor;
 	m_panel = PanelId::EditActor;
 }
 void Window::createSimulation(const std::string& name, const DateTime dateTime)
@@ -359,7 +361,7 @@ void Window::updateSimulationList()
 }
 void Window::load(const std::filesystem::path& path)
 {
-	m_gameOverlay.deselectAll();
+	m_areaOverlay.deselectAll();
 	auto result = std::make_shared<LoadResult>();
 	std::function<void()> task = [path, result] mutable {
 		result->simulation = std::make_unique<Simulation>(path);
@@ -416,19 +418,30 @@ void Window::save(std::function<void()>&& continuation)
 	};
 	m_backgroundTask.start(*this, std::move(task), std::move(continuation));
 }
+void Window::showMap()
+{
+	m_mapOpen = true;
+	m_currentDisplayTargetTotalTilesX = m_simulation->m_world->m_boundry.sizeX();
+	m_currentDisplayTargetTotalTilesY = m_simulation->m_world->m_boundry.sizeY();
+	m_pov = &m_mapPov;
+}
 void Window::setArea(Area& area)
 {
 	m_area = &area;
 	SDL_DestroyTexture(m_gameView);
 	const Space& space = m_area->getSpace();
-	int width = space.m_sizeX.get() * displayData::defaultScale;
-	int height = space.m_sizeY.get() * displayData::defaultScale;
+	m_currentDisplayTargetTotalTilesX = space.m_sizeX;
+	int width = m_currentDisplayTargetTotalTilesX.get() * displayData::defaultScale;
+	m_currentDisplayTargetTotalTilesY = space.m_sizeY;
+	int height = m_currentDisplayTargetTotalTilesY.get() * displayData::defaultScale;
 	m_gameView = SDL_CreateTexture(m_sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
+	m_mapOpen = false;
 }
 Area* Window::getArea() { return m_area; }
 const Area* Window::getArea() const { return m_area; }
 POV Window::makeDefaultPOV() const
 {
+	assert(m_area != nullptr);
 	Point3D surfaceCenter = m_area->getSpace().getCenterAtGroundLevel();
 	return {
 		surfaceCenter.x().get() * displayData::defaultScale,
@@ -461,9 +474,8 @@ void Window::clampPOV()
 	SDL_GetRendererOutputSize(m_sdlRenderer, &w, &h);
 	float viewW = w / m_pov->zoom;
 	float viewH = h / m_pov->zoom;
-	const Space& space = m_area->getSpace();
-	float worldW = space.m_sizeX.get() * displayData::defaultScale;
-	float worldH = space.m_sizeY.get() * displayData::defaultScale;
+	float worldW = m_currentDisplayTargetTotalTilesX.get() * displayData::defaultScale;
+	float worldH = m_currentDisplayTargetTotalTilesY.get() * displayData::defaultScale;
 	float maxX = worldW - viewW + 100.f;
 	float maxY = worldH - viewH + 100.f;
 	m_pov->x = std::clamp((float)m_pov->x, -100.f, maxX);
@@ -472,12 +484,11 @@ void Window::clampPOV()
 SDL_FPoint Window::screenToWorld(float sx, float sy) const
 {
 	assert(m_area != nullptr);
-	Space& space = m_area->getSpace();
 	SDL_FPoint p;
 	p.x = (sx / m_pov->zoom) + m_pov->x;
 	p.y = (sy / m_pov->zoom) + m_pov->y;
-	p.x = std::clamp(p.x, 0.f, (float)(space.m_sizeX.get() - 1)* displayData::defaultScale);
-	p.y = std::clamp(p.y, 0.f, (float)(space.m_sizeY.get() - 1) * displayData::defaultScale);
+	p.x = std::clamp(p.x, 0.f, (float)(m_currentDisplayTargetTotalTilesX.get() - 1)* displayData::defaultScale);
+	p.y = std::clamp(p.y, 0.f, (float)(m_currentDisplayTargetTotalTilesY.get() - 1) * displayData::defaultScale);
 	return p;
 }
 SDL_FPoint Window::worldToScreen(float wx, float wy) const
@@ -509,10 +520,20 @@ Point3D Window::getBlockAtScreenPosition(const SDL_Point point) const
 Distance Window::invertY(const Distance distance) const
 {
 	assert(m_area != nullptr);
-	return (m_area->getSpace().m_sizeY - 1) - distance;
+	return (m_currentDisplayTargetTotalTilesY - 1) - distance;
 }
 std::chrono::milliseconds Window::msSinceEpoch()
 {
 	auto duration = std::chrono::system_clock::now().time_since_epoch();
 	return std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+}
+Cuboid Window::boundry() const
+{
+	if(m_mapOpen)
+		return m_simulation->m_world->m_boundry;
+	else
+	{
+		assert(m_area != nullptr);
+		return m_area->getSpace().boundry();
+	}
 }

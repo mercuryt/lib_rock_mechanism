@@ -62,7 +62,7 @@ class CraftStepProject final : public Project
 	void onCancel() override;
 	void onDelay() override { cancel(); }
 	void offDelay() override { std::unreachable(); }
-	void onAddToMaking(const ActorIndex actor);
+	void onAddToMaking(ActorIndex actor);
 	[[nodiscard]] bool canReset() const override{ return false; }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const override;
@@ -74,7 +74,7 @@ public:
 	CraftStepProject(const FactionId faction, Area &area, const Point3D location, const CraftStepType &cst, CraftJob &cj) : Project(faction, area, location, Quantity::create(1)), m_craftStepType(cst), m_craftJob(cj) {}
 	CraftStepProject(const Json &data, DeserializationMemo &deserializationMemo, CraftJob &cj, Area &area);
 	// No toJson needed here, the base class one has everything.
-	[[nodiscard]] int getWorkerCraftScore(const ActorIndex actor) const;
+	[[nodiscard]] int getWorkerCraftScore(ActorIndex actor) const;
 	[[nodiscard]] SkillTypeId getSkill() const { return m_craftStepType.skillType; }
 	[[nodiscard]] std::string description() const { return m_craftStepType.name; };
 };
@@ -169,7 +169,7 @@ public:
 	// Undo an addJob order.
 	void removeJob(CraftJob& craftJob);
 	// To be called by CraftStepProject::onComplete.
-	void stepComplete(CraftJob& craftJob, const ActorIndex actor);
+	void stepComplete(CraftJob& craftJob, ActorIndex actor);
 	// To be called by CraftStepProject::onCancel.
 	void stepDestroy(CraftJob& craftJob);
 	// List a project as being in need of workers.
@@ -180,7 +180,7 @@ public:
 	// To be called when all steps are complete.
 	void jobComplete(CraftJob& craftJob, const Point3D location);
 	// Generate a project step for craftJob and dispatch the worker from objective.
-	void makeAndAssignStepProject(CraftJob& craftJob, const Point3D location, CraftObjective& objective, const ActorIndex actor);
+	void makeAndAssignStepProject(CraftJob& craftJob, const Point3D location, CraftObjective& objective, ActorIndex actor);
 	// To be used by the UI.
 	void forEachPoint(auto&& action)
 	{
@@ -194,7 +194,7 @@ public:
 	[[nodiscard]] CraftStepTypeCategoryId getDisplayStepTypeCategoryForLocation(const Point3D location) const;
 	[[nodiscard]] SmallSet<Point3D>& getLocationsForCategoryType(const CraftStepTypeCategoryId category) { return m_locationsByCategory[category]; }
 	// May return nullptr;
-	[[nodiscard]] std::pair<CraftJob*, Point3D> getJobForAt(const ActorIndex actor, const SkillTypeId skillType, const Cuboid cuboid, const SmallSet<CraftJob *> &excludeJobs) const;
+	[[nodiscard]] std::pair<CraftJob*, Point3D> getJobForAt(ActorIndex actor, const SkillTypeId skillType, const Cuboid cuboid, const SmallSet<CraftJob *> &excludeJobs) const;
 	[[nodiscard]] bool queryAny(const Cuboid cuboid);
 	[[nodiscard]] Point3D queryOne(const Cuboid cuboid, const SkillTypeId skillType, const SkillLevel skillLevel, const FactionId faction, const SmallSet<CraftJob *> &excludeJobs);
 	friend class CraftObjectiveType;

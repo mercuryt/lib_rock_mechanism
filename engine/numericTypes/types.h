@@ -24,6 +24,9 @@
 enum class Facing4 : int8_t {North,East,South,West,Null};
 enum class Facing6 {Below,North,East,South,West,Above,Null};
 Facing6 flipFacing6(Facing6 facing);
+Facing4 flipFacing4(Facing4 facing);
+Facing4 facing6ToFacing4(Facing6 facing);
+Facing6 facing4ToFacing6(Facing4 facing);
 enum class Facing8 {North,NorthEast,East,SouthEast,South,SouthWest,West,NorthWest,Null};
 enum class SetLocationAndFacingResult {PermanantlyBlocked,TemporarilyBlocked,Success,Null};
 using StepWidth = int64_t;

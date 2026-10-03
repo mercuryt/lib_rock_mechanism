@@ -12,12 +12,12 @@ Json UnmountObjective::toJson() const
 	data["location"] = m_location;
 	return data;
 }
-void UnmountObjective::execute(Area& area, const ActorIndex actor)
+void UnmountObjective::execute(Area& area, ActorIndex actor)
 {
 	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	assert(actors.onDeck_getIsOnDeckOf(actor).isActor());
-	const ActorIndex mount = actors.onDeck_getIsOnDeckOf(actor).getActor();
+	ActorIndex mount = actors.onDeck_getIsOnDeckOf(actor).getActor();
 	const ShapeId shape = actors.getCompoundShape(actor);
 	const Point3D startingLocation = actors.getLocation(actor);
 	if(m_location.empty())

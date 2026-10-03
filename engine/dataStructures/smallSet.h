@@ -102,6 +102,7 @@ struct SmallSet
 	template<typename Predicate>
 	[[nodiscard]] bool containsAny(Predicate&& predicate) const { return std::ranges::find_if(m_data, predicate) != m_data.end(); }
 	[[nodiscard]] bool containsAny(const This& other) const;
+	[[nodiscard]] bool containsAll(const This& other) const;
 	[[nodiscard]] int indexOf(const T& value) const;
 	[[nodiscard]] T& front();
 	[[nodiscard]] const T& front() const;

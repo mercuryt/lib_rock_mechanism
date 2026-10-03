@@ -19,7 +19,7 @@ class GivePlantsFluidPathRequest final : public PathRequest
 {
 	GivePlantsFluidObjective& m_objective;
 public:
-	GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, const ActorIndex actorIndex);
+	GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, ActorIndex actorIndex);
 	GivePlantsFluidPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
 	void writeStep(Area& area, bool useCurrentLocation) override;
@@ -29,8 +29,8 @@ public:
 class GivePlantsFluidObjectiveType final : public ObjectiveType
 {
 public:
-	bool canBeAssigned(Area& area, const ActorIndex actor) const;
-	std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex actor) const;
+	bool canBeAssigned(Area& area, ActorIndex actor) const;
+	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
 	GivePlantsFluidObjectiveType() = default;
 	GivePlantsFluidObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
 	[[nodiscard]] std::string name() const { return "give plants fluid"; }
@@ -42,12 +42,12 @@ public:
 	GivePlantsFluidObjective() : Objective(Config::givePlantsFluidPriority) { }
 	GivePlantsFluidObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void execute(Area& area, const ActorIndex actor) override;
-	void cancel(Area& area, const ActorIndex actor) override;
-	void reset(Area& area, const ActorIndex actor) override;
-	void delay(Area& area, const ActorIndex actor) override;
-	void selectPlantLocation(Area& area, const Point3D point, const ActorIndex actor);
-	void makePathRequest(Area& area, const ActorIndex actor);
+	void execute(Area& area, ActorIndex actor) override;
+	void cancel(Area& area, ActorIndex actor) override;
+	void reset(Area& area, ActorIndex actor) override;
+	void delay(Area& area, ActorIndex actor) override;
+	void selectPlantLocation(Area& area, const Point3D point, ActorIndex actor);
+	void makePathRequest(Area& area, ActorIndex actor);
 	void onBeforeUnload(Area&, const ActorIndex) override;
 	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("give plants fluid").getId(); }
 	[[nodiscard]] std::string name() const override { return "give plants fluid"; }

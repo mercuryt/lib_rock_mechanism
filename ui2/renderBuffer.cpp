@@ -248,6 +248,90 @@ void RenderBuffer::addTiled(const Sprite& sprite, const SDL_Rect& d, int repetit
 		}
 	}
 }
+void RenderBuffer::addLine(SDL_Point point1, SDL_Point point2, SDL_Color color)
+{
+	SDL_Point middle = point1;
+	middle.x += point2.x;
+	middle.y += point2.y;
+	middle.x /= 2.f;
+	middle.y /= 2.f;
+
+}
+void RenderBuffer::addNetwork(SDL_Rect destination, SDL_Color color, int thickness, BitSet<uint8_t, 8> connections)
+{
+	static const Sprite pixel("pixel");
+	for(int i{0}; i < 8; ++i)
+		if(connections[i])
+		{
+			switch(i)
+			{
+				case 0: // North
+					add(SDL_Rect{
+						destination.x + ((destination.w - thickness) / 2),
+						destination.y,
+						thickness,
+						destination.h / 2
+					}, color);
+				break;
+				case 1: // NorthEast
+					addRotated(pixel, SDL_Rect{
+						destination.x + int((destination.w * 0.75) - (thickness / 2)),
+						destination.y,
+						thickness,
+						destination.h / 2
+					}, 45.0, color);
+				break;
+				case 2: // East
+					add(SDL_Rect{
+						destination.x + (destination.w / 2 ),
+						destination.y + ((destination.h - thickness) / 2),
+						destination.w / 2,
+						thickness
+					}, color);
+				break;
+				case 3: // SouthEast
+					addRotated(pixel, SDL_Rect{
+						destination.x + int((destination.w * 0.75) - (thickness / 2)),
+						destination.y + (destination.h / 2),
+						thickness,
+						destination.h / 2
+					}, 315.0, color);
+				break;
+				case 4: // South
+					add(SDL_Rect{
+						destination.x + ((destination.w - thickness) / 2),
+						destination.y + (destination.h / 2),
+						thickness,
+						destination.h / 2
+					}, color);
+				break;
+				case 5: // SouthWest
+					addRotated(pixel, SDL_Rect{
+						destination.x + int((destination.w * 0.25) - (thickness / 2)),
+						destination.y + (destination.h / 2),
+						thickness,
+						destination.h / 2
+					}, 45.0, color);
+				break;
+				case 6: // West
+					add(SDL_Rect{
+						destination.x,
+						destination.y + ((destination.h - thickness) / 2),
+						destination.w / 2,
+						thickness
+					}, color);
+				break;
+				case 7: // NorthWest
+					addRotated(pixel, SDL_Rect{
+						destination.x + int((destination.w * 0.25) - (thickness / 2)),
+						destination.y,
+						thickness,
+						destination.h / 2
+					}, 315.0, color);
+				break;
+			}
+		}
+}
 void RenderBuffer::render(SDL_Renderer* renderer)
 {
 	int count = m_indices.size();

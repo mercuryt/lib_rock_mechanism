@@ -25,7 +25,7 @@
 #include <string>
 #include <sys/types.h>
 
-Area::Area(AreaId id, std::string n, Simulation& s, const Distance x, const Distance y, const Distance z) :
+Area::Area(AreaId id, std::string n, Simulation& s, Distance x, Distance y, Distance z) :
 	#ifndef NDEBUG
 		m_space(std::make_unique<Space>(*this, x, y, z)),
 		m_actors(std::make_unique<Actors>(*this)),
@@ -92,8 +92,6 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_simulation(simulation),
 	m_id(data["id"].get<AreaId>())
 {
-	// Record id now so json point references will function later in this method.
-	m_simulation.m_hasAreas->recordId(*this);
 	setup();
 	getSpace().load(data["space"], deserializationMemo);
 	// Load liquid.
@@ -154,7 +152,7 @@ Area::~Area()
 	m_hasPaths.clearPathRequests();
 	// Call onBeforeUnload on all objectives. Currently only used to clear GivePlantFluid.
 	Actors& actors = getActors();
-	for(const ActorIndex actor : actors.getAll())
+	for(ActorIndex actor : actors.getAll())
 		if(actors.objective_exists(actor))
 			actors.objective_getCurrent<Objective>(actor).onBeforeUnload(*this, actor);
 }
@@ -180,10 +178,15 @@ Json Area::toJson() const
 }
 void Area::setup()
 {
-	updateClimate();
+	if(hasSpace())
+		updateClimate();
 }
 void Area::doStep()
 {
+	m_threadedTaskEngine.doStep(m_simulation, this);
+	m_eventSchedule.doStep(m_simulation.m_step);
+	if(!hasSpace())
+		return;
 	m_hasFluidGroups.doStep();
 	Space& space = getSpace();
 	space.prepareRtrees();
@@ -195,8 +198,6 @@ void Area::doStep()
 	m_fluidSources.doStep();
 	m_visionRequests.doStep();
 	m_hasPaths.doStep(*this);
-	m_threadedTaskEngine.doStep(m_simulation, this);
-	m_eventSchedule.doStep(m_simulation.m_step);
 	m_hasSoldiers.doStep(*this);
 	m_fires.doStep(m_simulation.m_step, *this);
 }
@@ -218,7 +219,7 @@ void Area::logActorsAndItems() const
 {
 	const Actors& actors = getActors();
 	const Items& items = getItems();
-	for(const ActorIndex actor : actors.getAll())
+	for(ActorIndex actor : actors.getAll())
 		actors.log(actor);
 	for(const ItemIndex item : items.getAll())
 		items.log(item);

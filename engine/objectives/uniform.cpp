@@ -6,7 +6,7 @@
 #include "../path/longRange.hpp"
 #include "../numericTypes/types.h"
 // Equip uniform.
-UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex actorIndex) :
+UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective, ActorIndex actorIndex) :
 	m_objective(objective)
 {
 	Actors& actors = area.getActors();
@@ -92,12 +92,12 @@ Json UniformPathRequest::toJson() const
 	return output;
 }
 // UniformObjective
-UniformObjective::UniformObjective(Area& area, const ActorIndex actor) :
+UniformObjective::UniformObjective(Area& area, ActorIndex actor) :
 	Objective(Config::equipPriority), m_elementsCopy(area.getActors().uniform_get(actor).elements)
 {
 	assert(area.getActors().uniform_exists(actor));
 }
-UniformObjective::UniformObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo) :
+UniformObjective::UniformObjective(const Json& data, Area& area, ActorIndex actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo)
 {
 	area.getActors().m_hasUniform[actor]->recordObjective(*this);
@@ -108,7 +108,7 @@ Json UniformObjective::toJson() const
 	data["item"] = m_item;
 	return data;
 }
-void UniformObjective::execute(Area& area, const ActorIndex actor)
+void UniformObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
@@ -145,12 +145,12 @@ void UniformObjective::execute(Area& area, const ActorIndex actor)
 		actors.move_pathRequestRecord(actor, std::make_unique<UniformPathRequest>(area, *this, actor));
 	}
 }
-void UniformObjective::cancel(Area& area, const ActorIndex actor)
+void UniformObjective::cancel(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 }
-void UniformObjective::reset(Area& area, const ActorIndex actor)
+void UniformObjective::reset(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	actors.canReserve_clearAll(actor);
@@ -175,7 +175,7 @@ ItemIndex UniformObjective::getItemAtLocation(Area& area, const Cuboid cuboid)
 	return area.getSpace().item_getOneWithCondition(cuboid, condition);
 }
 void UniformObjective::select(Area& area, const ItemIndex item) { m_item.setIndex(item, area.getItems().m_referenceData); }
-void UniformObjective::equip(Area& area, const ItemIndex item, const ActorIndex actor)
+void UniformObjective::equip(Area& area, const ItemIndex item, ActorIndex actor)
 {
 	Items& items = area.getItems();
 	for(auto& element : m_elementsCopy)

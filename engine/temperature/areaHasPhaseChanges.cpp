@@ -72,7 +72,7 @@ void AreaHasPhaseChanges::doMelt(Area& area, MaterialTypeId materialType, Cuboid
 				else
 				{
 					CuboidSet occupied = items.getOccupied(smallestItem);
-					items.destroy(smallestItem);
+					items.remove(smallestItem);
 					space.fluid_add(occupied, smallestVolume.get(), fluidType);
 				}
 			}

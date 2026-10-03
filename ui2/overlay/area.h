@@ -3,17 +3,17 @@
 #include <SDL2/SDL.h>
 _Pragma("GCC diagnostic push")
 _Pragma("GCC diagnostic ignored \"-Wdouble-promotion\"")
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_sdl2.h"
-#include "imgui/imgui_impl_sdlrenderer2.h"
+#include "../imgui/imgui.h"
+#include "../imgui/imgui_impl_sdl2.h"
+#include "../imgui/imgui_impl_sdlrenderer2.h"
 _Pragma("GCC diagnostic pop")
 //#include "contextMenu.h"
 //#include "infoPopup.h"
-#include "../engine/numericTypes/types.h"
-#include "../engine/numericTypes/index.h"
-#include "../engine/geometry/cuboidSet.h"
-#include "../engine/reference.h"
-#include "contextMenu/contextMenu.h"
+#include "../../engine/numericTypes/types.h"
+#include "../../engine/numericTypes/index.h"
+#include "../../engine/geometry/cuboidSet.h"
+#include "../../engine/reference.h"
+#include "../contextMenu/contextMenu.h"
 class Window;
 class Uniform;
 enum class SelectMode{Space, Actors, Items, Plants};
@@ -41,7 +41,7 @@ struct ControllsState final
 	void initalize();
 };
 
-class GameOverlay final
+class AreaOverlay final
 {
 public:
 	// Coordinates as float in 2d for drawing selection box, point is 3d for creating selected cuboids.
@@ -51,7 +51,6 @@ public:
 	SmallSet<ActorReference> m_selectedActors;
 	SmallSet<ItemReference> m_selectedItems;
 	Uniform* m_uniformToEdit;
-	Point3D m_blockUnderCursor;
 	ActorReference m_detailActor;
 	ItemReference m_detailItem;
 	ItemReference m_itemBeingInstalled;
@@ -65,7 +64,7 @@ public:
 	FactionId m_factionToEdit;
 	bool m_mouseIsDown = false;
 	bool m_gameMenuIsOpen = false;
-	void draw(Window& window);
+	void drawArea(Window& window);
 	void drawSelectionBox(Window& window);
 	void drawTopBar(Window& window);
 	void drawMenu(Window& window);

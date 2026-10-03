@@ -9,7 +9,6 @@ template<class EventType>
 class HasScheduledEvent
 {
 protected:
-	// m_schedule is pointer rather then a reference so HasScheduledEvent can be moved.
 	EventSchedule* m_schedule = nullptr;
 	ScheduledEvent* m_event = nullptr;
 public:
@@ -75,6 +74,11 @@ public:
 		else
 			// Set new scheduled step.
 			updateStep(to);
+	}
+	void moveTo(EventSchedule& newSchedule)
+	{
+		assert(!exists());
+		m_schedule = &newSchedule;
 	}
 	[[nodiscard]] Percent percentComplete() const { assert(exists()); return m_event->percentComplete(m_schedule->getSimulation()); }
 	[[nodiscard]] float fractionComplete() const { assert(exists()); return m_event->fractionComplete(m_schedule->getSimulation()); }

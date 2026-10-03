@@ -363,7 +363,7 @@ TEST_CASE("construct")
 		// Another step to path to the pick.
 		simulation.doStep();
 		// Destroying the saw triggers a dishonor callback which resets the project.
-		items.destroy(saw);
+		items.remove(saw);
 		CHECK(project.getWorkers().empty());
 		CHECK(!project.reservationsComplete());
 		CHECK(!project.hasCandidate(dwarf1));

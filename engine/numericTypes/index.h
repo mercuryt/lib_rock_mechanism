@@ -35,10 +35,10 @@ public:
 	HasShapeIndex() = default;
 	HasShapeIndex(const PlantIndex index);
 	HasShapeIndex(const ItemIndex index);
-	HasShapeIndex(const ActorIndex index);
+	HasShapeIndex(ActorIndex index);
 	[[nodiscard]] static HasShapeIndex cast(const PlantIndex o);
 	[[nodiscard]] static HasShapeIndex cast(const ItemIndex o);
-	[[nodiscard]] static HasShapeIndex cast(const ActorIndex o);
+	[[nodiscard]] static HasShapeIndex cast(ActorIndex o);
 	[[nodiscard]] static HasShapeIndex null() { return StrongInteger<HasShapeIndex, int>::null(); }
 	[[nodiscard]] PlantIndex toPlant() const;
 	[[nodiscard]] ActorIndex toActor() const;
@@ -76,7 +76,7 @@ public:
 	[[nodiscard]] ActorOrItemIndex toActorOrItemIndex() const;
 	[[nodiscard]] HasShapeIndex toHasShape() const { return HasShapeIndex::create(get()); }
 	[[nodiscard]] static ActorIndex cast(const HasShapeIndex index) { ActorIndex output; output.set(index.get()); return output; }
-	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const ActorIndex index) const { return index.get(); } };
+	struct Hash { [[nodiscard]] constexpr std::size_t operator()(ActorIndex index) const { return index.get(); } };
 };
 void to_json(Json& data, const ActorIndex& index);
 void from_json(const Json& data, ActorIndex& index);
@@ -149,7 +149,7 @@ void from_json(const Json& data, SquadFormationIndex& index);
 
 inline HasShapeIndex HasShapeIndex::cast(const PlantIndex o) { return HasShapeIndex::create(o.get()); }
 inline HasShapeIndex HasShapeIndex::cast(const ItemIndex o) { return HasShapeIndex::create(o.get()); }
-inline HasShapeIndex HasShapeIndex::cast(const ActorIndex o) { return HasShapeIndex::create(o.get()); }
+inline HasShapeIndex HasShapeIndex::cast(ActorIndex o) { return HasShapeIndex::create(o.get()); }
 inline PlantIndex HasShapeIndex::toPlant() const { return PlantIndex::create(get()); }
 inline ItemIndex HasShapeIndex::toItem() const { return ItemIndex::create(get()); }
 inline ActorIndex HasShapeIndex::toActor() const { return ActorIndex::create(get()); }

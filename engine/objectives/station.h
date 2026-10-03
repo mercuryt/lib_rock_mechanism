@@ -9,10 +9,10 @@ class StationObjective final : public Objective
 public:
 	StationObjective(const Point3D l, const Priority priority = Config::stationPriority) : Objective(priority), m_location(l) { }
 	StationObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex actor);
+	void execute(Area& area, ActorIndex actor);
 	void cancel(Area&, const ActorIndex) { }
 	void delay(Area&, const ActorIndex) { }
-	void reset(Area& area, const ActorIndex actor);
+	void reset(Area& area, ActorIndex actor);
 	std::string name() const { return "station"; }
 };
 /*

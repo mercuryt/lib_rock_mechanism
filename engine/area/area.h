@@ -116,7 +116,7 @@ public:
 	//WorldLocation* m_worldLocation;
 
 	// Create space and store adjacent
-	Area(AreaId id, std::string n, Simulation& s, const Distance x, const Distance y, const Distance z);
+	Area(AreaId id, std::string n, Simulation& s, Distance x, Distance y, Distance z);
 	Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s);
 	Area(const Area& area) = delete;
 	Area(const Area&& area) = delete;
@@ -139,7 +139,7 @@ public:
 		[[nodiscard]] const Actors& getActors() const { return m_actors; }
 		[[nodiscard]] const Items& getItems() const { return m_items; }
 	#else
-		[[nodiscard]] Space& getSpace() { assert(m_space != nullptr); return *m_space.get(); }
+		[[nodiscard]] Space& getSpace() { assert(m_space != nullptr); assert(hasSpace()); return *m_space.get(); }
 		[[nodiscard]] Plants& getPlants() { assert(m_plants != nullptr); return *m_plants.get(); }
 		[[nodiscard]] Actors& getActors() { assert(m_actors != nullptr); return *m_actors.get(); }
 		[[nodiscard]] Items& getItems() { assert(m_items != nullptr); return *m_items.get(); }
@@ -151,6 +151,7 @@ public:
 	// Clear all destructor callbacks in preperation for quit or hibernate.
 	void clearReservations();
 
+	[[nodiscard]] bool hasSpace() const { return getSpace().m_sizeZ != 0; }
 	[[nodiscard]] bool operator==(const Area& other) const { return this == &other; }
 	// For testing.
 	[[maybe_unused]] void logActorsAndItems() const;

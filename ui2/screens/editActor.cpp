@@ -15,7 +15,7 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 	Area& area = *window.m_area;
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	const ActorIndex actor = actorRef.getIndex(actors.m_referenceData);
+	ActorIndex actor = actorRef.getIndex(actors.m_referenceData);
 	std::string name = actors.getName(actor);
 	DateTime birthDate = DateTime(actors.getBirthStep(actor));
 	int percentGrown = actors.getPercentGrown(actor).get();
@@ -189,7 +189,7 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 	ImGui::EndTable();
 	// New Equipment
 	// This is nearly identical to the code in the item create segment of the context menu.
-	ControllsState& state = window.m_gameOverlay.m_controllsState;
+	ControllsState& state = window.m_areaOverlay.m_controllsState;
 	widgets::itemType(&state.itemType);
 	widgets::materialType(&state.materialType);
 	bool isGeneric = ItemType::getIsGeneric(state.itemType);

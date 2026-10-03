@@ -36,6 +36,7 @@ Point3D Random::getInCuboid(Cuboid cuboid)
 }
 Point3D Random::getInCuboidSet(const CuboidSet& cuboids)
 {
+	assert(!cuboids.empty());
 	Cuboid cuboid = getInVector(cuboids.m_cuboids.m_data);
 	return getInCuboid(cuboid);
 }

@@ -2,7 +2,7 @@
 #include "../area/area.h"
 #include "../space/space.h"
 #include "../items/items.h"
-Point3D Actors::mount_findLocationToMountOn(const ActorIndex index, const ActorIndex toMount) const
+Point3D Actors::mount_findLocationToMountOn(ActorIndex index, ActorIndex toMount) const
 {
 	const Space& space = m_area.getSpace();
 	const ShapeId shape = getShape(index);
@@ -15,27 +15,27 @@ Point3D Actors::mount_findLocationToMountOn(const ActorIndex index, const ActorI
 				return point;
 	return Point3D::null();
 }
-bool Actors::mount_hasPilot(const ActorIndex actor) const
+bool Actors::mount_hasPilot(ActorIndex actor) const
 {
 	return mount_getPilot(actor) != ActorIndex::null();
 }
-ActorIndex Actors::mount_getPilot(const ActorIndex actor) const
+ActorIndex Actors::mount_getPilot(ActorIndex actor) const
 {
 	for(const ActorOrItemIndex& onDeck : m_onDeck[actor])
 		if(onDeck.isActor())
 		{
-			const ActorIndex actorOnDeck = onDeck.getActor();
+			ActorIndex actorOnDeck = onDeck.getActor();
 			if(m_isPilot[actorOnDeck])
 				return actorOnDeck;
 		}
 	return ActorIndex::null();
 }
-void Actors::mount_do(const ActorIndex index, const ActorIndex toMount, const Point3D location, const bool& pilot)
+void Actors::mount_do(ActorIndex index, ActorIndex toMount, Point3D location, bool pilot)
 {
 	const Facing4& mountFacing = getFacing(toMount);
-	location_set(index, location, mountFacing);
-	m_isOnDeckOf[index] = ActorOrItemIndex::createForActor(toMount);
-	m_onDeck[toMount].insert(ActorOrItemIndex::createForActor(index));
+	if(!location.empty() && location != m_location[index])
+		location_set(index, location, mountFacing);
+	mount_set(index, toMount);
 	// Update speed will modify mount speed using the mass of onDeck.
 	move_updateIndividualSpeed(toMount);
 	// Mutate the shape of the mount to add the rider.
@@ -47,17 +47,16 @@ void Actors::mount_do(const ActorIndex index, const ActorIndex toMount, const Po
 		m_isPilot.set(index);
 	}
 }
-void Actors::mount_undo(const ActorIndex index, const Point3D location, const Facing4 facing)
+void Actors::mount_undo(ActorIndex index, Point3D location, Facing4 facing)
 {
-	const ActorIndex mount = m_isOnDeckOf[index].getActor();
+	ActorIndex mount = m_isOnDeckOf[index].getActor();
 	assert(mount.exists());
 	const Point3D previousLocation = m_location[index];
 	removeShapeFromCompoundShape(mount, getShape(index), previousLocation, m_facing[index]);
 	Space& space = m_area.getSpace();
 	assert(space.shape_shapeAndMoveTypeCanEnterEverWithFacing(location, getShape(index), getMoveType(index), facing));
 	location_set(index, location, facing);
-	m_isOnDeckOf[index].clear();
-	m_onDeck[mount].erase(ActorOrItemIndex::createForActor(index));
+	mount_unset(index, mount);
 	// Update speed will modify mount speed using the mass of onDeck.
 	move_updateIndividualSpeed(mount);
 	if(m_isPilot[index])
@@ -67,7 +66,17 @@ void Actors::mount_undo(const ActorIndex index, const Point3D location, const Fa
 		objective_maybeDoNext(mount);
 	}
 }
-void Actors::pilotItem_set(const ActorIndex index, const ItemIndex item)
+void Actors::mount_set(ActorIndex index, ActorIndex toMount)
+{
+	m_isOnDeckOf[index] = ActorOrItemIndex::createForActor(toMount);
+	m_onDeck[toMount].insert(ActorOrItemIndex::createForActor(index));
+}
+void Actors::mount_unset(ActorIndex index, ActorIndex mount)
+{
+	m_isOnDeckOf[index].clear();
+	m_onDeck[mount].erase(ActorOrItemIndex::createForActor(index));
+}
+void Actors::pilotItem_set(ActorIndex index, const ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	assert(m_facing[index] == items.getFacing(item));
@@ -78,7 +87,7 @@ void Actors::pilotItem_set(const ActorIndex index, const ItemIndex item)
 	m_moveType[index] = items.getMoveType(item);
 	items.maybeUnsetStatic(item);
 }
-void Actors::pilotItem_unset(const ActorIndex index)
+void Actors::pilotItem_unset(ActorIndex index)
 {
 	Items& items = m_area.getItems();
 	items.pilot_clear(m_isOnDeckOf[index].getItem());
@@ -87,7 +96,7 @@ void Actors::pilotItem_unset(const ActorIndex index)
 	m_compoundShape[index] = m_shape[index];
 	resetMoveType(index);
 }
-bool Actors::pilotItem_isPilotingConstructedItem(const ActorIndex index)
+bool Actors::pilotItem_isPilotingConstructedItem(ActorIndex index)
 {
 	Items& items = m_area.getItems();
 	if(!m_isPilot[index])

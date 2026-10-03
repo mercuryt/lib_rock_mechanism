@@ -14,7 +14,7 @@ void contextMenu::controlls::plants(Window& window)
 		Area& area = *window.getArea();
 		Space& space =  area.getSpace();
 		Plants& plants = area.getPlants();
-		ControllsState& state = window.m_gameOverlay.m_controllsState;
+		ControllsState& state = window.m_areaOverlay.m_controllsState;
 		if(space.plant_exists(state.clickedOnPoint))
 		{
 			const PlantIndex& plant = space.plant_get(state.clickedOnPoint);
@@ -23,8 +23,8 @@ void contextMenu::controlls::plants(Window& window)
 			{
 				if(ImGui::MenuItem("info"))
 				{
-					window.m_gameOverlay.m_detailPoint = state.clickedOnPoint;
-					window.m_gameOverlay.m_infoPopUp = InfoPopUpId::Plant;
+					window.m_areaOverlay.m_detailPoint = state.clickedOnPoint;
+					window.m_areaOverlay.m_infoPopUp = InfoPopUpId::Plant;
 					ImGui::CloseCurrentPopup();
 				}
 				if(window.m_editMode)
@@ -32,9 +32,9 @@ void contextMenu::controlls::plants(Window& window)
 					if(ImGui::MenuItem("remove"))
 					{
 						// Remove all selected with the same species as the one clicked on.
-						if(window.m_gameOverlay.m_selectedArea.empty())
-							window.m_gameOverlay.m_selectedArea.add(state.clickedOnPoint);
-						for(const Cuboid& cuboid : window.m_gameOverlay.m_selectedArea)
+						if(window.m_areaOverlay.m_selectedArea.empty())
+							window.m_areaOverlay.m_selectedArea.add(state.clickedOnPoint);
+						for(const Cuboid& cuboid : window.m_areaOverlay.m_selectedArea)
 							for(const Point3D& selectedBlock : cuboid)
 								if(space.plant_exists(selectedBlock) && plants.getSpecies(space.plant_get(selectedBlock)) == species)
 									plants.remove(space.plant_get(selectedBlock));
@@ -53,9 +53,9 @@ void contextMenu::controlls::plants(Window& window)
 				ImGui::InputInt("percent grown", &state.percentGrown.getReference());
 				if(ImGui::MenuItem("confirm"))
 				{
-					if(window.m_gameOverlay.m_selectedArea.empty())
-							window.m_gameOverlay.m_selectedArea.add(state.clickedOnPoint);
-					for(const Cuboid& cuboid : window.m_gameOverlay.m_selectedArea)
+					if(window.m_areaOverlay.m_selectedArea.empty())
+							window.m_areaOverlay.m_selectedArea.add(state.clickedOnPoint);
+					for(const Cuboid& cuboid : window.m_areaOverlay.m_selectedArea)
 						for(const Point3D& selectedBlock : cuboid)
 							if(!space.plant_exists(selectedBlock) && !space.solid_isAny(selectedBlock) && space.plant_canGrowHereEver(state.clickedOnPoint, state.plantSpecies))
 								space.plant_create(selectedBlock, state.plantSpecies, state.percentGrown);

@@ -14,7 +14,7 @@ class WanderPathRequest final : public PathRequest
 	Point3D m_lastPoint;
 	int m_pointCounter = 0;
 public:
-	WanderPathRequest(Area& area, WanderObjective& objective, const ActorIndex actor);
+	WanderPathRequest(Area& area, WanderObjective& objective, ActorIndex actor);
 	WanderPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
 	void writeStep(Area& area, bool useCurrentLocation) override;
@@ -27,14 +27,14 @@ class WanderObjective final : public Objective
 public:
 	WanderObjective();
 	WanderObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex actor);
-	void cancel(Area& area, const ActorIndex actor);
-	void delay(Area& area, const ActorIndex actor) { cancel(area, actor); }
-	void reset(Area& area, const ActorIndex actor);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor);
 	std::string name() const { return "wander"; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canResume() const { return false; }
 	// For testing.
-	[[nodiscard]] bool hasPathRequest(const Area& area, const ActorIndex actor) const;
+	[[nodiscard]] bool hasPathRequest(const Area& area, ActorIndex actor) const;
 	friend class WanderPathRequest;
 };

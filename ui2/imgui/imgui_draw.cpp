@@ -105,7 +105,7 @@ namespace IMGUI_STB_NAMESPACE
 #pragma warning (push)
 #pragma warning (disable: 4456)                             // declaration of 'xx' hides previous local declaration
 #pragma warning (disable: 6011)                             // (stb_rectpack) Dereferencing NULL pointer 'cur->next'.
-#pragma warning (disable: 5262)                             // (stb_truetype) implicit fall-through occurs here; are you missing a break statement? 
+#pragma warning (disable: 5262)                             // (stb_truetype) implicit fall-through occurs here; are you missing a break statement?
 #pragma warning (disable: 6385)                             // (stb_truetype) Reading invalid data from 'buffer':  the readable size is '_Old_3`kernel_width' bytes, but '3' bytes may be read.
 #pragma warning (disable: 28182)                            // (stb_rectpack) Dereferencing NULL pointer. 'cur' contains the same NULL value as 'cur->next' did.
 #endif
@@ -513,7 +513,7 @@ void ImDrawList::AddDrawCmd()
     CmdBuffer.push_back(draw_cmd);
 }
 
-// Pop trailing draw command (used before merging or presenting to user)
+// Pop trailing drawArea command (used before merging or presenting to user)
 // Note that this leaves the ImDrawList in a state unfit for further commands, as most code assume that CmdBuffer.Size > 0 && CmdBuffer.back().UserCallback == NULL
 void ImDrawList::_PopUnusedDrawCmd()
 {
@@ -567,7 +567,7 @@ void ImDrawList::AddCallback(ImDrawCallback callback, void* userdata, size_t use
 #define ImDrawCmd_HeaderCopy(CMD_DST, CMD_SRC)          (memcpy(CMD_DST, CMD_SRC, ImDrawCmd_HeaderSize))    // Copy ClipRect, TexRef, VtxOffset
 #define ImDrawCmd_AreSequentialIdxOffset(CMD_0, CMD_1)  (CMD_0->IdxOffset + CMD_0->ElemCount == CMD_1->IdxOffset)
 
-// Try to merge two last draw commands
+// Try to merge two last drawArea commands
 void ImDrawList::_TryMergeDrawCmds()
 {
     IM_ASSERT_PARANOID(CmdBuffer.Size > 0);
@@ -813,7 +813,7 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
 
     const bool closed = (flags & ImDrawFlags_Closed) != 0;
     const ImVec2 opaque_uv = _Data->TexUvWhitePixel;
-    const int count = closed ? points_count : points_count - 1; // The number of line segments we need to draw
+    const int count = closed ? points_count : points_count - 1; // The number of line segments we need to drawArea
     const bool thick_line = (thickness > _FringeScale);
 
     if (Flags & ImDrawListFlags_AntiAliasedLines)
@@ -827,8 +827,8 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
         const int integer_thickness = (int)thickness;
         const float fractional_thickness = thickness - integer_thickness;
 
-        // Do we want to draw this line using a texture?
-        // - For now, only draw integer-width lines using textures to avoid issues with the way scaling occurs, could be improved.
+        // Do we want to drawArea this line using a texture?
+        // - For now, only drawArea integer-width lines using textures to avoid issues with the way scaling occurs, could be improved.
         // - If AA_SIZE is not 1.0f we cannot use the texture path.
         const bool use_texture = (Flags & ImDrawListFlags_AntiAliasedLinesUseTex) && (integer_thickness < IM_DRAWLIST_TEX_LINES_WIDTH_MAX) && (fractional_thickness <= 0.00001f) && (AA_SIZE == 1.0f);
 
@@ -864,7 +864,7 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
             // [PATH 1] Texture-based lines (thick or non-thick)
             // [PATH 2] Non texture-based lines (non-thick)
 
-            // The width of the geometry we need to draw - this is essentially <thickness> pixels for the line itself, plus "one pixel" for AA.
+            // The width of the geometry we need to drawArea - this is essentially <thickness> pixels for the line itself, plus "one pixel" for AA.
             // - In the texture-based path, we don't use AA_SIZE here because the +1 is tied to the generated texture
             //   (see ImFontAtlasBuildRenderLinesTexData() function), and so alternate values won't work without changes to that code.
             // - In the non texture-based paths, we would allow AA_SIZE to potentially be != 1.0f with a patch (e.g. fringe_scale patch to
@@ -959,7 +959,7 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
         }
         else
         {
-            // [PATH 2] Non texture-based lines (thick): we need to draw the solid line core and thus require four vertices per point
+            // [PATH 2] Non texture-based lines (thick): we need to drawArea the solid line core and thus require four vertices per point
             const float half_inner_thickness = (thickness - AA_SIZE) * 0.5f;
 
             // If line is not closed, the first and last points need to be generated differently as there are no normals to blend
@@ -1247,7 +1247,7 @@ void ImDrawList::_PathArcToN(const ImVec2& center, float radius, float a_min, fl
     }
 
     // Note that we are adding a point at both a_min and a_max.
-    // If you are trying to draw a full closed circle you don't want the overlapping points!
+    // If you are trying to drawArea a full closed circle you don't want the overlapping points!
     _Path.reserve(_Path.Size + (num_segments + 1));
     for (int i = 0; i <= num_segments; i++)
     {
@@ -2181,11 +2181,11 @@ void ImDrawListSplitter::Merge(ImDrawList* draw_list)
         if (ch._CmdBuffer.Size > 0 && last_cmd != NULL)
         {
             // Do not include ImDrawCmd_AreSequentialIdxOffset() in the compare as we rebuild IdxOffset values ourselves.
-            // Manipulating IdxOffset (e.g. by reordering draw commands like done by RenderDimmedBackgroundBehindWindow()) is not supported within a splitter.
+            // Manipulating IdxOffset (e.g. by reordering drawArea commands like done by RenderDimmedBackgroundBehindWindow()) is not supported within a splitter.
             ImDrawCmd* next_cmd = &ch._CmdBuffer[0];
             if (ImDrawCmd_HeaderCompare(last_cmd, next_cmd) == 0 && last_cmd->UserCallback == NULL && next_cmd->UserCallback == NULL)
             {
-                // Merge previous channel last draw command with current channel first draw command if matching.
+                // Merge previous channel last drawArea command with current channel first drawArea command if matching.
                 last_cmd->ElemCount += next_cmd->ElemCount;
                 idx_offset += next_cmd->ElemCount;
                 ch._CmdBuffer.erase(ch._CmdBuffer.Data); // FIXME-OPT: Improve for multiple merges.
@@ -2215,7 +2215,7 @@ void ImDrawListSplitter::Merge(ImDrawList* draw_list)
     }
     draw_list->_IdxWritePtr = idx_write;
 
-    // Ensure there's always a non-callback draw command trailing the command-buffer
+    // Ensure there's always a non-callback drawArea command trailing the command-buffer
     if (draw_list->CmdBuffer.Size == 0 || draw_list->CmdBuffer.back().UserCallback != NULL)
         draw_list->AddDrawCmd();
 
@@ -2285,8 +2285,8 @@ void ImGui::AddDrawListToDrawDataEx(ImDrawData* draw_data, ImVector<ImDrawList*>
 
     // Check that draw_list doesn't use more vertices than indexable (default ImDrawIdx = unsigned short = 2 bytes = 64K vertices per ImDrawList = per window)
     // If this assert triggers because you are drawing lots of stuff manually:
-    // - First, make sure you are coarse clipping yourself and not trying to draw many things outside visible bounds.
-    //   Be mindful that the lower-level ImDrawList API doesn't filter vertices. Use the Metrics/Debugger window to inspect draw list contents.
+    // - First, make sure you are coarse clipping yourself and not trying to drawArea many things outside visible bounds.
+    //   Be mindful that the lower-level ImDrawList API doesn't filter vertices. Use the Metrics/Debugger window to inspect drawArea list contents.
     // - If you want large meshes with more than 64K vertices, you can either:
     //   (A) Handle the ImDrawCmd::VtxOffset value in your renderer backend, and set 'io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset'.
     //       Most example backends already support this from 1.71. Pre-1.71 backends won't.
@@ -2297,7 +2297,7 @@ void ImGui::AddDrawListToDrawDataEx(ImDrawData* draw_data, ImVector<ImDrawList*>
     //       Your own engine or render API may use different parameters or function calls to specify index sizes.
     //       2 and 4 bytes indices are generally supported by most graphics API.
     // - If for some reason neither of those solutions works for you, a workaround is to call BeginChild()/EndChild() before reaching
-    //   the 64K limit to split your draw commands in multiple draw lists.
+    //   the 64K limit to split your drawArea commands in multiple drawArea lists.
     if (sizeof(ImDrawIdx) == 2)
         IM_ASSERT(draw_list->_VtxCurrentIdx < (1 << 16) && "Too many vertices in ImDrawList using 16-bit indices. Read comment above");
 
@@ -3258,7 +3258,7 @@ void ImFontAtlasBuildNotifySetFont(ImFontAtlas* atlas, ImFont* old_font, ImFont*
             shared_data->Font = new_font;
         if (ImGuiContext* ctx = shared_data->Context)
         {
-            if (ctx->FrameCount == 0 && old_font == NULL) // While this should work either way, we save ourselves the bother / debugging confusion of running ImGui code so early when it is not needed. 
+            if (ctx->FrameCount == 0 && old_font == NULL) // While this should work either way, we save ourselves the bother / debugging confusion of running ImGui code so early when it is not needed.
                 continue;
 
             if (ctx->IO.FontDefault == old_font)
@@ -3972,12 +3972,12 @@ void ImFontAtlasRemoveDrawListSharedData(ImFontAtlas* atlas, ImDrawListSharedDat
     atlas->DrawListSharedDatas.find_erase(data);
 }
 
-// Update texture identifier in all active draw lists
+// Update texture identifier in all active drawArea lists
 void ImFontAtlasUpdateDrawListsTextures(ImFontAtlas* atlas, ImTextureRef old_tex, ImTextureRef new_tex)
 {
     for (ImDrawListSharedData* shared_data : atlas->DrawListSharedDatas)
     {
-        // If Context 2 uses font owned by Context 1 which already called EndFrame()/Render(), we don't want to mess with draw commands for Context 1
+        // If Context 2 uses font owned by Context 1 which already called EndFrame()/Render(), we don't want to mess with drawArea commands for Context 1
         if (shared_data->Context && !shared_data->Context->WithinFrameScope)
             continue;
 
@@ -3997,7 +3997,7 @@ void ImFontAtlasUpdateDrawListsTextures(ImFontAtlas* atlas, ImTextureRef old_tex
     }
 }
 
-// Update texture coordinates in all draw list shared context
+// Update texture coordinates in all drawArea list shared context
 // FIXME-NEWATLAS FIXME-OPT: Doesn't seem necessary to update for all, only one bound to current context?
 void ImFontAtlasUpdateDrawListsSharedData(ImFontAtlas* atlas)
 {

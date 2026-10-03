@@ -7,7 +7,7 @@
 #include "../numericTypes/types.h"
 #include "../path/areaHasPaths.hpp"
 // PathRequest.
-InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex actorIndex) :
+InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective& iio, ActorIndex actorIndex) :
 	m_installItemObjective(iio)
 {
 	Actors& actors = area.getActors();
@@ -79,15 +79,15 @@ Json InstallItemObjective::toJson() const
 		data["project"] = m_project;
 	return data;
 }
-void InstallItemObjective::execute(Area& area, const ActorIndex actor)
+void InstallItemObjective::execute(Area& area, ActorIndex actor)
 {
 	if(m_project)
 		m_project->commandWorker(actor);
 	else
 		area.getActors().move_pathRequestRecord(actor, std::make_unique<InstallItemPathRequest>(area, *this, actor));
 }
-void InstallItemObjective::cancel(Area& area, const ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); m_project->removeWorker(actor); }
-bool InstallItemObjectiveType::canBeAssigned(Area& area, const ActorIndex actor) const
+void InstallItemObjective::cancel(Area& area, ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); m_project->removeWorker(actor); }
+bool InstallItemObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
 	return !area.m_hasInstallItemDesignations.getForFaction(area.getActors().getFaction(actor)).empty();
 }
@@ -96,4 +96,4 @@ std::unique_ptr<Objective> InstallItemObjectiveType::makeFor(Area&, const ActorI
 	std::unique_ptr<Objective> objective = std::make_unique<InstallItemObjective>();
 	return objective;
 }
-void InstallItemObjective::reset(Area& area, const ActorIndex actor) { area.getActors().canReserve_clearAll(actor); m_project = nullptr; }
+void InstallItemObjective::reset(Area& area, ActorIndex actor) { area.getActors().canReserve_clearAll(actor); m_project = nullptr; }

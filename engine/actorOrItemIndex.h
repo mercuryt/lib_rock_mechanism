@@ -4,6 +4,7 @@
  */
 #pragma once
 #include "numericTypes/types.h"
+#include "numericTypes/actorOrItemId.h"
 #include "config/config.h"
 #include "dishonorCallback.h"
 #include "numericTypes/index.h"
@@ -30,10 +31,10 @@ public:
 	ActorOrItemIndex() = default;
 	ActorOrItemIndex(const ActorOrItemIndex& other) : m_index(other.m_index), m_isActor(other.m_isActor) { }
 	ActorOrItemIndex& operator=(const ActorOrItemIndex other) { m_index = other.m_index; m_isActor = other.m_isActor; return *this; }
-	static ActorOrItemIndex createForActor(const ActorIndex actor) { return ActorOrItemIndex(actor, true); }
+	static ActorOrItemIndex createForActor(ActorIndex actor) { return ActorOrItemIndex(actor, true); }
 	static ActorOrItemIndex createForItem(const ItemIndex item) { return ActorOrItemIndex(item, false); }
 	static ActorOrItemIndex create(const ItemIndex item) { return createForItem(item); }
-	static ActorOrItemIndex create(const ActorIndex actor) { return createForActor(actor); }
+	static ActorOrItemIndex create(ActorIndex actor) { return createForActor(actor); }
 	static ActorOrItemIndex null() { return ActorOrItemIndex(); }
 	void clear() { m_index.clear(); m_isActor = false; }
 	void updateIndex(const HasShapeIndex index) { m_index = index; }
@@ -41,13 +42,17 @@ public:
 	void location_clear(Area& area) const;
 	void location_clearStatic(Area& area) const;
 	void location_clearDynamic(Area& area) const;
-	void followActor(Area& area, const ActorIndex actor) const;
+	void followActor(Area& area, ActorIndex actor) const;
 	void followItem(Area& area, const ItemIndex item) const;
 	void followPolymorphic(Area& area, const ActorOrItemIndex actorOrItem) const;
 	void unfollow(Area& area) const;
 	void move_updateIndividualSpeed(Area& area) const;
 	void maybeSetStatic(Area& area) const;
 	void setStatic(Area& area) const;
+	void setCarrier(Area& area, ActorOrItemIndex carrier) const;
+	void setPilot(Area& area, ActorIndex pilot) const;
+	void setOnDeck(Area& area, ActorOrItemIndex onDeckOf) const;
+	ActorOrItemIndex moveTo(Area& oldArea, Area& newArea) const;
 	std::string toS() const;
 	[[nodiscard]] ActorIndex getActor() const { assert(isActor()); return ActorIndex::create(m_index.get()); }
 	[[nodiscard]] ItemIndex getItem() const { assert(isItem()); return ItemIndex::create(m_index.get()); }
@@ -57,24 +62,30 @@ public:
 	[[nodiscard]] HasShapeIndex get() const { return m_index; }
 	[[nodiscard]] bool isActor() const { return m_isActor; }
 	[[nodiscard]] bool isItem() const { return !m_isActor; }
-	[[nodiscard]] bool isStatic(Area& area) const;
-	[[nodiscard]] bool isFollowing(Area& area) const;
-	[[nodiscard]] bool isLeading(Area& area) const;
-	[[nodiscard]] ActorOrItemIndex getFollower(Area& area) const;
-	[[nodiscard]] ActorOrItemIndex getLeader(Area& area) const;
+	[[nodiscard]] bool isStatic(const Area& area) const;
+	[[nodiscard]] bool isFollowing(const Area& area) const;
+	[[nodiscard]] bool isLeading(const Area& area) const;
+	[[nodiscard]] bool hasPilot(const Area& area) const;
+	[[nodiscard]] ActorIndex getPilot(const Area& area) const;
+	[[nodiscard]] bool isPilot(const Area& area) const;
+	[[nodiscard]] const SmallSet<ActorOrItemIndex>& getOnDeck(const Area& area) const;
+	[[nodiscard]] bool deckHasContent(const Area& area) const;
+	[[nodiscard]] bool isOnDeck(const Area& area) const;
+	[[nodiscard]] ActorOrItemIndex getFollower(const Area& area) const;
+	[[nodiscard]] ActorOrItemIndex getLeader(const Area& area) const;
 
-	[[nodiscard]] bool canEnterCurrentlyFrom(Area& area, const Point3D destination, const Point3D origin) const;
-	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(Area& area, const Point3D destination, const Point3D origin, const CuboidSet& occupied) const;
+	[[nodiscard]] bool canEnterCurrentlyFrom(const Area& area, Point3D destination, Point3D origin) const;
+	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(const Area& area, Point3D destination, Point3D origin, const CuboidSet& occupied) const;
 
 	[[nodiscard]] Point3D getLocation(const Area& area) const;
 	[[nodiscard]] const CuboidSet& getOccupied(const Area& area) const;
 	[[nodiscard]] const MapWithCuboidKeys<CollisionVolume>& getOccupiedWithVolume(const Area& area) const;
 	[[nodiscard]] CuboidSet getAdjacentCuboids(const Area& area) const;
 	[[nodiscard]] bool isAdjacent(const Area& area, const ActorOrItemIndex other) const;
-	[[nodiscard]] bool isAdjacentToActor(const Area& area, const ActorIndex other) const;
+	[[nodiscard]] bool isAdjacentToActor(const Area& area, ActorIndex other) const;
 	[[nodiscard]] bool isAdjacentToItem(const Area& area, const ItemIndex item) const;
 	[[nodiscard]] bool isAdjacentToLocation(const Area& area, const Point3D location) const;
-	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Area& area, const ActorIndex other) const;
+	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Area& area, ActorIndex other) const;
 	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Area& area, const ItemIndex item) const;
 	[[nodiscard]] bool occupiesPoint(const Area& area, const Point3D location) const;
 
@@ -87,6 +98,8 @@ public:
 	[[nodiscard]] FullDisplacement getVolume(const Area& area) const;
 	[[nodiscard]] Facing4 getFacing(const Area& area) const;
 	[[nodiscard]] bool isGeneric(const Area& area) const;
+	[[nodiscard]] ActorOrItemId getId(const Area& area) const;
+	[[nodiscard]] ActorOrItemReference getReference(const Area& area) const;
 	[[nodiscard]] Point3D findAdjacentPointWithCondition(const Area& area, auto&& condition)
 	{
 		for(const Cuboid cuboid : getAdjacentCuboids(area))

@@ -244,8 +244,8 @@ void AreaHasTemperature::updateAmbientSurfaceTemperature(Area& area)
 }
 Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature(Area& area) const
 {
-	Temperature yearlyHottestDailyAverage = m_maxAmbiant.exists()? m_maxAmbiant : Temperature::create(290);
-	Temperature yearlyColdestDailyAverage = m_minAmbiant.exists()? m_minAmbiant : Temperature::create(270);;
+	Temperature yearlyHottestDailyAverage = m_maxAmbiant.exists() ? m_maxAmbiant : Temperature::create(290);
+	Temperature yearlyColdestDailyAverage = m_minAmbiant.exists() ? m_minAmbiant : Temperature::create(270);;
 	static int dayOfYearOfSolstice = Config::daysPerYear / 2;
 	int day = DateTime(area.m_simulation.m_step).day;
 	int daysFromSolstice = std::abs(day - (int)dayOfYearOfSolstice);

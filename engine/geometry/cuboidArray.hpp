@@ -143,7 +143,7 @@ template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboids(const ParamaterizedLine& line) const
 {
 	const PointArray replicatedStart = line.begin.data.replicate(1, capacity);
-	const Float3DArray replicatedSloap = line.sloap.replicate(1, capacity);
+	const Float3DArray replicatedSloap = line.slope.replicate(1, capacity);
 	const PointArray replicatedHighBoundry = line.boundry.m_high.data.replicate(1, capacity);
 	const PointArray replicatedLowBoundry = line.boundry.m_low.data.replicate(1, capacity);
 	const Offset3DArray distanceFromStartToHighFace = m_high.template cast<OffsetWidth>() - replicatedStart.template cast<OffsetWidth>();
@@ -153,7 +153,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 	BoolArray result;
 	result.setZero();
 	// X
-	if(line.sloap.x() != 0.0f)
+	if(line.slope.x() != 0.0f)
 	{
 		const PointArray coordinatesAtHighX = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(0).replicate(3, 1)).round().template cast<DistanceWidth>();
 		result +=
@@ -179,7 +179,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 			(coordinatesAtLowX >= replicatedLowBoundry).colwise().all();
 	}
 	// Y
-	if(line.sloap.y() != 0.0f)
+	if(line.slope.y() != 0.0f)
 	{
 		const PointArray coordinatesAtHighY = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(1).replicate(3, 1)).round().template cast<DistanceWidth>();
 		result +=
@@ -205,7 +205,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 			(coordinatesAtLowY >= replicatedLowBoundry).colwise().all();
 	}
 	// Z
-	if(line.sloap.z() != 0.0f)
+	if(line.slope.z() != 0.0f)
 	{
 		const PointArray coordinatesAtHighZ = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(2).replicate(3, 1)).round().template cast<DistanceWidth>();
 		result +=
@@ -235,9 +235,9 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboidsWhereThereIsADifferenceInEntranceAndExitZ(const ParamaterizedLine& line) const
 {
-	assert(line.sloap.z() != 0);
+	assert(line.slope.z() != 0);
 	const PointArray replicatedStart = line.begin.data.replicate(1, capacity);
-	const Float3DArray replicatedSloap = line.sloap.replicate(1, capacity);
+	const Float3DArray replicatedSloap = line.slope.replicate(1, capacity);
 	const PointArray replicatedHighBoundry = line.boundry.m_high.data.replicate(1, capacity);
 	const PointArray replicatedLowBoundry = line.boundry.m_low.data.replicate(1, capacity);
 	// Check for intersection with high faces.
@@ -245,7 +245,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 	const Float3DArray stepsFromStartToHighFace = distanceFromStartToHighFace.template cast<float>() / replicatedSloap;
 	// High x.
 	Bool3DArray highResults;
-	if(line.sloap[0] == 0.0f)
+	if(line.slope[0] == 0.0f)
 		highResults.row(0) = false;
 	else
 	{
@@ -262,7 +262,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 			(coordinatesAtHighX >= replicatedLowBoundry).colwise().all();
 	}
 	// High y.
-	if(line.sloap[1] == 0.0f)
+	if(line.slope[1] == 0.0f)
 		highResults.row(1) = false;
 	else
 	{
@@ -278,7 +278,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 			(coordinatesAtHighY <= replicatedHighBoundry).colwise().all() &&
 			(coordinatesAtHighY >= replicatedLowBoundry).colwise().all();
 	}
-	if(line.sloap[2] == 0.0f)
+	if(line.slope[2] == 0.0f)
 	// High z.
 		highResults.row(2) = false;
 	else
@@ -300,7 +300,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 	const Float3DArray stepsFromStartToLowFace = distanceFromStartToLowFace.template cast<float>() / replicatedSloap;
 	Bool3DArray lowResults;
 	// Low x.
-	if(line.sloap[0] == 0.0f)
+	if(line.slope[0] == 0.0f)
 		lowResults.row(0) = false;
 	else
 	{
@@ -317,7 +317,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 			(coordinatesAtLowX >= replicatedLowBoundry).colwise().all();
 	}
 	// Low y.
-	if(line.sloap[1] == 0.0f)
+	if(line.slope[1] == 0.0f)
 		lowResults.row(1) = false;
 	else
 	{
@@ -335,7 +335,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 	}
 	// Low z.
 	// TODO: Unnessesary?
-	if(line.sloap[2] == 0.0f)
+	if(line.slope[2] == 0.0f)
 		lowResults.row(2) = false;
 	else
 	{
@@ -363,14 +363,14 @@ template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboidsLowZOnly(const ParamaterizedLine& line) const
 {
 	// Cannot intersect z face with no z slope.
-	if(line.sloap[2] == 0.0f)
+	if(line.slope[2] == 0.0f)
 	{
 		BoolArray output;
 		output.fill(0);
 		return output;
 	}
 	const PointArray replicatedStart = line.begin.data.replicate(1, capacity);
-	const Float3DArray replicatedSloap = line.sloap.replicate(1, capacity);
+	const Float3DArray replicatedSloap = line.slope.replicate(1, capacity);
 	Cuboid boundry = line.boundry;
 	// Ignore anything on the lowest Z level, it represents the floor.
 	boundry.m_low.setZ(boundry.m_low.z() + 1);

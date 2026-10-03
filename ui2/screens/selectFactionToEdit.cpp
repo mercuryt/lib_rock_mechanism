@@ -13,7 +13,7 @@ void screens::selectFactionToEdit(Window& window)
 	ImGui::InputText("name", &name);
 	ImGui::BeginDisabled(name.empty());
 	if(ImGui::Button("create"))
-		window.m_gameOverlay.m_factionToEdit = window.m_simulation->m_hasFactions.createFaction(name);
+		window.m_areaOverlay.m_factionToEdit = window.m_simulation->m_hasFactions.createFaction(name);
 	ImGui::EndDisabled();
 	if(ImGui::Button("back"))
 		window.showGame();

@@ -4,7 +4,7 @@
 #include "../actors/actors.h"
 #include "../config/social.h"
 InspirationalSpeachObjective::InspirationalSpeachObjective(const Priority priority) : Objective(priority) { }
-InspirationalSpeachObjective::InspirationalSpeachObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo) :
+InspirationalSpeachObjective::InspirationalSpeachObjective(const Json& data, Area& area, ActorIndex actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
 	m_audience(data["audience"])
 {
@@ -12,7 +12,7 @@ InspirationalSpeachObjective::InspirationalSpeachObjective(const Json& data, Are
 		m_event.schedule(data["duration"].get<Step>(), *this, area.getActors().getReference(actor), area.m_simulation, data["start"].get<Step>());
 	createOnDestroy(area);
 }
-void InspirationalSpeachObjective::execute(Area& area, const ActorIndex actor)
+void InspirationalSpeachObjective::execute(Area& area, ActorIndex actor)
 {
 	m_event.schedule(Config::Social::inspirationalSpeachDuration, *this, area.getActors().getReference(actor), area.m_simulation);
 	// Record audience at start.
@@ -23,8 +23,8 @@ void InspirationalSpeachObjective::execute(Area& area, const ActorIndex actor)
 			m_audience.insert(watcher);
 }
 void InspirationalSpeachObjective::cancel(Area&, const ActorIndex) { m_event.maybeUnschedule(); m_audience.clear(); }
-void InspirationalSpeachObjective::delay(Area& area, const ActorIndex actor) { cancel(area, actor); }
-void InspirationalSpeachObjective::reset(Area& area, const ActorIndex actor) { cancel(area, actor); }
+void InspirationalSpeachObjective::delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+void InspirationalSpeachObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }
 void InspirationalSpeachObjective::createOnDestroy(Area& area)
 {
 	Actors& actors = area.getActors();
@@ -32,14 +32,14 @@ void InspirationalSpeachObjective::createOnDestroy(Area& area)
 		actors.onDestroy_subscribe(ref.getIndex(actors.m_referenceData), m_audienceOnDestroy);
 	m_audienceOnDestroy.setCallback(std::make_unique<InsiprationalSpeachOnAudienceDestroyCallBack>(*this));
 }
-void InspirationalSpeachObjective::callback(Area& area, const ActorIndex actor)
+void InspirationalSpeachObjective::callback(Area& area, ActorIndex actor)
 {
 	// Apply bonus to audience at start who are still here at the end.
 	Actors& actors = area.getActors();
 	ActorReference speakerRef = actors.getReference(actor);
 	for(const ActorReference ref : m_audience)
 	{
-		const ActorIndex watcher = ref.getIndex(actors.m_referenceData);
+		ActorIndex watcher = ref.getIndex(actors.m_referenceData);
 		if(!actors.isAlive(watcher) || !actors.sleep_isAwake(watcher))
 			continue;
 		if(!actors.vision_getCanSee(watcher).contains(speakerRef))

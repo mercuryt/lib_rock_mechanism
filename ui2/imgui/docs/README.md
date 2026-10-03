@@ -98,9 +98,9 @@ Dear ImGui allows you to **create elaborate tools** as well as very short-lived 
 
 The IMGUI paradigm through its API tries to minimize superfluous state duplication, state synchronization, and state retention from the user's point of view. It is less error-prone (less code and fewer bugs) than traditional retained-mode interfaces, and lends itself to creating dynamic user interfaces. Check out the Wiki's [About the IMGUI paradigm](https://github.com/ocornut/imgui/wiki#about-the-imgui-paradigm) section for more details.
 
-Dear ImGui outputs vertex buffers and command lists that you can easily render in your application. The number of draw calls and state changes required to render them is fairly small. Because Dear ImGui doesn't know or touch graphics state directly, you can call its functions  anywhere in your code (e.g. in the middle of a running algorithm, or in the middle of your own rendering process). Refer to the sample applications in the examples/ folder for instructions on how to integrate Dear ImGui with your existing codebase.
+Dear ImGui outputs vertex buffers and command lists that you can easily render in your application. The number of drawArea calls and state changes required to render them is fairly small. Because Dear ImGui doesn't know or touch graphics state directly, you can call its functions  anywhere in your code (e.g. in the middle of a running algorithm, or in the middle of your own rendering process). Refer to the sample applications in the examples/ folder for instructions on how to integrate Dear ImGui with your existing codebase.
 
-_A common misunderstanding is to mistake immediate mode GUI for immediate mode rendering, which usually implies hammering your driver/GPU with a bunch of inefficient draw calls and state changes as the GUI functions are called. This is NOT what Dear ImGui does. Dear ImGui outputs vertex buffers and a small list of draw calls batches. It never touches your GPU directly. The draw call batches are decently optimal and you can render them later, in your app or even remotely._
+_A common misunderstanding is to mistake immediate mode GUI for immediate mode rendering, which usually implies hammering your driver/GPU with a bunch of inefficient drawArea calls and state changes as the GUI functions are called. This is NOT what Dear ImGui does. Dear ImGui outputs vertex buffers and a small list of drawArea calls batches. It never touches your GPU directly. The drawArea call batches are decently optimal and you can render them later, in your app or even remotely._
 
 ### Releases & Changelogs
 
@@ -109,7 +109,7 @@ Reading the changelogs is a good way to keep up to date with the things Dear ImG
 
 ### Demo
 
-Calling the `ImGui::ShowDemoWindow()` function will create a demo window showcasing a variety of features and examples. The code is always available for reference in `imgui_demo.cpp`. 
+Calling the `ImGui::ShowDemoWindow()` function will create a demo window showcasing a variety of features and examples. The code is always available for reference in `imgui_demo.cpp`.
 - [Web version of the demo](https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html) courtesy of [@pthom](https://github.com/pthom).
 - [Screenshot of the demo](https://raw.githubusercontent.com/wiki/ocornut/imgui/web/v167/v167-misc.png).
 

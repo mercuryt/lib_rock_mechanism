@@ -20,5 +20,5 @@ public:
 	InspirationalSpeachDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool ready(const FactionId faction) const;
-	void begin(const ActorIndex actor);
+	void begin(ActorIndex actor);
 };

@@ -8,28 +8,28 @@ World::World(Cuboid boundry) :
 	m_boundry(boundry),
 	m_oceanFluidType(FluidType::byName("water"))
 { }
-AreaId World::createArea(Simulation& simulation, Point3D location)
+AreaId World::createArea(Simulation& simulation, Point3D location, bool proceduralGeneration)
 {
-	BuildArea buildArea(*this, simulation, location);
-	return buildArea.m_area->m_id;
+	Area* area;
+	if(!proceduralGeneration)
+	{
+		Distance size = Config::World::defaultAreaSize;
+		area = &simulation.m_hasAreas->createArea(size, size, size, true);
+	}
+	else
+	{
+		BuildArea buildArea(*this, simulation, location);
+		area = buildArea.m_area;
+	}
+	area->m_location = location;
+	m_areas.insert(location, area->m_id);
+	return area->m_id;
 }
 Percent World::getHumidity(Point3D location) const
 {
-	Percent output{0};
-	CuboidSet edge = location.toSet();
-	for(Distance range{0}; range <= Config::World::maxHumidityEffectDistance; ++range)
-	{
-		CuboidSet copy = edge;
-		edge.inflate({1});
-		edge.removeAll(copy);
-		int volume = edge.volume();
-		int volumeContainsFluidSource = m_fluid.queryCount(edge) + m_smallRivers.queryIntersectionVolume(edge) + m_smallLakes.queryIntersectionVolume(edge);
-		Percent percentagePerBlock{volume / 100};
-		output += percentagePerBlock * volumeContainsFluidSource;
-		if(output >= 100)
-			return {100};
-	}
-	return output;
+	Cuboid range = location.inflated(Config::World::maxHumidityEffectDistance);
+	int volumeContainsFluidSource = m_fluid.queryIntersectionVolume(range) + m_smallRivers.queryIntersectionVolume(range);
+	return Percent::create(volumeContainsFluidSource) * Config::World::humidityPercentPerFluidBlock;
 }
 MaterialTypeId World::getBedrockType(Point3D location) const
 {
@@ -61,4 +61,12 @@ int World::getFoliageMass(Point3D location) const
 	float temperatureModifier = differenceBetweenAverageAndIdeal.get() * Config::World::fractionOfFoliageMassToLosePerPointTemperatureFromIdeal;
 	Percent humidity = getHumidity(location);
 	return util::scaleByPercent(Config::World::maxFoliageMassForArea * temperatureModifier, humidity);
+}
+Area& World::getOrCreateArea(Simulation& simulation, Point3D location)
+{
+	AreaId id = m_areas.queryGetOne(location);
+	if(id.empty())
+		id = createArea(simulation, location);
+	return simulation.m_hasAreas->getById(id);
+
 }

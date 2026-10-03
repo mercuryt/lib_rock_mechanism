@@ -57,7 +57,7 @@ your application or engine to easily integrate Dear ImGui.** Each backend is typ
 - The 'Platform' backends are in charge of: mouse/keyboard/gamepad inputs, cursor shape, timing, and windowing.<BR>
   e.g. Windows ([imgui_impl_win32.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_win32.cpp)), SDL3 ([imgui_impl_sdl3.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_sdl3.cpp)), GLFW ([imgui_impl_glfw.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_glfw.cpp)), etc.
 
-- The 'Renderer' backends are in charge of: creating atlas texture, and rendering imgui draw data.<BR>
+- The 'Renderer' backends are in charge of: creating atlas texture, and rendering imgui drawArea data.<BR>
   e.g. DirectX11 ([imgui_impl_dx11.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_dx11.cpp)), OpenGL/WebGL ([imgui_impl_opengl3.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_opengl3.cpp)), Vulkan ([imgui_impl_vulkan.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_vulkan.cpp)), etc.
 
 - For some high-level frameworks, a single backend usually handles both 'Platform' and 'Renderer' parts.<BR>
@@ -279,8 +279,8 @@ void MyImGuiBackend_RenderDrawData(ImDrawData* draw_data)
                 //   (some elements visible outside their bounds) but you can fix that once everything else works!
                 MyEngineSetScissor(clip_min.x, clip_min.y, clip_max.x, clip_max.y);
 
-                // The texture for the draw call is specified by pcmd->GetTexID().
-                // The vast majority of draw calls will use the Dear ImGui texture atlas, which value you have set yourself during initialization.
+                // The texture for the drawArea call is specified by pcmd->GetTexID().
+                // The vast majority of drawArea calls will use the Dear ImGui texture atlas, which value you have set yourself during initialization.
                 MyEngineBindTexture((MyTexture*)pcmd->GetTexID());
 
                 // Render 'pcmd->ElemCount/3' indexed triangles.

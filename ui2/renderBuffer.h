@@ -3,6 +3,7 @@
 #include<vector>
 #include<cstdint>
 #include "../engine/numericTypes/types.h"
+#include "../engine/dataStructures/bitset.h"
 struct Sprite;
 
 struct RenderBuffer
@@ -21,5 +22,7 @@ struct RenderBuffer
 	void addFacing(const Sprite& sprite, const SDL_Rect& destination, const Facing4 facing, const SDL_Color color = {255, 255, 255, 255});
 	// repetitionsX and repetitionsY are possed in to avoid extra division, even though they could be derived from sprite.source and destination.
 	void addTiled(const Sprite& sprite, const SDL_Rect& destination, int repetitionsX, int repetitionsY, const SDL_Color color = {255, 255, 255, 255});
+	void addLine(SDL_Point point1, SDL_Point point2, SDL_Color color);
+	void addNetwork(SDL_Rect destination, SDL_Color color, int thickness, BitSet<uint8_t, 8> connections);
 	void render(SDL_Renderer* renderer);
 };

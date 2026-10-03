@@ -8,7 +8,7 @@ void screens::objectivePriorities(Window& window, const ActorReference actorRef)
 {
 	assert(window.m_editMode);
 	Actors& actors = window.m_area->getActors();
-	const ActorIndex actor = actorRef.getIndex(actors.m_referenceData);
+	ActorIndex actor = actorRef.getIndex(actors.m_referenceData);
 	begin(window, "Set Priorities For " + actors.getName(actor));
 	ImGui::BeginTable("objectivePriorityTable", 2);
 	for(auto& objectiveType : objectiveTypeData)

@@ -192,7 +192,7 @@ TEST_CASE("craft")
 		}
 		SUBCASE("by destroying a reserved item")
 		{
-			items.destroy(board);
+			items.remove(board);
 			// There is still wood working to be done even though there are no boards to do it with.
 			CHECK(craftObjectiveTypeWoodWorking.canBeAssigned(area, dwarf1));
 			CHECK(!actors.project_exists(dwarf1));

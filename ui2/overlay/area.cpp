@@ -1,27 +1,27 @@
-#include "gameOverlay.h"
-#include "window.h"
-#include "displayData.h"
-#include "draw.h"
-#include "infoPopUp.h"
-#include "../engine/area/area.h"
-#include "../engine/space/space.h"
-#include "../engine/actors/actors.h"
-#include "../engine/items/items.h"
-#include "../engine/plants.h"
-#include "../engine/definitions/plantSpecies.h"
-#include "../engine/definitions/animalSpecies.h"
-void GameOverlay::draw(Window& window)
+#include "area.h"
+#include "../window.h"
+#include "../displayData.h"
+#include "../draw/area.h"
+#include "../infoPopUp.h"
+#include "../../engine/area/area.h"
+#include "../../engine/space/space.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/items/items.h"
+#include "../../engine/plants.h"
+#include "../../engine/definitions/plantSpecies.h"
+#include "../../engine/definitions/animalSpecies.h"
+void AreaOverlay::drawArea(Window& window)
 {
 	drawSelectionBox(window);
 	drawTopBar(window);
 	drawInfoPopUp(window);
-	contextMenu::draw(window);
+	contextMenu::drawArea(window);
 	if(m_gameMenuIsOpen)
 		drawMenu(window);
 }
-void GameOverlay::drawSelectionBox(Window& window)
+void AreaOverlay::drawSelectionBox(Window& window)
 {
-	if(!window.m_gameOverlay.m_mouseIsDown)
+	if(!window.m_areaOverlay.m_mouseIsDown)
 		return;
 	SDL_Rect rect;
 	rect.x = std::min(m_mouseDragStartCoordinates.x, window.m_mousePosition.x);
@@ -37,7 +37,7 @@ void GameOverlay::drawSelectionBox(Window& window)
 		SDL_SetRenderDrawColor(window.m_sdlRenderer, 255, 255, 255, 255);
 	}
 }
-void GameOverlay::drawTopBar(Window& window)
+void AreaOverlay::drawTopBar(Window& window)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	float windowWidth = io.DisplaySize.x;
@@ -66,7 +66,8 @@ void GameOverlay::drawTopBar(Window& window)
 	ImGui::Text(window.m_paused ? "paused" : "speed: %.2f", window.m_speed.load());
 	ImGui::SameLine();
 	ImGui::SetCursorScreenPos({windowWidth * 6 / 10.f, yPos});
-	ImGui::Text("%i, %i, %i", m_blockUnderCursor.x().get(), m_blockUnderCursor.y().get(), m_blockUnderCursor.z().get());
+	Point3D point = window.m_blockUnderCursor;
+	ImGui::Text("%i, %i, %i", point.x().get(), point.y().get(), point.z().get());
 	ImGui::SameLine();
 	ImGui::SetCursorScreenPos({windowWidth * 8 / 10.f, yPos});
 	std::string selectModeName;
@@ -95,7 +96,7 @@ void GameOverlay::drawTopBar(Window& window)
 	// TODO: weather.
 	ImGui::End();
 }
-void GameOverlay::drawMenu(Window& window)
+void AreaOverlay::drawMenu(Window& window)
 {
 	ImGui::PushFont(nullptr, displayData::menuFontSize);
 	bool canClose = false;
@@ -124,13 +125,13 @@ void GameOverlay::drawMenu(Window& window)
 	ImGui::PopFont();
 	ImGui::End();
 }
-void GameOverlay::deselectAll()
+void AreaOverlay::deselectAll()
 {
 	m_selectedArea.clear();
 	m_selectedActors.clear();
 	m_selectedItems.clear();
 }
-void GameOverlay::updateSelect(Window& window, const Cuboid cuboid)
+void AreaOverlay::updateSelect(Window& window, const Cuboid cuboid)
 {
 	Space& space = window.m_area->getSpace();
 	CuboidSet revealedPartOfSelection = CuboidSet::create(cuboid);
@@ -194,7 +195,7 @@ void GameOverlay::updateSelect(Window& window, const Cuboid cuboid)
 			break;
 	}
 }
-void GameOverlay::drawInfoPopUp(Window& window)
+void AreaOverlay::drawInfoPopUp(Window& window)
 {
 	switch(m_infoPopUp)
 	{
@@ -214,22 +215,22 @@ void GameOverlay::drawInfoPopUp(Window& window)
 			std::unreachable();
 	}
 }
-void GameOverlay::showInfoPopUpForActor(const ActorReference actor)
+void AreaOverlay::showInfoPopUpForActor(const ActorReference actor)
 {
 	m_infoPopUp = InfoPopUpId::Actor;
 	m_detailActor = actor;
 }
-void GameOverlay::showInfoPopUpForItem(const ItemReference item)
+void AreaOverlay::showInfoPopUpForItem(const ItemReference item)
 {
 	m_infoPopUp = InfoPopUpId::Item;
 	m_detailItem = item;
 }
-void GameOverlay::showInfoPopUpForPoint(const Point3D point)
+void AreaOverlay::showInfoPopUpForPoint(const Point3D point)
 {
 	m_infoPopUp = InfoPopUpId::Point;
 	m_detailPoint = point;
 }
-void GameOverlay::showInfoPopUpPlant(const Point3D point)
+void AreaOverlay::showInfoPopUpPlant(const Point3D point)
 {
 	m_infoPopUp = InfoPopUpId::Plant;
 	m_detailPoint = point;

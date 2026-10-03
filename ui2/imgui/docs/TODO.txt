@@ -37,7 +37,7 @@ It's mostly a bunch of personal notes, probably incomplete. Feel free to query i
 
  - drawdata: make it easy to deep-copy (or swap?) a full ImDrawData so user can easily save that data if they use threaded rendering. (#1860 see ImDrawDataSnapshot)
  ! drawlist: add CalcTextSize() func to facilitate consistent code from user pov (currently need to use ImGui or ImFont alternatives!)
- - drawlist: maintaining bounding box per command would allow to merge draw command when clipping isn't relied on (typical non-scrolling window or non-overflowing column would merge with previous command). (WIP branch)
+ - drawlist: maintaining bounding box per command would allow to merge drawArea command when clipping isn't relied on (typical non-scrolling window or non-overflowing column would merge with previous command). (WIP branch)
  - drawlist: make it easier to toggle AA per primitive, so we can use e.g. non-AA fill + AA borders more naturally
  - drawlist: non-AA strokes have gaps between points (#593, #288), glitch especially on RenderCheckmark() and ColorPicker4().
  - drawlist: callback: add an extra void* in ImDrawCallback to expose render state instead of pulling from Renderer_RenderState (would break API).
@@ -79,7 +79,7 @@ It's mostly a bunch of personal notes, probably incomplete. Feel free to query i
  - input text: global callback system so user can plug in an expression evaluator easily. (#1691)
  - input text: force scroll to end or scroll to a given line/contents (so user can implement a log or a search feature)
  - input text: a way to preview completion (e.g. disabled text completing from the cursor)
- - input text: a side bar that could e.g. preview where errors are. probably left to the user to draw but we'd need to give them the info there.
+ - input text: a side bar that could e.g. preview where errors are. probably left to the user to drawArea but we'd need to give them the info there.
  - input text: a way for the user to provide syntax coloring.
  - input text: Shift+TAB with ImGuiInputTextFlags_AllowTabInput could eat preceding blanks, up to tab_count.
  - input text multi-line: don't directly call AddText() which does an unnecessary vertex reserve for character count prior to clipping. and/or more line-based clipping to AddText(). and/or reorganize TextUnformatted/RenderText for more efficiency for large text (e.g TextUnformatted could clip and log separately, etc).
@@ -248,11 +248,11 @@ It's mostly a bunch of personal notes, probably incomplete. Feel free to query i
  - font: MemoryTTF taking ownership confusing/not obvious, maybe default should be opposite?
  - font: storing MinAdvanceX per font would allow us to skip calculating line width (under a threshold of character count) in loops looking for block width
  - font/demo: demonstrate use of ImFontGlyphRangesBuilder.
- - font/draw: vertical and/or rotated text renderer (#705) - vertical is easier clipping wise
- - font/draw: need to be able to specify wrap start position.
- - font/draw: better reserve policy for large horizontal block of text (shouldn't reserve for all clipped lines). also see #3349.
- - font/draw: fix for drawing 16k+ visible characters in same call.
- - font/draw: underline, squiggle line rendering helpers.
+ - font/drawArea: vertical and/or rotated text renderer (#705) - vertical is easier clipping wise
+ - font/drawArea: need to be able to specify wrap start position.
+ - font/drawArea: better reserve policy for large horizontal block of text (shouldn't reserve for all clipped lines). also see #3349.
+ - font/drawArea: fix for drawing 16k+ visible characters in same call.
+ - font/drawArea: underline, squiggle line rendering helpers.
  - font: optimization: for monospace font (like the default one) we can trim IndexXAdvance as long as trailing value is == FallbackXAdvance (need to make sure TAB is still correct), would save on cache line.
  - font: add support for kerning, probably optional. A) perhaps default to (32..128)^2 matrix ~ 9K entries = 36KB, then hash for non-ascii?. B) or sparse lookup into per-char list?
  - font: add a simpler CalcTextSizeA() api? current one ok but not welcome if user needs to call it directly (without going through ImGui::CalcTextSize)
@@ -260,7 +260,7 @@ It's mostly a bunch of personal notes, probably incomplete. Feel free to query i
  - font/opt: Considering storing standalone AdvanceX table as 16-bit fixed point integer?
  - font/opt: Glyph currently 40 bytes (2+9*4). Consider storing UV as 16-bits integer? (->32 bytes). X0/Y0/X1/Y1 as 16 fixed-point integers? Or X0/Y0 as float and X1/Y1 as fixed8_8?
 
- - nav: some features such as PageUp/Down/Home/End should probably work without ImGuiConfigFlags_NavEnableKeyboard? (where do we draw the line? how about CTRL+Tab)
+ - nav: some features such as PageUp/Down/Home/End should probably work without ImGuiConfigFlags_NavEnableKeyboard? (where do we drawArea the line? how about CTRL+Tab)
  - nav: Home/End behavior when navigable item is not fully visible at the edge of scrolling? should be backtrack to keep item into view?
  - nav: NavScrollToBringItemIntoView() with item bigger than view should focus top-right? Repro: using Nav in "About Window"
  - nav: expose wrap around flags/logic to allow e.g. grid based layout (pressing NavRight on the right-most element would go to the next row, etc.). see internal's NavMoveRequestTryWrapping().

@@ -6,7 +6,8 @@
 class Window;
 namespace contextMenu
 {
-	void draw(Window& window);
+	void drawArea(Window& window);
+	void drawMap(Window& window);
 	namespace controlls
 	{
 		void dig(Window& window);

@@ -7,7 +7,7 @@
 #include "../reference.h"
 #include "../numericTypes/types.h"
 #include "../path/pathRequest.h"
-DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, const ActorIndex actorIndex) :
+DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, ActorIndex actorIndex) :
 	m_digObjective(digObjective)
 {
 	Actors& actors = area.getActors();
@@ -75,7 +75,7 @@ Json DigObjective::toJson() const
 		data["project"] = m_project;
 	return data;
 }
-void DigObjective::execute(Area& area, const ActorIndex actor)
+void DigObjective::execute(Area& area, ActorIndex actor)
 {
 	if(m_project != nullptr)
 		m_project->commandWorker(actor);
@@ -90,19 +90,19 @@ void DigObjective::execute(Area& area, const ActorIndex actor)
 			actors.move_pathRequestRecord(actor, std::make_unique<DigPathRequest>(area, *this, actor));
 	}
 }
-void DigObjective::cancel(Area& area, const ActorIndex actor)
+void DigObjective::cancel(Area& area, ActorIndex actor)
 {
 	if(m_project != nullptr)
 		m_project->removeWorker(actor);
 	area.getActors().move_pathRequestMaybeCancel(actor);
 }
-void DigObjective::delay(Area& area, const ActorIndex actor)
+void DigObjective::delay(Area& area, ActorIndex actor)
 {
 	cancel(area, actor);
 	m_project = nullptr;
 	area.getActors().project_maybeUnset(actor);
 }
-void DigObjective::reset(Area& area, const ActorIndex actor)
+void DigObjective::reset(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(m_project)
@@ -122,14 +122,14 @@ void DigObjective::onProjectCannotReserve(Area&, const ActorIndex)
 	assert(m_project);
 	m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
 }
-void DigObjective::joinProject(DigProject& project, const ActorIndex actor)
+void DigObjective::joinProject(DigProject& project, ActorIndex actor)
 {
 	assert(!m_project);
 	m_project = &project;
 	project.addWorkerCandidate(actor, *this);
 }
 template<typename ShapeT>
-DigProject* DigObjective::getJoinableProjectAt(Area& area, ShapeT&& shape, const ActorIndex actor)
+DigProject* DigObjective::getJoinableProjectAt(Area& area, ShapeT&& shape, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	const auto condition = [&](const DigProject& project)
@@ -140,16 +140,16 @@ DigProject* DigObjective::getJoinableProjectAt(Area& area, ShapeT&& shape, const
 	};
 	return area.m_hasDigDesignations.getProjectWithCondition(actors.getFaction(actor), shape, condition);
 }
-template DigProject* DigObjective::getJoinableProjectAt(Area& area, Cuboid&& shape, const ActorIndex actor);
-template DigProject* DigObjective::getJoinableProjectAt(Area& area, const CuboidSet& shape, const ActorIndex actor);
-Point3D DigObjective::joinableProjectExistsAt(Area& area, const Cuboid cuboid, const ActorIndex actor) const
+template DigProject* DigObjective::getJoinableProjectAt(Area& area, Cuboid&& shape, ActorIndex actor);
+template DigProject* DigObjective::getJoinableProjectAt(Area& area, const CuboidSet& shape, ActorIndex actor);
+Point3D DigObjective::joinableProjectExistsAt(Area& area, const Cuboid cuboid, ActorIndex actor) const
 {
 	const DigProject* project = const_cast<DigObjective*>(this)->getJoinableProjectAt(area, cuboid, actor);
 	if(project != nullptr)
 		return project->getLocation();
 	return Point3D::null();
 }
-bool DigObjectiveType::canBeAssigned(Area& area, const ActorIndex actor) const
+bool DigObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	// Pilots and passengers onDeck cannot dig.

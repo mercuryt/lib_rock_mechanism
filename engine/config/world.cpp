@@ -65,4 +65,9 @@ void Config::World::load()
 	data["treesMaxDeltaFromIdealTemperature"].get_to(treesMaxDeltaFromIdealTemperature);
 	data["seaLevelAttractorWeight"].get_to(seaLevelAttractorWeight);
 	data["ratioOfAnimalMassFlying"].get_to(ratioOfAnimalMassFlying);
+	data["depthOfTransitZone"].get_to(depthOfTransitZone);
+	data["baseMoveCost"].get_to(baseMoveCost);
+	data["fractionToIncreaseCostByPerZLevelUp"].get_to(fractionToIncreaseCostByPerZLevelUp);
+	data["fractionToDecreaseCostByPerZLevelDown"].get_to(fractionToDecreaseCostByPerZLevelDown);
+	data["humidityPercentPerFluidBlock"].get_to(humidityPercentPerFluidBlock);
 }

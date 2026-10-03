@@ -259,9 +259,28 @@ bool Space::move_canSwimInAny(const Cuboid cuboid, const MoveTypeId moveType) co
 	});
 	return result;
 }
+bool Space::move_containsUnenterable(Cuboid cuboid) const
+{
+	return (
+		m_solid.queryAny(cuboid) ||
+		m_features.queryAnyWithCondition(cuboid, [](PointFeature feature){ return feature.blocksEntrance(); })
+	);
+}
+bool Space::move_containsUnenterableForMoveType(Cuboid cuboid, MoveTypeId moveType) const
+{
+	assert(!move_containsUnenterable(cuboid));
+	return (
+		m_area.m_hasPaths.get(m_area, moveType).m_enterable.queryAll(cuboid)
+	);
+}
 void Space::move_removeUnenterableFrom(CuboidSet& cuboids) const
 {
 	m_solid.queryRemove(cuboids);
 	if(!cuboids.empty())
 		m_features.queryRemoveWithCondition(cuboids, [](PointFeature feature){ return feature.blocksEntrance(); });
+}
+void Space::move_removeUnenterableFrom(CuboidSet& cuboids, MoveTypeId moveType) const
+{
+	move_removeUnenterableFrom(cuboids);
+	cuboids = m_area.m_hasPaths.get(m_area, moveType).m_enterable.queryGetIntersection(cuboids);
 }

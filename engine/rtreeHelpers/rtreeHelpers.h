@@ -130,12 +130,17 @@ namespace RTreeHelpers
 	}
 	Distance getContiguousDistanceInDirection(const auto& rtree, const auto& shape, Facing6 direction)
 	{
-		assert(rtree.queryAny(shape));
+		Distance output{0};
+		if(rtree.queryAnyNot(shape))
+			return output;
 		auto copy = shape;
-		copy.maximizeDirection(direction);
-		CuboidSet found = rtree.queryGetIntersection(copy);
-		std::vector<CuboidSet> grouped = cuboidSetHelper::splitIntoTouchingGroups(found);
-		CuboidSet group = *std::ranges::find_if(grouped, [copy](const CuboidSet& candidate) { return candidate.intersects(copy); });
-		return group.boundry().dimensionForFacing(direction) - copy.dimensionForFacing(direction);
+		while(true)
+		{
+			copy.shift(direction);
+			++output;
+			if(rtree.queryAnyNot(copy))
+				return output;
+		}
+		std::unreachable();
 	}
 }

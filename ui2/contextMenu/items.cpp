@@ -9,7 +9,7 @@ void contextMenu::controlls::items(Window& window)
 {
 	if(ImGui::BeginMenu("items"))
 	{
-		ControllsState& state = window.m_gameOverlay.m_controllsState;
+		ControllsState& state = window.m_areaOverlay.m_controllsState;
 		Space& space = window.m_area->getSpace();
 		Items& items = window.m_area->getItems();
 		if(window.m_editMode)
@@ -61,15 +61,15 @@ void contextMenu::controlls::items(Window& window)
 				ImGui::CloseCurrentPopup();
 			}
 			SmallSet<ItemIndex> selected;
-			if(window.m_gameOverlay.m_selectMode == SelectMode::Space)
-				selected = space.item_getAll(window.m_gameOverlay.m_selectedArea);
-			else if(window.m_gameOverlay.m_selectMode == SelectMode::Items)
+			if(window.m_areaOverlay.m_selectMode == SelectMode::Space)
+				selected = space.item_getAll(window.m_areaOverlay.m_selectedArea);
+			else if(window.m_areaOverlay.m_selectMode == SelectMode::Items)
 			{
-				for(const ItemReference& ref : window.m_gameOverlay.m_selectedItems)
+				for(const ItemReference& ref : window.m_areaOverlay.m_selectedItems)
 					selected.insert(ref.getIndex(items.m_referenceData));
 			}
 			else
-				selected = space.item_getAll(window.m_gameOverlay.m_blockUnderCursor);
+				selected = space.item_getAll(window.m_areaOverlay.m_blockUnderCursor);
 			if(ImGui::Button("destroy all"))
 			{
 				window.m_area->getItems().destroyAll(selected);
@@ -79,11 +79,11 @@ void contextMenu::controlls::items(Window& window)
 			{
 				const ItemIndex& item = selected.front();
 				const Point3D& location = state.clickedOnPoint;
-				if(location.exists() && location != window.m_gameOverlay.m_blockUnderCursor && space.shape_canEnterCurrentlyWithFacing(location, items.getShape(item), window.m_gameOverlay.m_facing, items.getOccupied(item)))
+				if(location.exists() && location != window.m_areaOverlay.m_blockUnderCursor && space.shape_canEnterCurrentlyWithFacing(location, items.getShape(item), window.m_areaOverlay.m_facing, items.getOccupied(item)))
 				{
 					if(ImGui::Button("install"))
 					{
-						window.m_area->m_hasInstallItemDesignations.getForFaction(window.m_faction).add(*window.m_area, location, item, window.m_gameOverlay.m_facing, window.m_faction);
+						window.m_area->m_hasInstallItemDesignations.getForFaction(window.m_faction).add(*window.m_area, location, item, window.m_areaOverlay.m_facing, window.m_faction);
 						ImGui::CloseCurrentPopup();
 					}
 				}
@@ -93,8 +93,8 @@ void contextMenu::controlls::items(Window& window)
 				std::string description = items.description(item).c_str();
 				if(ImGui::MenuItem((description + " info").c_str()))
 				{
-					window.m_gameOverlay.m_detailItem = items.getReference(item);
-					window.m_gameOverlay.m_infoPopUp = InfoPopUpId::Item;
+					window.m_areaOverlay.m_detailItem = items.getReference(item);
+					window.m_areaOverlay.m_infoPopUp = InfoPopUpId::Item;
 					ImGui::CloseCurrentPopup();
 				}
 				if(window.m_editMode)

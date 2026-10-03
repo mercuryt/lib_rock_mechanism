@@ -6,7 +6,7 @@
 #include "../path/areaHasPaths.hpp"
 #include "../numericTypes/types.h"
 // Objective Type.
-bool StockPileObjectiveType::canBeAssigned(Area& area, const ActorIndex actor) const
+bool StockPileObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	// Pilots and passengers onDeck cannot stockpile.
@@ -49,7 +49,7 @@ Json StockPileObjective::toJson() const
 		data["hasCheckedForDropOffLocation"] = true;
 	return data;
 }
-void StockPileObjective::execute(Area& area, const ActorIndex actor)
+void StockPileObjective::execute(Area& area, ActorIndex actor)
 {
 	// If there is no project to work on dispatch a threaded task to either find one or call cannotFulfillObjective.
 	if(m_project == nullptr)
@@ -64,7 +64,7 @@ void StockPileObjective::execute(Area& area, const ActorIndex actor)
 	else
 		m_project->commandWorker(actor);
 }
-void StockPileObjective::cancel(Area& area, const ActorIndex actor)
+void StockPileObjective::cancel(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(m_project != nullptr)
@@ -77,7 +77,7 @@ void StockPileObjective::cancel(Area& area, const ActorIndex actor)
 	actors.move_pathRequestMaybeCancel(actor);
 	actors.canReserve_clearAll(actor);
 }
-void StockPileObjective::reset(Area& area, const ActorIndex actor)
+void StockPileObjective::reset(Area& area, ActorIndex actor)
 {
 	m_hasCheckedForCloserDropOffLocation = false;
 	unsetItemAndDestination();
@@ -96,7 +96,7 @@ void StockPileObjective::unsetItemAndDestination()
 	m_itemStartLocation.clear();
 	m_itemType.clear();
 }
-bool StockPileObjective::destinationCondition(Area& area, const Point3D point, const ItemIndex item, const ActorIndex actor)
+bool StockPileObjective::destinationCondition(Area& area, const Point3D point, const ItemIndex item, ActorIndex actor)
 {
 	Space& space = area.getSpace();
 	Items& items = area.getItems();
@@ -129,7 +129,7 @@ ItemIndex StockPileObjective::getItem(const Area& area, ActorIndex actor) const
 }
 // Path Reqests
 // Searches for an Item and destination to make a hauling project for m_objective.m_actor.
-StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, const ActorIndex actorIndex) :
+StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, ActorIndex actorIndex) :
 	m_objective(spo)
 {
 	assert(m_objective.m_project == nullptr);
@@ -260,7 +260,7 @@ PathResult StockPilePathRequest::readStep(Area& area, const AreaHasPathsForMoveT
 void StockPilePathRequest::writeStep(Area& area, bool)
 {
 	Actors& actors = area.getActors();
-	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	const FactionId& actorFaction = actors.getFaction(actorIndex);
 	if(!m_objective.m_itemStartLocation.exists())
 		// No combination of item and destination found.
@@ -313,7 +313,7 @@ Json StockPilePathRequest::toJson() const
 	output["type"] = "stockpile";
 	return output;
 }
-StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, StockPileObjective& spo, const ActorIndex actorIndex) :
+StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, StockPileObjective& spo, ActorIndex actorIndex) :
 	m_objective(spo)
 {
 	assert(m_objective.m_project == nullptr);
@@ -336,7 +336,7 @@ StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, Sto
 PathResult StockPileDestinationPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	const Actors& actors = area.getActors();
-	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	const ItemIndex item = m_objective.getItem(area, actorIndex);
 	if(item.empty())
 		// Target item has moved somehow, restart objective.

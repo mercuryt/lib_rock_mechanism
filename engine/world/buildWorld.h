@@ -19,13 +19,14 @@ struct WorldParamaters
 	float seaLevelAttractorWeight;
 	float oceanFloorAttractorWeight;
 	float mountainPeakAttractorWeight;
-	float seaLevelAttractorDistanceExponent;
 	float oceanFloorAttractorDistanceExponent;
 	float mountainPeakAttractorDistanceExponent;
 	Distance oceanFloorMaxDepth;
 	Distance oceanFloorMinDepth;
 	Distance mountainPeakMaxHeight;
 	Distance mountainPeakMinHeight;
+	Distance mountainMaxEffectRange;
+	Distance oceanFloorMaxEffectRange;
 	FluidTypeId primaryFluid;
 	MaterialTypeId primaryBedrockMaterial;
 	int riverHeadwatersCount;
@@ -33,6 +34,7 @@ struct WorldParamaters
 	int64_t riverMaxHeadwatersVolume;
 	Distance riverHeadwatersZLevel;
 	float riverFractionToMakeSmallLakes;
+	Distance treesMaxZLevel;
 };
 
 struct BuildWorld
@@ -40,7 +42,7 @@ struct BuildWorld
 	WorldParamaters m_paramaters;
 	std::unique_ptr<World> m_world;
 	Random* m_random;
-	std::vector<std::tuple<Point3D, float, float>> m_attractorsWithMagnitudesAndDistanceExponents;
+	std::vector<std::tuple<Point3D, float, float, Distance>> m_attractorsWithMagnitudesAndDistanceExponentsAndMaxDistance;
 	BuildWorld(Simulation& simulation, WorldParamaters& paramaters);
 	void makeAttractors();
 	void makeLand();

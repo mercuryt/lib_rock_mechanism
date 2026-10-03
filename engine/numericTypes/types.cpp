@@ -15,6 +15,25 @@ Facing6 flipFacing6(Facing6 facing)
 		default: std::unreachable();
 	}
 }
+Facing4 flipFacing4(Facing4 facing)
+{
+	switch(facing)
+	{
+		case Facing4::North: return Facing4::South;
+		case Facing4::South: return Facing4::North;
+		case Facing4::East: return Facing4::West;
+		case Facing4::West: return Facing4::East;
+		default: std::unreachable();
+	}
+}
+Facing4 facing6ToFacing4(Facing6 facing)
+{
+	return Facing4((int)facing - 1);
+}
+Facing6 facing4ToFacing6(Facing4 facing)
+{
+	return Facing6((int)facing + 1);
+}
 Step Step::createDbg(const StepWidth& value) { return Step::create(value); }
 Speed Force::operator/(const Mass mass) const { return Speed::create((float)data / (float)mass.get()); }
 FullDisplacement FullDisplacement::operator*(Quantity other) const { return FullDisplacement::create(data * other.get()); }

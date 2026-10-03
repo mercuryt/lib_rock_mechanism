@@ -1785,7 +1785,7 @@ static void DemoWindowWidgetsImages()
         // So with the DirectX11 backend, you call ImGui::Image() with a 'ID3D11ShaderResourceView*' cast to ImTextureID.
         // - If you decided that ImTextureID = MyEngineTexture*, then you can pass your MyEngineTexture* pointers
         //   to ImGui::Image(), and gather width/height through your own functions, etc.
-        // - You can use ShowMetricsWindow() to inspect the draw data that are being passed to your renderer,
+        // - You can use ShowMetricsWindow() to inspect the drawArea data that are being passed to your renderer,
         //   it will help you debug issues if you are confused about it.
         // - Consider using the lower-level ImDrawList::AddImage() API, via ImGui::GetWindowDrawList()->AddImage().
         // - Read https://github.com/ocornut/imgui/blob/master/docs/FAQ.md
@@ -5145,7 +5145,7 @@ static void DemoWindowLayout()
             "(use this as a shortcut if you are only using ImDrawList calls)\n\n"
             "(Right) Using ImDrawList::AddText() with a fine ClipRect:\n"
             "Will alter only this specific ImDrawList::AddText() rendering.\n"
-            "This is often used internally to avoid altering the clipping rectangle and minimize draw calls.");
+            "This is often used internally to avoid altering the clipping rectangle and minimize drawArea calls.");
 
         for (int n = 0; n < 3; n++)
         {
@@ -7346,7 +7346,7 @@ static void DemoWindowTables()
                 ImGui::CheckboxFlags("ImGuiTableFlags_PreciseWidths", &flags, ImGuiTableFlags_PreciseWidths);
                 ImGui::SameLine(); HelpMarker("Disable distributing remainder width to stretched columns (width allocation on a 100-wide table with 3 columns: Without this flag: 33,33,34. With this flag: 33,33,33). With larger number of columns, resizing will appear to be less smooth.");
                 ImGui::CheckboxFlags("ImGuiTableFlags_NoClip", &flags, ImGuiTableFlags_NoClip);
-                ImGui::SameLine(); HelpMarker("Disable clipping rectangle for every individual columns (reduce draw command count, items will be able to overflow into other columns). Generally incompatible with ScrollFreeze options.");
+                ImGui::SameLine(); HelpMarker("Disable clipping rectangle for every individual columns (reduce drawArea command count, items will be able to overflow into other columns). Generally incompatible with ScrollFreeze options.");
                 ImGui::TreePop();
             }
 
@@ -8016,7 +8016,7 @@ static void DemoWindowInputs()
             ImGui::Text("Hover to see mouse cursors:");
             ImGui::SameLine(); HelpMarker(
                 "Your application can render a different mouse cursor based on what ImGui::GetMouseCursor() returns. "
-                "If software cursor rendering (io.MouseDrawCursor) is set ImGui will draw the right cursor for you, "
+                "If software cursor rendering (io.MouseDrawCursor) is set ImGui will drawArea the right cursor for you, "
                 "otherwise your backend needs to handle it.");
             for (int i = 0; i < ImGuiMouseCursor_COUNT; i++)
             {
@@ -8633,7 +8633,7 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
             DragFloat("Curve Tessellation Tolerance", &style.CurveTessellationTol, 0.02f, 0.10f, 10.0f, "%.2f");
             if (style.CurveTessellationTol < 0.10f) style.CurveTessellationTol = 0.10f;
 
-            // When editing the "Circle Segment Max Error" value, draw a preview of its effect on auto-tessellated circles.
+            // When editing the "Circle Segment Max Error" value, drawArea a preview of its effect on auto-tessellated circles.
             DragFloat("Circle Tessellation Max Error", &style.CircleTessellationMaxError , 0.005f, 0.10f, 5.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
             const bool show_samples = IsItemActive();
             if (show_samples)
@@ -9448,7 +9448,7 @@ struct ExampleAppPropertyEditor
 
     void Draw(ExampleTreeNode* root_node)
     {
-        // Left side: draw tree
+        // Left side: drawArea tree
         // - Currently using a table to benefit from RowBg feature
         if (ImGui::BeginChild("##tree", ImVec2(300, 0), ImGuiChildFlags_ResizeX | ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened))
         {
@@ -9469,7 +9469,7 @@ struct ExampleAppPropertyEditor
         }
         ImGui::EndChild();
 
-        // Right side: draw properties
+        // Right side: drawArea properties
         ImGui::SameLine();
 
         ImGui::BeginGroup(); // Lock X position
@@ -9545,7 +9545,7 @@ struct ExampleAppPropertyEditor
         tree_flags |= ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;// Standard opening mode as we are likely to want to add selection afterwards
         tree_flags |= ImGuiTreeNodeFlags_NavLeftJumpsToParent;  // Left arrow support
         tree_flags |= ImGuiTreeNodeFlags_SpanFullWidth;         // Span full width for easier mouse reach
-        tree_flags |= ImGuiTreeNodeFlags_DrawLinesToNodes;      // Always draw hierarchy outlines
+        tree_flags |= ImGuiTreeNodeFlags_DrawLinesToNodes;      // Always drawArea hierarchy outlines
         if (node == VisibleNode)
             tree_flags |= ImGuiTreeNodeFlags_Selected;
         if (node->Childs.Size == 0)
@@ -9913,7 +9913,7 @@ static void PathConcaveShape(ImDrawList* draw_list, float x, float y, float sz)
         draw_list->PathLineTo(ImVec2(x + 0.5f + (int)(sz * p.x), y + 0.5f + (int)(sz * p.y)));
 }
 
-// Demonstrate using the low-level ImDrawList to draw custom shapes.
+// Demonstrate using the low-level ImDrawList to drawArea custom shapes.
 static void ShowExampleAppCustomRendering(bool* p_open)
 {
     if (!ImGui::Begin("Example: Custom rendering", p_open))
@@ -10154,14 +10154,14 @@ static void ShowExampleAppCustomRendering(bool* p_open)
             ImGui::EndTabItem();
         }
 
-        if (ImGui::BeginTabItem("BG/FG draw lists"))
+        if (ImGui::BeginTabItem("BG/FG drawArea lists"))
         {
             static bool draw_bg = true;
             static bool draw_fg = true;
-            ImGui::Checkbox("Draw in Background draw list", &draw_bg);
-            ImGui::SameLine(); HelpMarker("The Background draw list will be rendered below every Dear ImGui windows.");
-            ImGui::Checkbox("Draw in Foreground draw list", &draw_fg);
-            ImGui::SameLine(); HelpMarker("The Foreground draw list will be rendered over every Dear ImGui windows.");
+            ImGui::Checkbox("Draw in Background drawArea list", &draw_bg);
+            ImGui::SameLine(); HelpMarker("The Background drawArea list will be rendered below every Dear ImGui windows.");
+            ImGui::Checkbox("Draw in Foreground drawArea list", &draw_fg);
+            ImGui::SameLine(); HelpMarker("The Foreground drawArea list will be rendered over every Dear ImGui windows.");
             ImVec2 window_pos = ImGui::GetWindowPos();
             ImVec2 window_size = ImGui::GetWindowSize();
             ImVec2 window_center = ImVec2(window_pos.x + window_size.x * 0.5f, window_pos.y + window_size.y * 0.5f);
@@ -10173,7 +10173,7 @@ static void ShowExampleAppCustomRendering(bool* p_open)
         }
 
         // Demonstrate out-of-order rendering via channels splitting
-        // We use functions in ImDrawList as each draw list contains a convenience splitter,
+        // We use functions in ImDrawList as each drawArea list contains a convenience splitter,
         // but you can also instantiate your own ImDrawListSplitter if you need to nest them.
         if (ImGui::BeginTabItem("Draw Channels"))
         {
@@ -10192,8 +10192,8 @@ static void ShowExampleAppCustomRendering(bool* p_open)
                 ImGui::Text("Red shape is drawn after, into channel 0: appears in back");
                 ImVec2 p1 = ImGui::GetCursorScreenPos();
 
-                // Create 2 channels and draw a Blue shape THEN a Red shape.
-                // You can create any number of channels. Tables API use 1 channel per column in order to better batch draw calls.
+                // Create 2 channels and drawArea a Blue shape THEN a Red shape.
+                // You can create any number of channels. Tables API use 1 channel per column in order to better batch drawArea calls.
                 draw_list->ChannelsSplit(2);
                 draw_list->ChannelsSetCurrent(1);
                 draw_list->AddRectFilled(ImVec2(p1.x, p1.y), ImVec2(p1.x + 50, p1.y + 50), IM_COL32(0, 0, 255, 255)); // Blue
@@ -10201,7 +10201,7 @@ static void ShowExampleAppCustomRendering(bool* p_open)
                 draw_list->AddRectFilled(ImVec2(p1.x + 25, p1.y + 25), ImVec2(p1.x + 75, p1.y + 75), IM_COL32(255, 0, 0, 255)); // Red
 
                 // Flatten/reorder channels. Red shape is in channel 0 and it appears below the Blue shape in channel 1.
-                // This works by copying draw indices only (vertices are not copied).
+                // This works by copying drawArea indices only (vertices are not copied).
                 draw_list->ChannelsMerge();
                 ImGui::Dummy(ImVec2(75, 75));
                 ImGui::Text("After reordering, contents of channel 0 appears below channel 1.");

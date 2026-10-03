@@ -35,15 +35,15 @@ class SleepObjective final : public Objective
 public:
 	SleepObjective();
 	SleepObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area&, const ActorIndex actor) override;
-	void cancel(Area&, const ActorIndex actor) override;
-	void delay(Area& area, const ActorIndex actor) override{ cancel(area, actor); }
-	void reset(Area& area, const ActorIndex actor) override;
-	void selectLocation(Area& area, const Point3D index, const ActorIndex actor);
-	void makePathRequest(Area& area, const ActorIndex actor);
+	void execute(Area&, ActorIndex actor) override;
+	void cancel(Area&, ActorIndex actor) override;
+	void delay(Area& area, ActorIndex actor) override{ cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor) override;
+	void selectLocation(Area& area, const Point3D index, ActorIndex actor);
+	void makePathRequest(Area& area, ActorIndex actor);
 	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("sleep").getId(); }
-	[[nodiscard]] bool onCanNotPath(Area& area, const ActorIndex actor);
-	[[nodiscard]] DesireToSleepAt desireToSleepAt(Area& area, const Point3D point, const ActorIndex actor) const;
+	[[nodiscard]] bool onCanNotPath(Area& area, ActorIndex actor);
+	[[nodiscard]] DesireToSleepAt desireToSleepAt(Area& area, const Point3D point, ActorIndex actor) const;
 	[[nodiscard]] std::string name() const { return "sleep"; }
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::sleep; }
@@ -61,7 +61,7 @@ class SleepPathRequest final : public PathRequest
 	Point3D m_maxDesireCandidate;
 	bool m_sleepAtCurrentLocation = false;
 public:
-	SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex actor);
+	SleepPathRequest(Area& area, SleepObjective& so, ActorIndex actor);
 	SleepPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
 	void writeStep(Area& area, bool useCurrentLocation) override;

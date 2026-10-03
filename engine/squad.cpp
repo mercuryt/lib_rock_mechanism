@@ -29,18 +29,18 @@ void Squad::createFormationWithCurrentPositions(const std::string& name, Area& a
 	formation.setName(name);
 	Actors& actors = area.getActors();
 	const SimulationHasActors& simulationHasActors = area.m_simulation.m_actors;
-	const ActorIndex commander = simulationHasActors.getIndexForId(m_commander);
+	ActorIndex commander = simulationHasActors.getIndexForId(m_commander);
 	Point3D commanderLocation = actors.getLocation(commander);
 	for(const ActorId soldierId : m_actors)
 	{
-		const ActorIndex soldier = simulationHasActors.getIndexForId(soldierId);
+		ActorIndex soldier = simulationHasActors.getIndexForId(soldierId);
 		Point3D soldierLocation = actors.getLocation(soldier);
 		Offset3D offset = commanderLocation.offsetTo(soldierLocation);
 		formation.setOffset(soldierId, offset);
 	}
 	m_formations.add(std::move(formation));
 }
-void Squad::updateActorIndex(const ActorIndex oldIndex, const ActorIndex newIndex)
+void Squad::updateActorIndex(ActorIndex oldIndex, ActorIndex newIndex)
 {
 	m_currentFormationLocationsAsIndices.updateKey(oldIndex, newIndex);
 }

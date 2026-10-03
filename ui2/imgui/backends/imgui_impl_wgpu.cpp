@@ -5,7 +5,7 @@
 // Implemented features:
 //  [X] Renderer: User texture binding. Use 'WGPUTextureView' as ImTextureID. Read the FAQ about ImTextureID/ImTextureRef!
 //  [X] Renderer: Large meshes support (64k+ vertices) even with 16-bit indices (ImGuiBackendFlags_RendererHasVtxOffset).
-//  [X] Renderer: Expose selected render state for draw callbacks to use. Access in '(ImGui_ImplXXXX_RenderState*)GetPlatformIO().Renderer_RenderState'.
+//  [X] Renderer: Expose selected render state for drawArea callbacks to use. Access in '(ImGui_ImplXXXX_RenderState*)GetPlatformIO().Renderer_RenderState'.
 //  [X] Renderer: Texture updates support for dynamic font system (ImGuiBackendFlags_RendererHasTextures).
 
 // Read imgui_impl_wgpu.h about how to use the IMGUI_IMPL_WEBGPU_BACKEND_WGPU or IMGUI_IMPL_WEBGPU_BACKEND_DAWN flags.
@@ -25,7 +25,7 @@
 //  2025-06-12: Added support for ImGuiBackendFlags_RendererHasTextures, for dynamic font atlas. (#8465)
 //  2025-02-26: Recreate image bind groups during render. (#8426, #8046, #7765, #8027) + Update for latest webgpu-native changes.
 //  2024-10-14: Update Dawn support for change of string usages. (#8082, #8083)
-//  2024-10-07: Expose selected render state in ImGui_ImplWGPU_RenderState, which you can access in 'void* platform_io.Renderer_RenderState' during draw callbacks.
+//  2024-10-07: Expose selected render state in ImGui_ImplWGPU_RenderState, which you can access in 'void* platform_io.Renderer_RenderState' during drawArea callbacks.
 //  2024-10-07: Changed default texture sampler to Clamp instead of Repeat/Wrap.
 //  2024-09-16: Added support for optional IMGUI_IMPL_WEBGPU_BACKEND_DAWN / IMGUI_IMPL_WEBGPU_BACKEND_WGPU define to handle ever-changing native implementations. (#7977)
 //  2024-01-22: Added configurable PipelineMultisampleState struct. (#7240)
@@ -966,7 +966,7 @@ const char* ImGui_ImplWGPU_GetLogLevelName(WGPULogLevel level)
 {
     switch (level)
     {
-    case WGPULogLevel_Error: return "Error"; 
+    case WGPULogLevel_Error: return "Error";
     case WGPULogLevel_Warn: return "Warn";
     case WGPULogLevel_Info: return "Info";
     case WGPULogLevel_Debug: return "Debug";

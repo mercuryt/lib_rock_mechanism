@@ -13,7 +13,7 @@ struct CuboidSet;
 
 struct ParamaterizedLine
 {
-	Eigen::Array<float, 3, 1> sloap;
+	Eigen::Array<float, 3, 1> slope;
 	Cuboid boundry;
 	Point3D begin;
 	Point3D end;
@@ -27,8 +27,8 @@ struct ParamaterizedLine
 		assert(end.exists());
 		const Offset3D difference = end.toOffset() - begin.toOffset();
 		const DistanceFractional distance = end.distanceToFractional(begin);
-		sloap = difference.data.cast<float>();
-		sloap /= distance.get();
+		slope = difference.data.cast<float>();
+		slope /= distance.get();
 		boundry = {begin.max(end), begin.min(end)};
 	}
 	ParamaterizedLine(const std::pair<Point3D, Point3D>& pair) : ParamaterizedLine(pair.first, pair.second) { }

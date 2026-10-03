@@ -24,8 +24,8 @@ class MustSleep final
 	bool m_isAwake = true;
 	bool m_force = false;
 public:
-	MustSleep(Area& area, const ActorIndex actor);
-	MustSleep(Area& area, const Json& data, const ActorIndex actor);
+	MustSleep(Area& area, ActorIndex actor);
+	MustSleep(Area& area, const Json& data, ActorIndex actor);
 	Json toJson() const;
 	void tired(Area& area);
 	void sleep(Area& area);
@@ -40,6 +40,9 @@ public:
 	void scheduleTiredEvent(Area& area);
 	void clearObjective() { m_objective = nullptr; }
 	void clearSleepSpot() { m_location.clear(); }
+	void updateReference(ActorReference oldReference, ActorReference newReference, ActorReferenceData& dataStore);
+	void updateEventSchedule(EventSchedule& newSchedule) { m_tiredEvent.moveTo(newSchedule); }
+	void onMove(Area& other, ActorReference newReference);
 	[[nodiscard]] bool isAwake() const { return m_isAwake; }
 	[[nodiscard]] bool isTired() const { return m_needsSleep; }
 	[[nodiscard]] bool getNeedsSleep() const { return m_needsSleep; }

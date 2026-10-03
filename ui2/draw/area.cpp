@@ -1,19 +1,19 @@
-#include "draw.h"
-#include "window.h"
-#include "displayData.h"
-#include "sprite.h"
-#include "../engine/area/area.h"
-#include "../engine/space/space.h"
-#include "../engine/actors/actors.h"
-#include "../engine/items/items.h"
-#include "../engine/plants.h"
-#include "../engine/definitions/plantSpecies.h"
+#include "area.h"
+#include "../window.h"
+#include "../displayData.h"
+#include "../sprite.h"
+#include "../../engine/area/area.h"
+#include "../../engine/space/space.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/items/items.h"
+#include "../../engine/plants.h"
+#include "../../engine/definitions/plantSpecies.h"
 #include<SDL2/SDL.h>
-void draw::world(Window& window)
+void drawArea::main(Window& window)
 {
 	const Space& space = window.m_area->getSpace();
-	int w, h;
-	SDL_GetRendererOutputSize(window.m_sdlRenderer, &w, &h);
+	//int w, h;
+	//SDL_GetRendererOutputSize(window.m_sdlRenderer, &w, &h);
 	Cuboid thisLevel = Cuboid::create(window.getBlockAtScreenPosition(0, 0), window.getBlockAtScreenPosition(window.m_screenWidth, window.m_screenHeight));
 	static auto roughFloorSprite = Sprite("roughFloor");
 	static auto blockFloorSprite = Sprite("blockFloor");
@@ -233,7 +233,7 @@ void draw::world(Window& window)
 			itemOverlay(window, point);
 	// Render actors.
 	CuboidSet containsActors;
-	space.actor_queryForEachWithCuboid(thisLevel, [&](const Cuboid cuboid, const ActorIndex actor) {
+	space.actor_queryForEachWithCuboid(thisLevel, [&](const Cuboid cuboid, ActorIndex actor) {
 		containsActors.add(cuboid);
 		actorAtLocation(window, actor);
 	});
@@ -271,18 +271,18 @@ void draw::world(Window& window)
 	// Draw selected boxes which show what is currently selected.
 	selectedBoxes(window);
 	// Item being installed or targeted hauling.
-	if(window.m_gameOverlay.m_itemBeingInstalled.exists() || window.m_gameOverlay.m_itemBeingMoved.exists())
+	if(window.m_areaOverlay.m_itemBeingInstalled.exists() || window.m_areaOverlay.m_itemBeingMoved.exists())
 	{
-		const Point3D hoverBlock = window.m_gameOverlay.m_blockUnderCursor;
+		const Point3D hoverBlock = window.m_areaOverlay.m_blockUnderCursor;
 		if(hoverBlock.exists())
 		{
-			const ItemReference itemRef = (window.m_gameOverlay.m_itemBeingInstalled.exists() ?
-				window.m_gameOverlay.m_itemBeingInstalled :
-				window.m_gameOverlay.m_itemBeingMoved
+			const ItemReference itemRef = (window.m_areaOverlay.m_itemBeingInstalled.exists() ?
+				window.m_areaOverlay.m_itemBeingInstalled :
+				window.m_areaOverlay.m_itemBeingMoved
 			);
 			const ItemIndex item = itemRef.getIndex(items.m_referenceData);
-			auto occupiedBlocks = items.getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(item, hoverBlock, window.m_gameOverlay.m_facing);
-			bool valid = space.shape_shapeAndMoveTypeCanEnterEverWithFacing(hoverBlock, items.getShape(item), items.getMoveType(item), window.m_gameOverlay.m_facing);
+			auto occupiedBlocks = items.getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(item, hoverBlock, window.m_areaOverlay.m_facing);
+			bool valid = space.shape_shapeAndMoveTypeCanEnterEverWithFacing(hoverBlock, items.getShape(item), items.getMoveType(item), window.m_areaOverlay.m_facing);
 			for(const Cuboid& cuboid : occupiedBlocks)
 				for(const Point3D point : cuboid)
 					if(!valid)
@@ -292,7 +292,7 @@ void draw::world(Window& window)
 		}
 	}
 }
-void draw::nonGroundCoverPlant(Window& window, const PlantIndex plant, const PlantSpeciesDisplayData& display)
+void drawArea::nonGroundCoverPlant(Window& window, const PlantIndex plant, const PlantSpeciesDisplayData& display)
 {
 	Space& space = window.m_area->getSpace();
 	Plants& plants = window.m_area->getPlants();
@@ -309,7 +309,7 @@ void draw::nonGroundCoverPlant(Window& window, const PlantIndex plant, const Pla
 				if(point == location && occupied.volume() > 2)
 				{
 					static Sprite trunk("trunk");
-					trunk.draw(window, point);
+					trunk.drawArea(window, point);
 				}
 				else
 				{
@@ -317,7 +317,7 @@ void draw::nonGroundCoverPlant(Window& window, const PlantIndex plant, const Pla
 					{
 						if(point.z() == space.m_sizeZ)
 						{
-							display.sprite.draw(window, point);
+							display.sprite.drawArea(window, point);
 						}
 						else
 						{
@@ -325,12 +325,12 @@ void draw::nonGroundCoverPlant(Window& window, const PlantIndex plant, const Pla
 							if(above.exists() && space.plant_exists(above) && space.plant_get(above) == plant)
 							{
 								static Sprite trunkWithBranches("trunkWithBranches");
-								trunkWithBranches.draw(window, point);
+								trunkWithBranches.drawArea(window, point);
 								static Sprite trunkLeaves("trunkLeaves");
-								trunkLeaves.draw(window, point);
+								trunkLeaves.drawArea(window, point);
 							}
 							else
-								display.sprite.draw(window, point);
+								display.sprite.drawArea(window, point);
 						}
 					}
 					else
@@ -347,17 +347,17 @@ void draw::nonGroundCoverPlant(Window& window, const PlantIndex plant, const Pla
 	else
 	{
 		if(plants.getOccupied(plant).size() == 1)
-			display.sprite.draw(window, location);
+			display.sprite.drawArea(window, location);
 		else
 			display.sprite.drawScaled(window, location, ((float)plants.getPercentGrown(plant).get() / 100.f));
 	}
 }
-void draw::colorOnArea(Window& window, const CuboidSet& area, const SDL_Color color)
+void drawArea::colorOnArea(Window& window, const CuboidSet& area, const SDL_Color color)
 {
 	for(const Cuboid& cuboid : area)
-		draw::colorOnCuboid(window, cuboid, color);
+		drawArea::colorOnCuboid(window, cuboid, color);
 }
-void draw::colorOnCuboid(Window& window, const Cuboid cuboid, const SDL_Color color)
+void drawArea::colorOnCuboid(Window& window, const Cuboid cuboid, const SDL_Color color)
 {
 	const auto& scale = displayData::defaultScale;
 	int x = cuboid.m_low.x().get() * scale;
@@ -367,12 +367,12 @@ void draw::colorOnCuboid(Window& window, const Cuboid cuboid, const SDL_Color co
 	SDL_Rect rect{x, y, w, h};
 	window.m_renderBuffer.add(rect, color);
 }
-void draw::colorOutlineArea(Window& window, const CuboidSet& area, const SDL_Color color, const int thickness)
+void drawArea::colorOutlineArea(Window& window, const CuboidSet& area, const SDL_Color color, const int thickness)
 {
 	for(const Cuboid& cuboid : area)
-		draw::colorOutlineCuboid(window, cuboid, color, thickness);
+		drawArea::colorOutlineCuboid(window, cuboid, color, thickness);
 }
-void draw::colorOutlineCuboid(Window& window, const Cuboid cuboid, const SDL_Color color, const int thickness)
+void drawArea::colorOutlineCuboid(Window& window, const Cuboid cuboid, const SDL_Color color, const int thickness)
 {
 	const auto& scale = displayData::defaultScale;
 	int x = cuboid.m_low.x().get() * scale;
@@ -385,13 +385,13 @@ void draw::colorOutlineCuboid(Window& window, const Cuboid cuboid, const SDL_Col
 		window.m_renderBuffer.add(rect, color);
 	}
 }
-void draw::colorOutlineCuboids(Window& window, const CuboidSet& cuboids, const SDL_Color color, const int thickness)
+void drawArea::colorOutlineCuboids(Window& window, const CuboidSet& cuboids, const SDL_Color color, const int thickness)
 {
-	// TODO: Don't draw internal faces.
+	// TODO: Don't drawArea internal faces.
 	for(const Cuboid& cuboid : cuboids)
 		colorOutlineCuboid(window, cuboid, color, thickness);
 }
-void draw::textAtCoordinates(Window& window, const int startX, const int startY, const std::string& text, const SDL_Color color, const int size)
+void drawArea::textAtCoordinates(Window& window, const int startX, const int startY, const std::string& text, const SDL_Color color, const int size)
 {
 	const int& charWidth = size;
 	const int& charHeight = size;
@@ -513,17 +513,17 @@ void draw::textAtCoordinates(Window& window, const int startX, const int startY,
 		x += charWidth + spacing;
 	}
 }
-void draw::textAtPoint(Window& window, const Point3D point, const std::string& text, const SDL_Color color, const int size)
+void drawArea::textAtPoint(Window& window, const Point3D point, const std::string& text, const SDL_Color color, const int size)
 {
 	const auto& scale = displayData::defaultScale;
 	textAtCoordinates(window, point.x().get() * scale, window.invertY(point.y()).get() * scale, text, color, size);
 }
-void draw::textOnCuboid(Window& window, const Cuboid cuboid, const std::string& text, const SDL_Color color, const int size)
+void drawArea::textOnCuboid(Window& window, const Cuboid cuboid, const std::string& text, const SDL_Color color, const int size)
 {
 	for(const Point3D point : cuboid)
 		textAtPoint(window, point, text, color, size);
 }
-void draw::featureType(Window& window, const PointFeatureTypeId type, const Sprite& sprite, const SmallMap<PointFeatureTypeId, SmallMap<PointFeature, CuboidSet>>& features)
+void drawArea::featureType(Window& window, const PointFeatureTypeId type, const Sprite& sprite, const SmallMap<PointFeatureTypeId, SmallMap<PointFeature, CuboidSet>>& features)
 {
 	auto found = features.find(type);
 	if(found != features.end())
@@ -535,7 +535,7 @@ void draw::featureType(Window& window, const PointFeatureTypeId type, const Spri
 		}
 	}
 }
-void draw::rampOrStairs(Window& window, const PointFeatureTypeId type, const Sprite& sprite, const SmallMap<PointFeatureTypeId, SmallMap<PointFeature, CuboidSet>>& features)
+void drawArea::rampOrStairs(Window& window, const PointFeatureTypeId type, const Sprite& sprite, const SmallMap<PointFeatureTypeId, SmallMap<PointFeature, CuboidSet>>& features)
 {
 	auto found = features.find(type);
 	if(found!= features.end())
@@ -552,7 +552,7 @@ void draw::rampOrStairs(Window& window, const PointFeatureTypeId type, const Spr
 		}
 	}
 }
-void draw::featureTypeRotated90IfInaccessableNorthAndSouth(Window& window, const PointFeatureTypeId type, const Sprite& sprite, const SmallMap<PointFeatureTypeId, SmallMap<PointFeature, CuboidSet>>& features)
+void drawArea::featureTypeRotated90IfInaccessableNorthAndSouth(Window& window, const PointFeatureTypeId type, const Sprite& sprite, const SmallMap<PointFeatureTypeId, SmallMap<PointFeature, CuboidSet>>& features)
 {
 	const Space& space = window.getArea()->getSpace();
 	auto found = features.find(type);
@@ -572,14 +572,14 @@ void draw::featureTypeRotated90IfInaccessableNorthAndSouth(Window& window, const
 		}
 	}
 }
-void draw::actorAtLocation(Window& window, const ActorIndex actor)
+void drawArea::actorAtLocation(Window& window, ActorIndex actor)
 {
 	Actors& actors = window.m_area->getActors();
 	AnimalSpeciesDisplayData& display = displayData::actorData[actors.getSpecies(actor)];
 	const Point3D location = actors.getLocation(actor);
-	display.sprite.draw(window, location);
+	display.sprite.drawArea(window, location);
 	if(Shape::getIsMultiTile(actors.getShape(actor)))
-		draw::colorOutlineCuboids(window, actors.getOccupied(actor), displayData::actorOutlineColor, displayData::actorOutlineThickness);
+		drawArea::colorOutlineCuboids(window, actors.getOccupied(actor), displayData::actorOutlineColor, displayData::actorOutlineThickness);
 	if(actors.canPickUp_exists(actor))
 	{
 		const ActorOrItemIndex isCarrying = actors.canPickUp_getPolymorphic(actor);
@@ -592,32 +592,32 @@ void draw::actorAtLocation(Window& window, const ActorIndex actor)
 		}
 	}
 }
-void draw::itemAtLocation(Window& window, const ItemIndex item)
+void drawArea::itemAtLocation(Window& window, const ItemIndex item)
 {
 	Items& items = window.m_area->getItems();
 	ItemTypeDisplayData& display = displayData::itemData[items.getItemType(item)];
 	SDL_Color color = displayData::materialColors[items.getMaterialType(item)];
 	display.sprite.drawTinted(window, items.getLocation(item), color);
 	if(Shape::getIsMultiTile(items.getShape(item)))
-		draw::colorOutlineCuboids(window, items.getOccupied(item), displayData::itemOutlineColor, displayData::itemOutlineThickness);
+		drawArea::colorOutlineCuboids(window, items.getOccupied(item), displayData::itemOutlineColor, displayData::itemOutlineThickness);
 }
-void draw::itemBeingCarried(Window& window, const ItemIndex item, const Point3D point)
+void drawArea::itemBeingCarried(Window& window, const ItemIndex item, const Point3D point)
 {
 	Items& items = window.m_area->getItems();
 	ItemTypeDisplayData& display = displayData::itemData[items.getItemType(item)];
-	display.sprite.draw(window, point);
+	display.sprite.drawArea(window, point);
 	// TODO: outline for multi tile?
 }
-void draw::selectedBoxes(Window& window)
+void drawArea::selectedBoxes(Window& window)
 {
-	switch(window.m_gameOverlay.m_selectMode)
+	switch(window.m_areaOverlay.m_selectMode)
 	{
 		case(SelectMode::Actors):
 		{
 			const Actors& actors = window.m_area->getActors();
-			for(const ActorReference& ref : window.m_gameOverlay.m_selectedActors)
+			for(const ActorReference& ref : window.m_areaOverlay.m_selectedActors)
 			{
-				const ActorIndex actor = ref.getIndex(actors.m_referenceData);
+				ActorIndex actor = ref.getIndex(actors.m_referenceData);
 				const CuboidSet& occupied = actors.getOccupied(actor);
 				colorOutlineCuboids(window, occupied, displayData::selectColor, displayData::selectBoxThickness);
 			}
@@ -626,7 +626,7 @@ void draw::selectedBoxes(Window& window)
 		case(SelectMode::Items):
 		{
 			const Items& items = window.m_area->getItems();
-			for(const ItemReference& ref : window.m_gameOverlay.m_selectedItems)
+			for(const ItemReference& ref : window.m_areaOverlay.m_selectedItems)
 			{
 				const ItemIndex item = ref.getIndex(items.m_referenceData);
 				const CuboidSet& occupied = items.getOccupied(item);
@@ -636,21 +636,21 @@ void draw::selectedBoxes(Window& window)
 		}
 		case(SelectMode::Space):
 		{
-			for(const Cuboid& cuboid : window.m_gameOverlay.m_selectedArea)
+			for(const Cuboid& cuboid : window.m_areaOverlay.m_selectedArea)
 				if(cuboid.m_high.z() >= window.m_pov->z && cuboid.m_low.z() <= window.m_pov->z)
 					colorOnCuboid(window, cuboid, displayData::selectColorOverlay);
 			break;
 		}
 		case(SelectMode::Plants):
 		{
-			window.m_area->getSpace().plant_queryForEachCuboid(window.m_gameOverlay.m_selectedArea, [&](const Cuboid cuboid){
+			window.m_area->getSpace().plant_queryForEachCuboid(window.m_areaOverlay.m_selectedArea, [&](const Cuboid cuboid){
 				colorOutlineCuboid(window, cuboid, displayData::selectColor, displayData::selectBoxThickness);
 			});
 			break;
 		}
 	}
 }
-void draw::itemOverlay(Window& window, const Point3D point)
+void drawArea::itemOverlay(Window& window, const Point3D point)
 {
 	Space& space = window.m_area->getSpace();
 	Items& items = window.m_area->getItems();
@@ -664,35 +664,35 @@ void draw::itemOverlay(Window& window, const Point3D point)
 	if(window.m_faction.exists() && !items.stockpile_canBeStockPiled(item, window.m_faction))
 		inaccessableSymbol(window, point);
 }
-void draw::actorOverlay(Window& window, const Point3D point)
+void drawArea::actorOverlay(Window& window, const Point3D point)
 {
 	Space& space = window.m_area->getSpace();
 	Actors& actors = window.m_area->getActors();
-	const ActorIndex actor = space.actor_getAll(point).front();
+	ActorIndex actor = space.actor_getAll(point).front();
 	if(!actors.sleep_isAwake(actor))
 		textAtPoint(window, point, "zzz", displayData::sleepZZZColor);
 }
-void draw::validOnBlock(Window& window, const Point3D point)
+void drawArea::validOnBlock(Window& window, const Point3D point)
 {
 	static const Sprite sprite("valid");
-	sprite.draw(window, point);
+	sprite.drawArea(window, point);
 }
-void draw::invalidOnBlock(Window& window, const Point3D point)
+void drawArea::invalidOnBlock(Window& window, const Point3D point)
 {
 	static const Sprite sprite("invalid");
-	sprite.draw(window, point);
+	sprite.drawArea(window, point);
 }
-void draw::accessableSymbol(Window& window, const Point3D point)
+void drawArea::accessableSymbol(Window& window, const Point3D point)
 {
 	static const Sprite sprite("o");
 	sprite.drawTinted(window, point, displayData::allowedColor);
 }
-void draw::inaccessableSymbol(Window& window, const Point3D point)
+void drawArea::inaccessableSymbol(Window& window, const Point3D point)
 {
 	static const Sprite sprite("x");
 	sprite.drawTinted(window, point, displayData::allowedColor);
 }
-void draw::progressBarOnBlock(Window& window, const Point3D point, const Percent progress)
+void drawArea::progressBarOnBlock(Window& window, const Point3D point, const Percent progress)
 {
 	const auto& scale = displayData::defaultScale;
 	int x = point.x().get() * scale;
@@ -705,10 +705,10 @@ void draw::progressBarOnBlock(Window& window, const Point3D point, const Percent
 	SDL_Rect bar{x, y, width, displayData::progressBarThickness};
 	window.m_renderBuffer.add(bar, displayData::progressBarColor);
 }
-void draw::maybeDesignated(Window& window, const Point3D point)
+void drawArea::maybeDesignated(Window& window, const Point3D point)
 {
 	SpaceDesignation designation = window.m_area->m_spaceDesignations.getForFaction(window.m_faction).getDisplayDesignation(point);
-	if(designation == SpaceDesignation::SPACE_DESIGNATION_MAX)
+	if(designation == SpaceDesignation::Null)
 		return;
 	static SmallMap<SpaceDesignation, Sprite> designationSprites{
 		{SpaceDesignation::Dig, {"pick"}},
@@ -723,9 +723,9 @@ void draw::maybeDesignated(Window& window, const Point3D point)
 		{SpaceDesignation::StockPileHaulFrom, {"hand"}},
 		{SpaceDesignation::StockPileHaulTo, {"open"}}
 	};
-	designationSprites[designation].draw(window, point);
+	designationSprites[designation].drawArea(window, point);
 }
-Facing4 draw::rampOrStairsFacing(Window& window, const Point3D point)
+Facing4 drawArea::rampOrStairsFacing(Window& window, const Point3D point)
 {
 	Space& space = window.m_area->getSpace();
 	static auto canConnectToAbove = [&](const Point3D otherPoint) -> bool {

@@ -23,7 +23,9 @@ Space::Space(Area& area, Distance x, Distance y, Distance z) :
 	m_sizeZ(z),
 	m_zLevelSize(x.get() * y.get())
 {
-	m_exposedToSky.initialize(Cuboid{Point3D(x - 1, y - 1, z - 1), Point3D::create(0,0,0)});
+	if(x != 0)
+		// If 0 is passed for the dimensions there is no space.
+		m_exposedToSky.initialize(Cuboid{Point3D(x - 1, y - 1, z - 1), Point3D::create(0,0,0)});
 }
 void Space::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
